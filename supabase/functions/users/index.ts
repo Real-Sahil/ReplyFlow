@@ -149,6 +149,9 @@ async function inviteUser(req: Request, currentUserSale: any) {
     email,
     password,
     user_metadata: { first_name, last_name },
+    // The database rejects every signup without this flag once an administrator
+    // exists. It lives in app_metadata, which only the service role can set.
+    app_metadata: { replyflow_invited: true },
   });
 
   let user = data?.user;
