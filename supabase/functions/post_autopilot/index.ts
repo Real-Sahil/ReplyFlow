@@ -8,7 +8,7 @@
 //                     composer. Returns a caption for one product. Saves nothing.
 // Secrets (Supabase Edge Function secrets, never in the repo):
 //   GROQ_API_KEY     from console.groq.com
-//   GROQ_MODEL       optional, defaults to llama-3.3-70b-versatile
+//   GROQ_MODEL       optional, defaults to openai/gpt-oss-120b
 // The cron key is in Vault (autopilot_key), checked by post_autopilot_key_ok().
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
@@ -32,7 +32,9 @@ import {
 } from "./autopilotRules.ts";
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
-const DEFAULT_MODEL = "llama-3.3-70b-versatile";
+// Groq retired llama-3.3-70b-versatile in August 2026; gpt-oss-120b is its
+// recommended production replacement. GROQ_MODEL can still override it.
+const DEFAULT_MODEL = "openai/gpt-oss-120b";
 // Keeps one run well inside the free tier, even if the schedule misfires.
 const MAX_PER_RUN = 3;
 // How many unused listings Groq chooses between.
@@ -78,7 +80,6 @@ const groqChat = async (
         model: modelName(),
         temperature: 0.6,
         max_tokens: maxTokens,
-        response_format: { type: "json_object" },
         messages: [
           { role: "system", content: system },
           { role: "user", content: user },
@@ -90,7 +91,11 @@ const groqChat = async (
     throw new GroqError(502, "Could not reach the AI writer.");
   }
   if (!response.ok) {
-    console.error("Groq error", response.status);
+    console.error(
+      "Groq error",
+      response.status,
+      (await response.text()).slice(0, 300),
+    );
     throw new GroqError(
       response.status,
       "The AI writer is unavailable right now.",

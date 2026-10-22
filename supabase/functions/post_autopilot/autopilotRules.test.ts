@@ -177,11 +177,20 @@ describe("parsePicks", () => {
 });
 
 describe("isImageContentType", () => {
-  it("accepts JPEG and PNG only", () => {
+  it("accepts JPEG, PNG and WebP only", () => {
     expect(isImageContentType("image/jpeg")).toBe(true);
     expect(isImageContentType("image/png; charset=binary")).toBe(true);
-    expect(isImageContentType("image/webp")).toBe(false);
+    expect(isImageContentType("image/webp")).toBe(true);
     expect(isImageContentType("text/html")).toBe(false);
     expect(isImageContentType(null)).toBe(false);
+  });
+});
+
+describe("JSON in a model reply", () => {
+  it("finds the JSON object even when the model adds words around it", () => {
+    expect(
+      parseDraft('Sure! Here it is: {"message":"Cosy evenings."} Enjoy.'),
+    ).toBe("Cosy evenings.");
+    expect(parsePicks('Picks: {"picks":[{"id":2}]}', [2], 1)).toEqual([2]);
   });
 });

@@ -167,11 +167,19 @@ export const buildUserPrompt = (product: ProductFacts) => {
   });
 };
 
+// Models do not always return bare JSON, so take the first {...} block in the reply.
+const jsonObjectIn = (raw: string): unknown => {
+  const start = raw.indexOf("{");
+  const end = raw.lastIndexOf("}");
+  if (start === -1 || end <= start) throw new SyntaxError("No JSON object");
+  return JSON.parse(raw.slice(start, end + 1));
+};
+
 // Pulls the post text out of the model's reply. Returns null when it is not usable.
 export const parseDraft = (raw: string): string | null => {
   let message: unknown;
   try {
-    message = (JSON.parse(raw) as { message?: unknown }).message;
+    message = (jsonObjectIn(raw) as { message?: unknown }).message;
   } catch {
     return null;
   }
@@ -240,7 +248,7 @@ export const parsePicks = (
 ): number[] | null => {
   let picks: unknown;
   try {
-    picks = (JSON.parse(raw) as { picks?: unknown }).picks;
+    picks = (jsonObjectIn(raw) as { picks?: unknown }).picks;
   } catch {
     return null;
   }
@@ -257,7 +265,7 @@ export const parsePicks = (
   return chosen.length > 0 ? chosen : null;
 };
 
-// A photo Facebook can fetch: a reachable JPEG or PNG. Checked before a post is
+// A photo Facebook can fetch: a reachable JPEG, PNG or WebP image. Checked before a post is
 // planned, so a dead or non-image link never reaches the queue.
 export const isImageContentType = (contentType: string | null) =>
-  !!contentType && /^image\/(jpeg|png)\b/i.test(contentType);
+  !!contentType && /^image\/(jpeg|png|webp)\b/i.test(contentType);
