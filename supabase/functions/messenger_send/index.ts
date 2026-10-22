@@ -22,6 +22,11 @@ import {
   isWithinReplyWindow,
   validateReplyText,
 } from "./replyWindow.ts";
+import { nextOpening } from "./sendWindow.ts";
+import {
+  type AutoReplySettings,
+  isOpenNow,
+} from "../messenger_webhook/autoReply.ts";
 
 type OutgoingMessage =
   | { text: string }
@@ -102,6 +107,7 @@ Deno.serve((req: Request) =>
           contact_id?: number;
           text?: unknown;
           product_id?: number;
+          automated?: unknown;
         };
         try {
           input = await req.json();
@@ -131,6 +137,35 @@ Deno.serve((req: Request) =>
             "Messenger sending is not set up yet",
             { code: "not_configured" },
           );
+        }
+
+        // Automatic messages (follow-ups) only go out inside business hours. Staff
+        // replies are not held: a person chose to send them.
+        if (input.automated === true) {
+          const { data: hours } = await supabaseAdmin
+            .from("messenger_settings")
+            .select("*")
+            .eq("id", 1)
+            .maybeSingle();
+          if (!hours) {
+            return createErrorResponse(
+              503,
+              "Business hours are not set up yet",
+              { code: "not_configured" },
+            );
+          }
+          const now = new Date();
+          if (!isOpenNow(hours as AutoReplySettings, now)) {
+            const next = nextOpening(hours as AutoReplySettings, now);
+            return createErrorResponse(
+              409,
+              "Automatic messages only go out inside business hours.",
+              {
+                code: "outside_send_window",
+                next_open_at: next?.toISOString() ?? null,
+              },
+            );
+          }
         }
 
         const { data: last } = await supabaseAdmin
