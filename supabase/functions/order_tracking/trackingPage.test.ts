@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   esc,
+  paymentLines,
   renderNotFound,
   renderTrackingPage,
   type TrackingOrder,
@@ -19,6 +20,10 @@ const base: TrackingOrder = {
   delivery_window_end: "2026-11-27",
   next_update_due: "2026-11-05",
   customer_update: "Frame is cut. Upholstery starts Monday.",
+  payment_terms: "cash_on_delivery",
+  balance_pence: 25000,
+  security_requested_pence: 0,
+  security_held_pence: 0,
 };
 
 describe("renderTrackingPage", () => {
@@ -79,5 +84,49 @@ describe("esc and renderNotFound", () => {
 
   it("gives a page that does not reveal whether a token exists", () => {
     expect(renderNotFound()).toContain("We could not find that order");
+  });
+});
+
+describe("paymentLines", () => {
+  const base2 = {
+    ...base,
+    payment_terms: "cash_on_delivery",
+    balance_pence: 25000,
+    security_requested_pence: 0,
+    security_held_pence: 0,
+  };
+
+  it("says cash on delivery and the balance due", () => {
+    const lines = paymentLines(base2);
+    expect(lines[0]).toContain("cash when your sofa is delivered");
+    expect(lines.join(" ")).toContain("Balance due on delivery: £250.00");
+  });
+
+  it("says a deposit is paid first on deposit terms", () => {
+    expect(
+      paymentLines({ ...base2, payment_terms: "deposit_first" })[0],
+    ).toContain("deposit is paid first");
+  });
+
+  it("shows a security deposit while held and its return once completed", () => {
+    const held = paymentLines({
+      ...base2,
+      security_requested_pence: 15000,
+      security_held_pence: 15000,
+    }).join(" ");
+    expect(held).toContain("refundable security deposit of £150.00");
+    const returned = paymentLines({
+      ...base2,
+      status: "completed",
+      security_requested_pence: 15000,
+      security_held_pence: 0,
+    }).join(" ");
+    expect(returned).toContain("has been returned");
+  });
+
+  it("says when the balance is paid in full", () => {
+    expect(paymentLines({ ...base2, balance_pence: 0 }).join(" ")).toContain(
+      "paid in full",
+    );
   });
 });

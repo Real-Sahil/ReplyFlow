@@ -124,9 +124,23 @@ export const OrderInputs = () => (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
       {money("quoted_price_pence", "Quoted (£)")}
       {money("agreed_price_pence", "Agreed (£)")}
+      <SelectInput
+        source="payment_terms"
+        label="Payment"
+        choices={[
+          { id: "cash_on_delivery", name: "Cash on delivery" },
+          { id: "deposit_first", name: "Deposit first, balance on delivery" },
+        ]}
+        defaultValue="cash_on_delivery"
+        helperText={false}
+      />
       {money("deposit_required_pence", "Deposit due (£)")}
-      {money("paid_pence", "Paid so far (£)")}
+      {money("security_deposit_pence", "Security deposit requested (£)")}
     </div>
+    <p className="text-sm text-muted-foreground">
+      Payments are recorded in the Payments section below. The amount paid is
+      worked out from them.
+    </p>
 
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <DateInput source="delivery_window_start" label="Delivery from" />

@@ -33,7 +33,7 @@ Deno.serve(async (req: Request) => {
   const { data, error } = await supabaseAdmin
     .from("orders")
     .select(
-      "reference, product_summary, status, stage_lights, delivery_window_start, delivery_window_end, next_update_due, customer_update",
+      "id, reference, product_summary, status, stage_lights, delivery_window_start, delivery_window_end, next_update_due, customer_update, payment_terms, balance_pence, security_deposit_pence",
     )
     .eq("tracking_token", token)
     .maybeSingle();
@@ -43,5 +43,29 @@ Deno.serve(async (req: Request) => {
   }
   if (!data) return page(renderNotFound(), 404);
 
-  return page(renderTrackingPage(data as TrackingOrder));
+  // The security deposit held is what has come in less what has been refunded.
+  const { data: deposits, error: depositError } = await supabaseAdmin
+    .from("order_payments")
+    .select("kind, amount_pence")
+    .eq("order_id", data.id)
+    .in("kind", ["security_deposit", "security_refund"]);
+  if (depositError) {
+    console.error("Order page deposit lookup failed", depositError.message);
+    return page(renderNotFound(), 500);
+  }
+  const held = (deposits ?? []).reduce(
+    (total, row) =>
+      row.kind === "security_deposit"
+        ? total + Number(row.amount_pence)
+        : total - Number(row.amount_pence),
+    0,
+  );
+
+  return page(
+    renderTrackingPage({
+      ...(data as TrackingOrder),
+      security_requested_pence: Number(data.security_deposit_pence ?? 0),
+      security_held_pence: held,
+    }),
+  );
 });

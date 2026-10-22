@@ -10,8 +10,8 @@ export type QuoteForPdf = {
   created_at: string;
 };
 
-// Seller name only. Address and VAT number are not in the CRM yet; add them here when
-// they are given.
+// Seller name only. The business address is not in the CRM yet; add it here when it is
+// given. No VAT is charged, so none is shown.
 const SELLER = "Mere & Row";
 
 // jsPDF is loaded on demand so the CRM does not carry it on every page.

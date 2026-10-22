@@ -37,6 +37,44 @@ export type TrackingOrder = {
   delivery_window_end: string | null;
   next_update_due: string | null;
   customer_update: string | null;
+  payment_terms: string | null;
+  balance_pence: number | null;
+  security_requested_pence: number | null;
+  security_held_pence: number | null;
+};
+
+const pounds = (pence: number) =>
+  new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(
+    pence / 100,
+  );
+
+// What the customer pays and when. Balance and security deposit amounts are shown, since
+// the customer needs the cash ready for delivery. No VAT is charged.
+export const paymentLines = (order: TrackingOrder): string[] => {
+  const lines: string[] = [];
+  lines.push(
+    order.payment_terms === "deposit_first"
+      ? "A deposit is paid first. The balance is paid when your sofa is delivered."
+      : "The balance is paid in cash when your sofa is delivered.",
+  );
+  const balance = order.balance_pence ?? null;
+  if (balance !== null && balance > 0) {
+    lines.push(`Balance due on delivery: ${pounds(balance)}.`);
+  } else if (balance !== null && balance <= 0) {
+    lines.push("Your balance is paid in full.");
+  }
+  const requested = order.security_requested_pence ?? 0;
+  const held = order.security_held_pence ?? 0;
+  if (requested > 0) {
+    if (order.status === "completed" && held <= 0) {
+      lines.push("Your security deposit has been returned.");
+    } else {
+      lines.push(
+        `A refundable security deposit of ${pounds(requested)} applies. It is returned when your order is completed.`,
+      );
+    }
+  }
+  return lines;
 };
 
 export const esc = (value: string) =>
@@ -155,6 +193,10 @@ export const renderTrackingPage = (order: TrackingOrder) => {
     timing.push(`Your next update is due by ${day(order.next_update_due)}.`);
   }
 
+  const payment = paymentLines(order)
+    .map((line) => `<p>${esc(line)}</p>`)
+    .join("\n");
+
   const update = order.customer_update?.trim()
     ? `<div class="card"><h2>Latest update from Mere &amp; Row</h2><p class="update">${esc(order.customer_update.trim())}</p></div>`
     : "";
@@ -166,6 +208,9 @@ ${update}
 <div class="card"><h2>Progress</h2><ol>
 ${rows}
 </ol></div>
-${timing.length ? `<div class="card">${timing.map((line) => `<p>${esc(line)}</p>`).join("\n")}</div>` : ""}`,
+${timing.length ? `<div class="card">${timing.map((line) => `<p>${esc(line)}</p>`).join("\n")}</div>` : ""}
+<div class="card"><h2>Payment</h2>
+${payment}
+</div>`,
   );
 };

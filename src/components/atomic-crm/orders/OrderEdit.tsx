@@ -5,6 +5,7 @@ import { AuditHistory } from "../audit/AuditHistory";
 import { FormToolbar } from "../layout/FormToolbar";
 import { CustomerPage } from "./CustomerPage";
 import { OrderInputs } from "./OrderInputs";
+import { OrderPayments } from "./OrderPayments";
 
 const OrderHistory = () => {
   const record = useRecordContext();
@@ -24,6 +25,8 @@ export const OrderEdit = () => (
         "created_at",
         "updated_at",
         "tracking_token",
+        // Worked out from the payment rows; a stale copy must never overwrite it.
+        "paid_pence",
       ])
         delete rest[key];
       // An empty light means "not set": drop it rather than store a blank.
@@ -41,6 +44,7 @@ export const OrderEdit = () => (
           <CardContent>
             <OrderInputs />
             <CustomerPage />
+            <OrderPayments />
             <FormToolbar />
           </CardContent>
         </Card>
