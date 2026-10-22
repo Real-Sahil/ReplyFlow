@@ -1,8 +1,14 @@
-import { EditBase, Form } from "ra-core";
+import { EditBase, Form, useRecordContext } from "ra-core";
 import { Card, CardContent } from "@/components/ui/card";
 
+import { AuditHistory } from "../audit/AuditHistory";
 import { FormToolbar } from "../layout/FormToolbar";
 import { ProductInputs } from "./ProductInputs";
+
+const ProductHistory = () => {
+  const record = useRecordContext();
+  return record ? <AuditHistory table="products" recordId={record.id} /> : null;
+};
 
 export const ProductEdit = () => (
   <EditBase actions={false} redirect="list">
@@ -16,5 +22,6 @@ export const ProductEdit = () => (
         </Card>
       </Form>
     </div>
+    <ProductHistory />
   </EditBase>
 );

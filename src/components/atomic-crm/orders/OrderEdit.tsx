@@ -1,8 +1,14 @@
-import { EditBase, Form } from "ra-core";
+import { EditBase, Form, useRecordContext } from "ra-core";
 import { Card, CardContent } from "@/components/ui/card";
 
+import { AuditHistory } from "../audit/AuditHistory";
 import { FormToolbar } from "../layout/FormToolbar";
 import { OrderInputs } from "./OrderInputs";
+
+const OrderHistory = () => {
+  const record = useRecordContext();
+  return record ? <AuditHistory table="orders" recordId={record.id} /> : null;
+};
 
 export const OrderEdit = () => (
   <EditBase
@@ -31,5 +37,6 @@ export const OrderEdit = () => (
         </Card>
       </Form>
     </div>
+    <OrderHistory />
   </EditBase>
 );
