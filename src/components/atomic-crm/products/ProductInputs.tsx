@@ -3,6 +3,8 @@ import { BooleanInput } from "@/components/admin/boolean-input";
 import { NumberInput } from "@/components/admin/number-input";
 import { TextInput } from "@/components/admin/text-input";
 
+import { ProductImageInput } from "./ProductImageInput";
+
 // Prices are stored in pence and edited in pounds.
 const toPounds = (pence: number | null) => (pence == null ? "" : pence / 100);
 // NumberInput types parse as returning a number, but an empty field must clear the price.
@@ -33,7 +35,7 @@ export const ProductInputs = () => (
       />
     </div>
     <TextInput source="description" multiline rows={6} helperText={false} />
-    <TextInput source="image_url" label="Image URL" helperText={false} />
+    <ProductImageInput />
     <BooleanInput source="active" label="Available to sell" defaultValue />
   </div>
 );

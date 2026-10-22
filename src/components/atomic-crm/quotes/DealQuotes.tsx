@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useGetIdentity, useNotify } from "ra-core";
-import { Download, FileText, Pencil, Plus } from "lucide-react";
+import { Download, FileText, Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -23,10 +23,10 @@ type Quote = {
   status: "draft" | "sent" | "accepted" | "declined";
   lines: QuoteLine[];
   discount_percent: number;
-  vat_percent: number;
   valid_until: string;
   notes: string | null;
   created_at: string;
+  updated_at: string;
 };
 
 type DraftLine = { description: string; quantity: string; price: string };
@@ -103,7 +103,6 @@ export const DealQuotes = ({
             const total = quoteTotals(
               quote.lines,
               quote.discount_percent,
-              quote.vat_percent,
             ).total_pence;
             return (
               <li
@@ -115,6 +114,8 @@ export const DealQuotes = ({
                   <p className="text-xs text-muted-foreground">
                     {quote.status} · valid until{" "}
                     {new Date(quote.valid_until).toLocaleDateString("en-GB")}
+                    {" · changed "}
+                    {new Date(quote.updated_at).toLocaleDateString("en-GB")}
                   </p>
                 </div>
                 <span className="tabular-nums">{formatPence(total)}</span>
@@ -182,7 +183,6 @@ const QuoteDialog = ({
   const [discount, setDiscount] = useState(
     String(quote?.discount_percent ?? 0),
   );
-  const [vat, setVat] = useState(String(quote?.vat_percent ?? 20));
   const [validUntil, setValidUntil] = useState(
     quote?.valid_until ?? daysFromToday(30),
   );
@@ -215,19 +215,14 @@ const QuoteDialog = ({
     return result;
   })();
   const discountPct = Number(discount);
-  const vatPct = Number(vat);
   const inputsOk =
     parsed !== null &&
     parsed.length > 0 &&
     discount.trim() !== "" &&
     Number.isFinite(discountPct) &&
     discountPct >= 0 &&
-    discountPct <= 100 &&
-    Number.isFinite(vatPct) &&
-    vatPct >= 0 &&
-    vatPct <= 100;
-  const totals =
-    parsed && inputsOk ? quoteTotals(parsed, discountPct, vatPct) : null;
+    discountPct <= 100;
+  const totals = parsed && inputsOk ? quoteTotals(parsed, discountPct) : null;
 
   const save = async () => {
     if (!parsed || !inputsOk) return;
@@ -236,20 +231,17 @@ const QuoteDialog = ({
       status,
       lines: parsed,
       discount_percent: discountPct,
-      vat_percent: vatPct,
       valid_until: validUntil,
       notes: notes.trim() || null,
     };
     const client = getSupabaseClient();
     const { error } = quote
       ? await client.from("quotes").update(row).eq("id", quote.id)
-      : await client
-          .from("quotes")
-          .insert({
-            ...row,
-            deal_id: dealId,
-            sales_id: Number(identity?.id) || null,
-          });
+      : await client.from("quotes").insert({
+          ...row,
+          deal_id: dealId,
+          sales_id: Number(identity?.id) || null,
+        });
     setSaving(false);
     if (error) {
       notify("The quote could not be saved", { type: "error" });
@@ -271,7 +263,7 @@ const QuoteDialog = ({
           {lines.map((line, index) => (
             <div
               key={index}
-              className="grid grid-cols-[minmax(0,1fr)_72px_104px] gap-2"
+              className="grid grid-cols-[minmax(0,1fr)_72px_104px_auto] items-end gap-2"
             >
               <div className="flex flex-col gap-1">
                 {index === 0 && <Label>Item</Label>}
@@ -304,6 +296,17 @@ const QuoteDialog = ({
                   aria-label={`Unit price ${index + 1}`}
                 />
               </div>
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                aria-label={`Remove line ${index + 1}`}
+                onClick={() =>
+                  setLines((current) => current.filter((_, i) => i !== index))
+                }
+              >
+                <Trash2 />
+              </Button>
             </div>
           ))}
           <div>
@@ -316,7 +319,7 @@ const QuoteDialog = ({
             </Button>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <div className="flex flex-col gap-1">
               <Label htmlFor="quote-discount">Discount %</Label>
               <Input
@@ -324,15 +327,6 @@ const QuoteDialog = ({
                 inputMode="decimal"
                 value={discount}
                 onChange={(e) => setDiscount(e.target.value)}
-              />
-            </div>
-            <div className="flex flex-col gap-1">
-              <Label htmlFor="quote-vat">VAT %</Label>
-              <Input
-                id="quote-vat"
-                inputMode="decimal"
-                value={vat}
-                onChange={(e) => setVat(e.target.value)}
               />
             </div>
             <div className="flex flex-col gap-1">
@@ -382,8 +376,6 @@ const QuoteDialog = ({
                     <span>-{formatPence(totals.discount_pence)}</span>
                   </>
                 )}
-                <span className="text-muted-foreground">VAT</span>
-                <span>{formatPence(totals.vat_pence)}</span>
                 <span className="font-semibold">Total</span>
                 <span className="font-semibold">
                   {formatPence(totals.total_pence)}
@@ -412,7 +404,6 @@ const QuoteDialog = ({
                     lines: parsed,
                     status,
                     discount_percent: discountPct,
-                    vat_percent: vatPct,
                     valid_until: validUntil,
                     notes: notes.trim() || null,
                   },

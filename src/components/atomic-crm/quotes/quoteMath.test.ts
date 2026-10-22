@@ -2,21 +2,18 @@ import { describe, expect, it } from "vitest";
 import { formatPence, poundsToPence, quoteTotals } from "./quoteMath";
 
 describe("quoteTotals", () => {
-  it("adds VAT after the discount", () => {
+  it("takes the discount off the subtotal, with no VAT", () => {
     const totals = quoteTotals(
       [
         { description: "Sofa", quantity: 1, unit_price_pence: 120000 },
         { description: "Footstool", quantity: 2, unit_price_pence: 25000 },
       ],
       10,
-      20,
     );
     expect(totals).toEqual({
       subtotal_pence: 170000,
       discount_pence: 17000,
-      net_pence: 153000,
-      vat_pence: 30600,
-      total_pence: 183600,
+      total_pence: 153000,
     });
   });
 
@@ -24,17 +21,14 @@ describe("quoteTotals", () => {
     const totals = quoteTotals(
       [{ description: "Cushion", quantity: 3, unit_price_pence: 333 }],
       7.5,
-      20,
     );
-    // 999 * 7.5% = 74.925 -> 75; net 924; VAT 184.8 -> 185
+    // 999 * 7.5% = 74.925 -> 75; total 924
     expect(totals.discount_pence).toBe(75);
-    expect(totals.net_pence).toBe(924);
-    expect(totals.vat_pence).toBe(185);
-    expect(totals.total_pence).toBe(1109);
+    expect(totals.total_pence).toBe(924);
   });
 
   it("is zero for an empty quote", () => {
-    expect(quoteTotals([], 0, 20).total_pence).toBe(0);
+    expect(quoteTotals([], 0).total_pence).toBe(0);
   });
 });
 
@@ -55,6 +49,6 @@ describe("poundsToPence", () => {
 
 describe("formatPence", () => {
   it("formats in pounds", () => {
-    expect(formatPence(183600)).toContain("1,836");
+    expect(formatPence(153000)).toContain("1,530");
   });
 });

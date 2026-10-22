@@ -5,7 +5,6 @@ export type QuoteForPdf = {
   status: string;
   lines: QuoteLine[];
   discount_percent: number;
-  vat_percent: number;
   valid_until: string;
   notes: string | null;
   created_at: string;
@@ -91,11 +90,7 @@ export const downloadQuotePdf = async (
     y += 18;
   }
 
-  const totals = quoteTotals(
-    quote.lines,
-    quote.discount_percent,
-    quote.vat_percent,
-  );
+  const totals = quoteTotals(quote.lines, quote.discount_percent);
   y += 8;
   doc.line(330, y, right, y);
   y += 16;
@@ -111,7 +106,6 @@ export const downloadQuotePdf = async (
       `Discount (${quote.discount_percent}%)`,
       `-${formatPence(totals.discount_pence)}`,
     );
-  row(`VAT (${quote.vat_percent}%)`, formatPence(totals.vat_pence));
   row("Total", formatPence(totals.total_pence), true);
 
   if (quote.notes) {
