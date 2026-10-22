@@ -27,6 +27,7 @@ import { NotesIterator } from "../notes/NotesIterator";
 import { useConfigurationContext } from "../root/ConfigurationContext";
 import type { Deal } from "../types";
 import { ContactList } from "./ContactList";
+import { DealTimeline } from "./DealTimeline";
 import { findDealLabel, formatISODateString } from "./dealUtils";
 
 export const DealShow = ({ open, id }: { open: boolean; id?: string }) => {
@@ -166,8 +167,9 @@ const DealShowContent = () => {
             </div>
           )}
 
-          <div className="m-4">
-            <Separator className="mb-4" />
+          <div className="m-4 space-y-6">
+            <Separator />
+            <DealTimeline dealId={record.id} />
             <InfiniteListBase
               resource="deal_notes"
               filter={{ deal_id: record.id }}
