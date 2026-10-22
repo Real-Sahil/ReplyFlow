@@ -9,7 +9,7 @@ so generate it **once, after** the permissions below are added to the app.
 | Use case | Permissions |
 |---|---|
 | Engage with customers on Messenger | `pages_messaging`, `pages_show_list`, `pages_manage_metadata`, `pages_read_engagement` |
-| Manage everything on your Page | `pages_manage_posts`, `pages_manage_engagement`, `pages_read_user_content`, `pages_read_engagement` |
+| Manage everything on your Page | `pages_manage_posts` (publish, schedule and delete posts), `pages_manage_engagement` (reply to and hide comments), `pages_read_user_content`, `pages_read_engagement` |
 
 Names are from memory of Meta's list. If one is missing or renamed, pick the
 closest and tell the developer which one failed.
@@ -37,6 +37,7 @@ closest and tell the developer which one failed.
   real Facebook name, not "Messenger enquiry 1234".
 - Reply from the Inbox: it arrives in Messenger.
 - Comment on a Page post: it appears under Inbox, Comments.
+- Posts: write one under Posts, schedule it at least 10 minutes ahead, and check it shows on the Page's scheduled posts.
 - Reply to a customer from the Facebook Page inbox: it appears in the conversation.
 
 ## Secrets already set in Supabase

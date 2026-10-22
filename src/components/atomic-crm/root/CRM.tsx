@@ -20,6 +20,7 @@ import inbox from "../inbox";
 import messengerSettings from "../messengerSettings";
 import orders from "../orders";
 import savedReplies from "../savedReplies";
+import posts from "../posts";
 import products from "../products";
 import contacts from "../contacts";
 import { Dashboard } from "../dashboard/Dashboard";
@@ -284,6 +285,7 @@ const DesktopAdmin = (
       <Resource name="messenger_conversation_state" />
       <Resource name="page_comments" />
       <Resource name="audit_log" />
+      <Resource name="page_posts" {...posts} />
     </Admin>
   );
 };
@@ -366,6 +368,7 @@ const MobileAdmin = (
         <Resource name="saved_replies" />
         <Resource name="page_comments" />
         <Resource name="audit_log" />
+        <Resource name="page_posts" {...posts} />
         <Resource name="messenger_settings" {...messengerSettings} />
         <Resource name="products" {...products} />
         <Resource name="orders" {...orders} />

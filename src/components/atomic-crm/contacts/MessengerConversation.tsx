@@ -58,7 +58,7 @@ const send = async (
 const fillPlaceholders = (body: string, firstName?: string) =>
   body.replace(/\{\{\s*first_name\s*\}\}/g, firstName ?? "there");
 
-const ProductPicker = ({
+export const ProductPicker = ({
   open,
   onClose,
   onPick,

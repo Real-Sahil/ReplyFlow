@@ -3,6 +3,7 @@ import {
   House,
   Import,
   Kanban,
+  Megaphone,
   MessageCircle,
   Package,
   Settings,
@@ -35,6 +36,8 @@ const Header = () => {
     currentPath = "/companies";
   } else if (matchPath("/messenger_inbox/*", location.pathname)) {
     currentPath = "/messenger_inbox";
+  } else if (matchPath("/page_posts/*", location.pathname)) {
+    currentPath = "/page_posts";
   } else if (matchPath("/orders/*", location.pathname)) {
     currentPath = "/orders";
   } else if (matchPath("/products/*", location.pathname)) {
@@ -67,7 +70,7 @@ const Header = () => {
                 />
               </Link>
               <div>
-                <nav className="flex items-center gap-1">
+                <nav className="flex items-center gap-1 overflow-x-auto">
                   <NavigationTab
                     label="Today"
                     Icon={House}
@@ -99,6 +102,12 @@ const Header = () => {
                     Icon={Package}
                     to="/orders"
                     isActive={currentPath === "/orders"}
+                  />
+                  <NavigationTab
+                    label="Posts"
+                    Icon={Megaphone}
+                    to="/page_posts"
+                    isActive={currentPath === "/page_posts"}
                   />
                   <NavigationTab
                     label={translate("resources.products.name", {
