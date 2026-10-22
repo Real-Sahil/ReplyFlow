@@ -185,3 +185,6 @@ verify_jwt = false
 
 [functions.web_enquiry]
 verify_jwt = false
+
+[functions.meta_leadgen]
+verify_jwt = false
