@@ -1,4 +1,4 @@
-import { Import, Settings, User, Users } from "lucide-react";
+import { Import, MessageCircle, Settings, User, Users } from "lucide-react";
 import { CanAccess, useGetList, useTranslate, useUserMenu } from "ra-core";
 import { Link, matchPath, useLocation } from "react-router";
 import { RefreshButton } from "@/components/admin/refresh-button";
@@ -114,6 +114,7 @@ const Header = () => {
                   </CanAccess>
                   <CanAccess resource="configuration" action="edit">
                     <SettingsMenu />
+                    <MessengerSettingsMenu />
                   </CanAccess>
                   <ImportFromJsonMenuItem />
                 </UserMenu>
@@ -204,6 +205,21 @@ const SettingsMenu = () => {
       <Link to="/settings" className="flex items-center gap-2">
         <Settings />
         {translate("crm.settings.title")}
+      </Link>
+    </DropdownMenuItem>
+  );
+};
+
+const MessengerSettingsMenu = () => {
+  const userMenuContext = useUserMenu();
+  if (!userMenuContext) {
+    throw new Error("<MessengerSettingsMenu> must be used inside <UserMenu>");
+  }
+  return (
+    <DropdownMenuItem asChild onClick={userMenuContext.onClose}>
+      <Link to="/messenger_settings/1" className="flex items-center gap-2">
+        <MessageCircle />
+        Messenger auto-replies
       </Link>
     </DropdownMenuItem>
   );

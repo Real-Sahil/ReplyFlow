@@ -8,6 +8,10 @@ begin
     if not coalesce(c, false) then raise exception 'FAIL: %', m; end if;
 end $$;
 
+create function pg_temp.rows_affected(sql text) returns bigint language plpgsql as $$
+declare n bigint;
+begin execute sql; get diagnostics n = row_count; return n; end $$;
+
 create function pg_temp.fails(sql text, m text) returns void language plpgsql as $$
 begin
     begin execute sql; exception when others then return; end;
@@ -72,5 +76,20 @@ set local role authenticated;
 select pg_temp.ok((select count(*) from public.messenger_messages) = 6, 'staff can read messages');
 select pg_temp.fails($$select public.record_messenger_message('P','x','m_9','t',now(),null,null,null)$$, 'staff cannot call the intake function');
 reset role;
+-- Auto-reply settings: off by default, admin-only edits, state is service-only.
+select pg_temp.ok((select not auto_replies_enabled and not qualify_enabled and not away_enabled from public.messenger_settings), 'auto replies are off by default');
+select pg_temp.fails($$update public.messenger_settings set open_days = '{0}'$$, 'weekday numbers must be 1 to 7');
+insert into auth.users (id, email, raw_app_meta_data) values ('00000000-0000-0000-0000-0000000000a2', 'agent@example.test', '{"replyflow_invited":"true"}');
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a2', true);
+set local role authenticated;
+select pg_temp.ok((select count(*) from public.messenger_settings) = 1, 'staff can read the settings');
+select pg_temp.ok(pg_temp.rows_affected($$update public.messenger_settings set auto_replies_enabled = true$$) = 0, 'agents cannot change the settings');
+select pg_temp.fails($$insert into public.messenger_conversation_state (contact_id) values (1)$$, 'staff cannot write conversation state');
+reset role;
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a1', true);
+set local role authenticated;
+select pg_temp.ok(pg_temp.rows_affected($$update public.messenger_settings set auto_replies_enabled = true$$) = 1, 'admins can change the settings');
+reset role;
+
 select 'ALL MESSENGER CHECKS PASSED' as result;
 rollback;

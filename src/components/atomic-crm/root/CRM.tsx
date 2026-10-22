@@ -17,6 +17,7 @@ import { OAuthConsentPage } from "@/components/supabase/oauth-consent-page";
 
 import companies from "../companies";
 import inbox from "../inbox";
+import messengerSettings from "../messengerSettings";
 import orders from "../orders";
 import savedReplies from "../savedReplies";
 import products from "../products";
@@ -279,6 +280,8 @@ const DesktopAdmin = (
       <Resource name="messenger_messages" />
       <Resource name="messenger_inbox" {...inbox} />
       <Resource name="saved_replies" {...savedReplies} />
+      <Resource name="messenger_settings" {...messengerSettings} />
+      <Resource name="messenger_conversation_state" />
     </Admin>
   );
 };
@@ -359,6 +362,7 @@ const MobileAdmin = (
         <Resource name="messenger_messages" />
         <Resource name="messenger_inbox" {...inbox} />
         <Resource name="saved_replies" />
+        <Resource name="messenger_settings" {...messengerSettings} />
         <Resource name="products" {...products} />
         <Resource name="orders" {...orders} />
       </Admin>
