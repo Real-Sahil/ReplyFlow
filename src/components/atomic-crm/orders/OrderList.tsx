@@ -1,3 +1,7 @@
+import { Link } from "react-router";
+import { Button } from "@/components/ui/button";
+import { ExportDialogButton } from "../exports/ExportDialog";
+import { ordersExport } from "../exports/exportConfigs";
 import { useGetIdentity, useRecordContext } from "ra-core";
 import { CreateButton } from "@/components/admin/create-button";
 import { DataTable } from "@/components/admin/data-table";
@@ -72,6 +76,10 @@ export const OrderList = () => {
       filters={filters}
       actions={
         <TopToolbar>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/transactions">Transactions</Link>
+          </Button>
+          <ExportDialogButton config={ordersExport()} />
           <CreateButton label="New order" />
         </TopToolbar>
       }

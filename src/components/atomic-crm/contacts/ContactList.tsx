@@ -12,7 +12,8 @@ import { BulkActionsToolbar } from "@/components/admin/bulk-actions-toolbar";
 import { BulkDeleteButton } from "@/components/admin/bulk-delete-button";
 import { BulkExportButton } from "@/components/admin/bulk-export-button";
 import { CreateButton } from "@/components/admin/create-button";
-import { ExportButton } from "@/components/admin/export-button";
+import { ExportDialogButton } from "../exports/ExportDialog";
+import { contactsExport } from "../exports/exportConfigs";
 import { List } from "@/components/admin/list";
 import { SelectAllButton } from "@/components/admin/select-all-button";
 import { SortButton } from "@/components/admin/sort-button";
@@ -90,7 +91,7 @@ const ContactListActions = () => (
   <TopToolbar>
     <SortButton fields={["first_name", "last_name", "last_seen"]} />
     <DataImportButton resource="contacts" />
-    <ExportButton exporter={exporter} />
+    <ExportDialogButton config={contactsExport()} />
     <CreateButton />
   </TopToolbar>
 );

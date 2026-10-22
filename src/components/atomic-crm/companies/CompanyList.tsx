@@ -1,6 +1,7 @@
 import { useGetIdentity, useListContext, useTranslate } from "ra-core";
 import { CreateButton } from "@/components/admin/create-button";
-import { ExportButton } from "@/components/admin/export-button";
+import { ExportDialogButton } from "../exports/ExportDialog";
+import { companiesExport } from "../exports/exportConfigs";
 import { List } from "@/components/admin/list";
 import { ListPagination } from "@/components/admin/list-pagination";
 import { SortButton } from "@/components/admin/sort-button";
@@ -50,7 +51,7 @@ const CompanyListActions = () => {
     <TopToolbar>
       <SortButton fields={["name", "created_at", "nb_contacts"]} />
       <DataImportButton resource="companies" />
-      <ExportButton />
+      <ExportDialogButton config={companiesExport()} />
       <CreateButton
         label={translate("resources.companies.action.new", {
           _: "New Company",

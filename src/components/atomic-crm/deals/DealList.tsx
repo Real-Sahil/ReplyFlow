@@ -1,3 +1,5 @@
+import { ExportDialogButton } from "../exports/ExportDialog";
+import { dealsExport } from "../exports/exportConfigs";
 import type { ReactNode } from "react";
 import type { InputProps } from "ra-core";
 import {
@@ -9,7 +11,6 @@ import {
 import { matchPath, useLocation } from "react-router";
 import { AutocompleteInput } from "@/components/admin/autocomplete-input";
 import { CreateButton } from "@/components/admin/create-button";
-import { ExportButton } from "@/components/admin/export-button";
 import { List } from "@/components/admin/list";
 import { ReferenceInput } from "@/components/admin/reference-input";
 import { FilterButton } from "@/components/admin/filter-form";
@@ -114,11 +115,16 @@ const DealLayout = () => {
   );
 };
 
+const DealExportButton = () => {
+  const { dealStages } = useConfigurationContext();
+  return <ExportDialogButton config={dealsExport(dealStages)} />;
+};
+
 const DealActions = () => (
   <TopToolbar>
     <FilterButton />
     <DataImportButton resource="deals" />
-    <ExportButton />
+    <DealExportButton />
     <CreateButton label="resources.deals.action.new" />
   </TopToolbar>
 );

@@ -13,7 +13,7 @@ export type RecordedPayment = { kind: PaymentKind; amount_pence: number };
 
 export const KIND_LABELS: Record<PaymentKind, string> = {
   deposit: "Deposit",
-  balance: "Payment on delivery",
+  balance: "Cash on delivery",
   security_deposit: "Security deposit received",
   security_refund: "Security deposit refunded",
 };

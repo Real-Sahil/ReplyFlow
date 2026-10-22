@@ -1,3 +1,5 @@
+import { ExportDialogButton } from "../exports/ExportDialog";
+import { productsExport } from "../exports/exportConfigs";
 import {
   RecordContextProvider,
   useGetIdentity,
@@ -41,6 +43,7 @@ export const ProductList = () => {
       filters={filters}
       actions={
         <TopToolbar>
+          <ExportDialogButton config={productsExport()} />
           <CreateButton label="New product" />
         </TopToolbar>
       }

@@ -1,3 +1,4 @@
+import { TransactionsPage } from "../orders/TransactionsPage";
 import type {
   CoreAdminProps,
   AuthProvider,
@@ -268,6 +269,7 @@ const DesktopAdmin = (
         <Route path={SettingsPage.path} element={<SettingsPage />} />
         <Route path="/facebook" element={<FacebookConnectionPage />} />
         <Route path={ImportPage.path} element={<ImportPage />} />
+        <Route path="/transactions" element={<TransactionsPage />} />
         <Route path={ChangelogPage.path} element={<ChangelogPage />} />
       </CustomRoutes>
       <Resource name="deals" {...deals} />
