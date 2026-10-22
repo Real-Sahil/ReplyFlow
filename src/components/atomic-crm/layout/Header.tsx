@@ -54,10 +54,10 @@ const Header = () => {
       <nav className="grow">
         <header className="bg-secondary">
           <div className="px-4 py-1.5">
-            <div className="flex justify-between items-center flex-1">
+            <div className="flex justify-between items-center flex-1 gap-3 min-w-0">
               <Link
                 to="/"
-                className="flex items-center gap-2 text-secondary-foreground no-underline"
+                className="flex shrink-0 items-center gap-2 text-secondary-foreground no-underline"
               >
                 <img
                   className="[.light_&]:hidden h-6"
@@ -70,7 +70,7 @@ const Header = () => {
                   alt={title}
                 />
               </Link>
-              <div>
+              <div className="min-w-0 flex-1">
                 <nav className="flex items-center gap-1 overflow-x-auto">
                   <NavigationTab
                     label="Today"
@@ -121,7 +121,7 @@ const Header = () => {
                   />
                 </nav>
               </div>
-              <div className="flex items-center">
+              <div className="flex shrink-0 items-center">
                 <GlobalSearchButton />
                 <ThemeModeToggle />
                 <RefreshButton />

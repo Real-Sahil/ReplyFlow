@@ -22,6 +22,7 @@ export type PostRow = {
   error: string | null;
   submitted_at: string | null;
   approved_at: string | null;
+  source?: "manual" | "ai" | null;
 };
 
 const labels: Record<PostRow["status"], string> = {

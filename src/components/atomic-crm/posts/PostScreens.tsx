@@ -5,7 +5,7 @@ import {
   useGetList,
   useNotify,
 } from "ra-core";
-import { useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router";
 import { ExternalLink, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -16,18 +16,107 @@ import { getSupabaseClient } from "../providers/supabase/supabase";
 import { AutopilotPanel } from "./AutopilotPanel";
 import { PostCalendar } from "./PostCalendar";
 import { PostComposer } from "./PostComposer";
+import { PostPipeline } from "./PostPipeline";
 import { PostStatusBadge, type PostRow } from "./postStatus";
+
+type Stage = PostRow["status"];
+type Source = "all" | "ai" | "manual";
 
 const cancelLabel = (status: PostRow["status"]) =>
   status === "scheduled" ? "Cancel schedule" : "Remove from Facebook";
 
-const ListView = () => {
+// "in 14 hours", "in 3 days", "2 hours ago": how far away a planned time is.
+const relativeTime = (iso: string) => {
+  const minutes = Math.round((Date.parse(iso) - Date.now()) / 60_000);
+  const formatter = new Intl.RelativeTimeFormat("en-GB", { numeric: "auto" });
+  const abs = Math.abs(minutes);
+  if (abs < 60) return formatter.format(minutes, "minute");
+  if (abs < 60 * 24) return formatter.format(Math.round(minutes / 60), "hour");
+  return formatter.format(Math.round(minutes / (60 * 24)), "day");
+};
+
+// What the post is waiting on, in plain words.
+const stateNote = (post: PostRow) => {
+  switch (post.status) {
+    case "draft":
+      return "Not yet sent for review";
+    case "pending_review":
+      return "Waiting for an administrator";
+    case "approved":
+      return "Approved, goes out on its slot";
+    case "scheduled":
+      return "Held by Facebook until its time";
+    case "published":
+      return "Live on the Page";
+    case "failed":
+      return "Needs a retry";
+  }
+};
+
+const whenLabel = (post: PostRow) => {
+  const iso = post.scheduled_for ?? post.published_at;
+  if (!iso) return { date: "Not planned", relative: "" };
+  return {
+    date: new Date(iso).toLocaleString("en-GB", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+    }),
+    relative: relativeTime(iso),
+  };
+};
+
+// Two letters from the first words of the caption, for posts without a photo.
+const initials = (message: string) =>
+  message
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => word[0]?.toUpperCase() ?? "")
+    .join("") || "•";
+
+const Thumb = ({ post }: { post: PostRow }) =>
+  post.image_url ? (
+    <img
+      src={post.image_url}
+      alt=""
+      loading="lazy"
+      referrerPolicy="no-referrer"
+      className="size-14 shrink-0 rounded-lg object-cover"
+    />
+  ) : (
+    <div
+      aria-hidden="true"
+      className="flex size-14 shrink-0 items-center justify-center rounded-lg bg-muted text-sm font-semibold text-muted-foreground"
+    >
+      {initials(post.message)}
+    </div>
+  );
+
+const SourceTag = ({ source }: { source?: PostRow["source"] }) => (
+  <span
+    className={cn(
+      "rounded-full px-2 py-0.5 text-xs font-medium",
+      source === "ai"
+        ? "bg-amber-300 text-neutral-900"
+        : "bg-muted text-muted-foreground",
+    )}
+  >
+    {source === "ai" ? "AI" : "Manual"}
+  </span>
+);
+
+const ListView = ({
+  posts,
+  refetch,
+}: {
+  posts: PostRow[];
+  refetch: () => void;
+}) => {
   const notify = useNotify();
   const [busyId, setBusyId] = useState<number | null>(null);
-  const { data, refetch } = useGetList<PostRow>("page_posts", {
-    sort: { field: "id", order: "DESC" },
-    pagination: { page: 1, perPage: 100 },
-  });
 
   const remove = async (post: PostRow) => {
     setBusyId(post.id);
@@ -47,91 +136,123 @@ const ListView = () => {
     }
   };
 
-  if (!data?.length) {
+  if (!posts.length) {
     return (
       <Card className="p-6 text-sm text-muted-foreground">
-        No posts yet. Write one, add a product or photo, then send it for review
-        or post it.
+        No posts match these filters. Clear a filter, or write a new post.
       </Card>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-      {data.map((post) => (
-        <Card key={post.id} className="flex-row gap-0 overflow-hidden py-0">
-          {post.image_url ? (
-            <img
-              src={post.image_url}
-              alt=""
-              loading="lazy"
-              referrerPolicy="no-referrer"
-              className="size-28 shrink-0 object-cover"
-            />
-          ) : null}
-          <div className="flex min-w-0 flex-1 flex-col gap-2 p-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <PostStatusBadge status={post.status} />
-              <span className="text-xs text-muted-foreground">
-                {post.status === "scheduled" && post.scheduled_for
-                  ? new Date(post.scheduled_for).toLocaleString("en-GB", {
-                      day: "numeric",
-                      month: "short",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })
-                  : post.published_at
-                    ? new Date(post.published_at).toLocaleDateString("en-GB", {
-                        day: "numeric",
-                        month: "short",
-                      })
-                    : post.scheduled_for
-                      ? `Planned ${new Date(post.scheduled_for).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`
-                      : ""}
-              </span>
-            </div>
-            <p className="line-clamp-3 whitespace-pre-wrap text-sm">
-              {post.message}
-            </p>
-            {post.error && (
-              <p className="text-xs text-destructive">{post.error}</p>
-            )}
-            <div className="mt-auto flex flex-wrap gap-2">
-              {["draft", "failed", "pending_review", "approved"].includes(
-                post.status,
-              ) && (
-                <Button asChild size="sm" variant="outline">
-                  <Link to={`/page_posts/${post.id}`}>Open</Link>
-                </Button>
-              )}
-              {post.fb_post_id && (
-                <Button asChild size="sm" variant="ghost">
-                  <a
-                    href={`https://www.facebook.com/${post.fb_post_id}`}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    <ExternalLink /> View
-                  </a>
-                </Button>
-              )}
-              {post.fb_post_id && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  disabled={busyId === post.id}
-                  onClick={() => remove(post)}
-                >
-                  {cancelLabel(post.status)}
-                </Button>
-              )}
-            </div>
-          </div>
-        </Card>
-      ))}
-    </div>
+    <Card className="gap-0 overflow-hidden p-0">
+      {/* Desktop column headings; on phones each row labels itself. */}
+      <div className="hidden grid-cols-[56px_minmax(0,2.2fr)_minmax(0,1.2fr)_minmax(0,1.6fr)] gap-4 border-b bg-muted/40 px-4 py-2.5 text-xs font-medium text-muted-foreground md:grid">
+        <div />
+        <div>Post</div>
+        <div>Planned</div>
+        <div>Status</div>
+      </div>
+
+      <ul className="divide-y">
+        {posts.map((post) => {
+          const when = whenLabel(post);
+          return (
+            <li
+              key={post.id}
+              className="grid grid-cols-[56px_minmax(0,1fr)] items-center gap-x-4 gap-y-2 px-4 py-3 md:grid-cols-[56px_minmax(0,2.2fr)_minmax(0,1.2fr)_minmax(0,1.6fr)]"
+            >
+              <Thumb post={post} />
+              <div className="min-w-0">
+                <p className="truncate font-medium">
+                  {post.message.split("\n")[0]}
+                </p>
+                <p className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
+                  <SourceTag source={post.source} />
+                  <span className="truncate">
+                    {post.error ? (
+                      <span className="text-destructive">{post.error}</span>
+                    ) : (
+                      stateNote(post)
+                    )}
+                  </span>
+                </p>
+              </div>
+
+              <div className="col-span-2 text-sm md:col-span-1">
+                <p className="tabular-nums">{when.date}</p>
+                {when.relative && (
+                  <p className="text-xs text-muted-foreground">
+                    {when.relative}
+                  </p>
+                )}
+              </div>
+
+              <div className="col-span-2 flex flex-wrap items-center gap-2 md:col-span-1">
+                <PostStatusBadge status={post.status} />
+                <div className="ml-auto flex flex-wrap gap-2">
+                  {["draft", "failed", "pending_review", "approved"].includes(
+                    post.status,
+                  ) && (
+                    <Button asChild size="sm" variant="outline">
+                      <Link to={`/page_posts/${post.id}`}>Open</Link>
+                    </Button>
+                  )}
+                  {post.fb_post_id && (
+                    <Button asChild size="sm" variant="ghost">
+                      <a
+                        href={`https://www.facebook.com/${post.fb_post_id}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <ExternalLink /> View
+                      </a>
+                    </Button>
+                  )}
+                  {(post.status === "scheduled" ||
+                    post.status === "published") && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      disabled={busyId === post.id}
+                      onClick={() => remove(post)}
+                    >
+                      {cancelLabel(post.status)}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </Card>
   );
 };
+
+const FilterChip = ({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) => (
+  <button
+    type="button"
+    aria-pressed={active}
+    onClick={onClick}
+    className={cn(
+      "h-8 shrink-0 rounded-full border px-3 text-sm transition-colors",
+      active
+        ? "border-foreground bg-foreground text-background"
+        : "bg-card hover:bg-accent",
+    )}
+  >
+    {children}
+  </button>
+);
 
 const Tabs = ({
   tab,
@@ -162,11 +283,30 @@ const Tabs = ({
 export const PostList = () => {
   const { identity } = useGetIdentity();
   const [tab, setTab] = useState<"calendar" | "list">("calendar");
+  const [stage, setStage] = useState<Stage | null>(null);
+  const [source, setSource] = useState<Source>("all");
+  const { data, refetch } = useGetList<PostRow>("page_posts", {
+    sort: { field: "id", order: "DESC" },
+    pagination: { page: 1, perPage: 200 },
+  });
+  const all = useMemo(() => data ?? [], [data]);
+  const visible = useMemo(
+    () =>
+      all.filter(
+        (post) =>
+          (stage === null || post.status === stage) &&
+          (source === "all" || (post.source ?? "manual") === source),
+      ),
+    [all, stage, source],
+  );
+
   if (!identity) return null;
   return (
-    <div className="mt-2 flex flex-col gap-4">
+    <div className="mt-2 flex flex-col gap-4 px-4 md:px-0">
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="flex-1 text-2xl font-semibold tracking-tight">Posts</h1>
+        <h1 className="min-w-0 flex-1 text-2xl font-semibold tracking-tight">
+          Posts
+        </h1>
         <Tabs tab={tab} onChange={setTab} />
         <Button asChild>
           <Link to="/page_posts/create">
@@ -174,8 +314,42 @@ export const PostList = () => {
           </Link>
         </Button>
       </div>
+
+      <PostPipeline posts={all} stage={stage} onPick={setStage} />
       <AutopilotPanel />
-      {tab === "calendar" ? <PostCalendar /> : <ListView />}
+
+      {tab === "calendar" ? (
+        <PostCalendar />
+      ) : (
+        <>
+          <div className="flex flex-wrap items-center gap-2">
+            <FilterChip
+              active={source === "all"}
+              onClick={() => setSource("all")}
+            >
+              All posts
+            </FilterChip>
+            <FilterChip
+              active={source === "ai"}
+              onClick={() => setSource("ai")}
+            >
+              Written by AI
+            </FilterChip>
+            <FilterChip
+              active={source === "manual"}
+              onClick={() => setSource("manual")}
+            >
+              Written by a person
+            </FilterChip>
+            {stage && (
+              <FilterChip active onClick={() => setStage(null)}>
+                {stage.replace("_", " ")} &times;
+              </FilterChip>
+            )}
+          </div>
+          <ListView posts={visible} refetch={refetch} />
+        </>
+      )}
     </div>
   );
 };

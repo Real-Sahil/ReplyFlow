@@ -75,6 +75,17 @@ export const PostCalendar = () => {
     );
   }, [view, cursor]);
 
+  const agenda = useMemo(() => {
+    const first = days[0].getTime();
+    const last = days[days.length - 1].getTime() + 24 * 60 * 60 * 1000;
+    return posts
+      .filter((p) => {
+        const d = dayOf(p);
+        return d && d.getTime() >= first && d.getTime() < last;
+      })
+      .sort((a, b) => dayOf(a)!.getTime() - dayOf(b)!.getTime());
+  }, [posts, days]);
+
   const step = (direction: number) => {
     setCursor((c) =>
       view === "week"
@@ -175,7 +186,7 @@ export const PostCalendar = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_260px]">
-        <Card className="gap-0 overflow-hidden p-0">
+        <Card className="hidden gap-0 overflow-hidden p-0 md:flex md:flex-col">
           <div className="grid grid-cols-7 border-b text-xs font-medium text-muted-foreground">
             {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
               <div key={d} className="px-2 py-1.5">
@@ -242,6 +253,15 @@ export const PostCalendar = () => {
                           )}
                           title={post.message}
                         >
+                          {post.image_url && (
+                            <img
+                              src={post.image_url}
+                              alt=""
+                              loading="lazy"
+                              referrerPolicy="no-referrer"
+                              className="size-5 shrink-0 rounded object-cover"
+                            />
+                          )}
                           <span className="shrink-0 tabular-nums text-muted-foreground">
                             {time}
                           </span>
@@ -254,6 +274,59 @@ export const PostCalendar = () => {
               );
             })}
           </div>
+        </Card>
+
+        {/* Phones: the month grid is too narrow, so the same posts read as a list by day. */}
+        <Card className="gap-0 p-0 md:hidden">
+          {agenda.length === 0 && (
+            <p className="p-4 text-sm text-muted-foreground">
+              Nothing planned in this period.
+            </p>
+          )}
+          <ul className="divide-y">
+            {agenda.map((post) => {
+              const when = dayOf(post)!;
+              return (
+                <li key={post.id}>
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/page_posts/${post.id}`)}
+                    className="flex w-full min-w-0 items-center gap-3 p-3 text-left hover:bg-accent"
+                  >
+                    {post.image_url ? (
+                      <img
+                        src={post.image_url}
+                        alt=""
+                        loading="lazy"
+                        referrerPolicy="no-referrer"
+                        className="size-12 shrink-0 rounded-lg object-cover"
+                      />
+                    ) : (
+                      <div
+                        aria-hidden="true"
+                        className="size-12 shrink-0 rounded-lg bg-muted"
+                      />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs tabular-nums text-muted-foreground">
+                        {when.toLocaleString("en-GB", {
+                          weekday: "short",
+                          day: "numeric",
+                          month: "short",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                      <p className="truncate text-sm font-medium">
+                        {post.message.split("\n")[0]}
+                      </p>
+                    </div>
+                    <PostStatusBadge status={post.status} />
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
         </Card>
 
         <Card className="h-fit gap-3 p-3">
