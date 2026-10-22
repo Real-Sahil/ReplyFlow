@@ -204,3 +204,60 @@ export const checkDraft = (
   }
   return { ok: true };
 };
+
+export const CURATION_PROMPT = [
+  "You choose which products Mere & Row, a UK sofa business, should feature in its next Facebook posts.",
+  "You are given a JSON list of candidate products. Pick the ones most worth a post now.",
+  "Rules:",
+  "- Pick distinct products. Spread the picks across collections rather than repeating one.",
+  "- Favour products with a clear name, a price, and a colour or type a customer can picture.",
+  "- Use only ids from the list. Never invent an id.",
+  'Reply with only a JSON object: {"picks": [{"id": <number>, "reason": "<short reason>"}]}.',
+].join("\n");
+
+export const buildCurationPrompt = (
+  products: Array<ProductFacts & { id: number }>,
+  count: number,
+) =>
+  JSON.stringify({
+    pick_up_to: count,
+    candidates: products.map((p) => ({
+      id: p.id,
+      name: p.title,
+      collection: p.collection,
+      type: p.product_type,
+      colour: p.colour,
+      price: p.price_pence != null ? p.price_pence / 100 : null,
+    })),
+  });
+
+// Reads the model's picks and keeps only real candidates, once each, up to `count`.
+// Returns null when the reply cannot be used, so the caller can fall back.
+export const parsePicks = (
+  raw: string,
+  candidateIds: number[],
+  count: number,
+): number[] | null => {
+  let picks: unknown;
+  try {
+    picks = (JSON.parse(raw) as { picks?: unknown }).picks;
+  } catch {
+    return null;
+  }
+  if (!Array.isArray(picks)) return null;
+  const allowed = new Set(candidateIds);
+  const chosen: number[] = [];
+  for (const pick of picks) {
+    const id = Number((pick as { id?: unknown })?.id);
+    if (!Number.isInteger(id) || !allowed.has(id) || chosen.includes(id))
+      continue;
+    chosen.push(id);
+    if (chosen.length >= count) break;
+  }
+  return chosen.length > 0 ? chosen : null;
+};
+
+// A photo Facebook can fetch: a reachable JPEG or PNG. Checked before a post is
+// planned, so a dead or non-image link never reaches the queue.
+export const isImageContentType = (contentType: string | null) =>
+  !!contentType && /^image\/(jpeg|png)\b/i.test(contentType);

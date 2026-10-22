@@ -1,7 +1,9 @@
-// Writes Facebook Page posts with Groq (free tier) and queues them for review.
+// Chooses product listings, writes Facebook Page posts with Groq (free tier), and
+// queues them in the next free slots. Posts use the product's own photo.
 //   action "run":     called every 30 minutes by pg_cron with the x-autopilot-key
-//                     header. Drafts a post for up to a few products that have no
-//                     post yet, in the next free slots, and leaves them pending review.
+//                     header. Groq picks the listings to feature, each photo is checked,
+//                     a caption is written and checked, and the post is queued: pending
+//                     review, or approved if the administrator switched on auto-approval.
 //   action "suggest": called by a signed-in administrator or agent from the post
 //                     composer. Returns a caption for one product. Saves nothing.
 // Secrets (Supabase Edge Function secrets, never in the repo):
@@ -16,10 +18,14 @@ import { getUserSale } from "../_shared/getUserSale.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { createErrorResponse } from "../_shared/utils.ts";
 import {
+  buildCurationPrompt,
   buildUserPrompt,
   checkDraft,
+  CURATION_PROMPT,
+  isImageContentType,
   nextFreeSlots,
   parseDraft,
+  parsePicks,
   type ProductFacts,
   SYSTEM_PROMPT,
   validSlotTimes,
@@ -29,9 +35,13 @@ const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 const DEFAULT_MODEL = "llama-3.3-70b-versatile";
 // Keeps one run well inside the free tier, even if the schedule misfires.
 const MAX_PER_RUN = 3;
+// How many unused listings Groq chooses between.
+const POOL_SIZE = 20;
 
 const PRODUCT_FIELDS =
   "id, title, collection, product_type, colour, price_pence, original_price_pence, source_url, image_url";
+
+type CandidateProduct = ProductFacts & { id: number; image_url: string };
 
 // The model's answer was unusable for this product: skip the product, keep going.
 class DraftRejected extends Error {}
@@ -48,7 +58,11 @@ class NotConfigured extends Error {}
 
 const modelName = () => Deno.env.get("GROQ_MODEL") || DEFAULT_MODEL;
 
-const groqChat = async (product: ProductFacts): Promise<string> => {
+const groqChat = async (
+  system: string,
+  user: string,
+  maxTokens = 400,
+): Promise<string> => {
   const key = Deno.env.get("GROQ_API_KEY");
   if (!key) throw new NotConfigured("The AI writer is not set up yet.");
 
@@ -63,11 +77,11 @@ const groqChat = async (product: ProductFacts): Promise<string> => {
       body: JSON.stringify({
         model: modelName(),
         temperature: 0.6,
-        max_tokens: 400,
+        max_tokens: maxTokens,
         response_format: { type: "json_object" },
         messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: buildUserPrompt(product) },
+          { role: "system", content: system },
+          { role: "user", content: user },
         ],
       }),
       signal: AbortSignal.timeout(20_000),
@@ -88,7 +102,9 @@ const groqChat = async (product: ProductFacts): Promise<string> => {
 
 // One caption for one product, checked before anyone sees it.
 const draftFor = async (product: ProductFacts): Promise<string> => {
-  const message = parseDraft(await groqChat(product));
+  const message = parseDraft(
+    await groqChat(SYSTEM_PROMPT, buildUserPrompt(product)),
+  );
   if (!message) {
     throw new DraftRejected("The AI writer did not return a usable caption.");
   }
@@ -97,17 +113,62 @@ const draftFor = async (product: ProductFacts): Promise<string> => {
   return message;
 };
 
+// Groq chooses which listings to feature. If its answer is unusable, the newest
+// listings are used instead, so one bad reply does not stop the run.
+const chooseProducts = async (
+  pool: CandidateProduct[],
+  count: number,
+): Promise<CandidateProduct[]> => {
+  try {
+    const raw = await groqChat(
+      CURATION_PROMPT,
+      buildCurationPrompt(pool, count),
+      300,
+    );
+    const ids = parsePicks(
+      raw,
+      pool.map((p) => p.id),
+      count,
+    );
+    if (ids) {
+      const byId = new Map(pool.map((p) => [p.id, p]));
+      return ids.map((id) => byId.get(id)!);
+    }
+  } catch (error) {
+    if (error instanceof GroqError || error instanceof NotConfigured)
+      throw error;
+  }
+  return pool;
+};
+
+// Facebook fetches the photo itself, so it must be reachable and a JPEG or PNG.
+const photoOk = async (url: string) => {
+  try {
+    const response = await fetch(url, {
+      headers: { Range: "bytes=0-0" },
+      signal: AbortSignal.timeout(5000),
+    });
+    await response.body?.cancel();
+    return (
+      (response.ok || response.status === 206) &&
+      isImageContentType(response.headers.get("content-type"))
+    );
+  } catch {
+    return false;
+  }
+};
+
 const loadSettings = async () => {
   const { data } = await supabaseAdmin
     .from("post_autopilot_settings")
-    .select("enabled, posts_per_day, slot_times, timezone")
+    .select("enabled, posts_per_day, slot_times, timezone, auto_approve")
     .eq("id", 1)
     .maybeSingle();
   return data;
 };
 
 // Active products with a photo that no post has used yet, newest first.
-const candidateProducts = async (limit: number): Promise<ProductFacts[]> => {
+const candidateProducts = async (): Promise<CandidateProduct[]> => {
   const { data: products } = await supabaseAdmin
     .from("products")
     .select(PRODUCT_FIELDS)
@@ -120,11 +181,9 @@ const candidateProducts = async (limit: number): Promise<ProductFacts[]> => {
     .select("product_id")
     .not("product_id", "is", null);
   const usedIds = new Set((used ?? []).map((row) => row.product_id as number));
-  return (
-    (products ?? []) as Array<ProductFacts & { id: number; image_url: string }>
-  )
+  return ((products ?? []) as CandidateProduct[])
     .filter((product) => !usedIds.has(product.id))
-    .slice(0, limit);
+    .slice(0, POOL_SIZE);
 };
 
 // Times already planned from now on, so new posts do not crowd them.
@@ -156,34 +215,48 @@ const runAutopilot = async () => {
   );
   if (room <= 0) return { skipped: "daily limit reached" };
 
-  const products = await candidateProducts(room);
-  if (products.length === 0)
+  const pool = await candidateProducts();
+  if (pool.length === 0)
     return { created: 0, note: "nothing new to write about" };
 
   const slots = nextFreeSlots({
     now: new Date(),
     slotTimes: validSlotTimes(settings.slot_times),
     taken: await plannedTimes(),
-    count: products.length,
+    count: room,
     timeZone: settings.timezone ?? "Europe/London",
   });
   if (slots.length === 0) return { skipped: "no free slots configured" };
 
+  // Listings Groq picked come first; the rest of the pool backs them up when a
+  // photo cannot be used or a caption is rejected.
+  const picked = await chooseProducts(pool, slots.length);
+  const order = [
+    ...picked,
+    ...pool.filter((p) => !picked.some((q) => q.id === p.id)),
+  ];
+
+  const autoApprove = settings.auto_approve === true;
   const skipped: string[] = [];
   let created = 0;
-  for (const [index, product] of products.entries()) {
-    const slot = slots[index];
-    if (!slot) break;
+  for (const product of order) {
+    if (created >= slots.length) break;
     try {
+      if (!(await photoOk(product.image_url))) {
+        skipped.push(`product ${product.id}: photo could not be used`);
+        continue;
+      }
       const message = await draftFor(product);
+      const now = new Date().toISOString();
       const { error } = await supabaseAdmin.from("page_posts").insert({
         message,
         product_id: product.id,
         image_url: product.image_url,
         link_url: product.source_url,
-        status: "pending_review",
-        scheduled_for: slot.toISOString(),
-        submitted_at: new Date().toISOString(),
+        status: autoApprove ? "approved" : "pending_review",
+        scheduled_for: slots[created].toISOString(),
+        submitted_at: now,
+        approved_at: autoApprove ? now : null,
         source: "ai",
         ai_model: modelName(),
       });
@@ -197,7 +270,7 @@ const runAutopilot = async () => {
       skipped.push(`product ${product.id}: ${(error as Error).message}`);
     }
   }
-  return { created, skipped };
+  return { created, auto_approved: autoApprove, skipped };
 };
 
 const json = (body: unknown, status = 200) =>

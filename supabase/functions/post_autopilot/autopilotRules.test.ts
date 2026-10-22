@@ -7,6 +7,8 @@ import {
   parseDraft,
   type ProductFacts,
   validSlotTimes,
+  parsePicks,
+  isImageContentType,
   zonedToUtc,
 } from "./autopilotRules";
 
@@ -150,5 +152,36 @@ describe("checkDraft", () => {
         original_price_pence: null,
       }),
     ).toEqual({ ok: true });
+  });
+});
+
+describe("parsePicks", () => {
+  it("keeps known ids once each, in the model's order, up to the count", () => {
+    const raw = JSON.stringify({
+      picks: [
+        { id: 7, reason: "a" },
+        { id: 99, reason: "not a candidate" },
+        { id: 7, reason: "duplicate" },
+        { id: 3, reason: "b" },
+        { id: 5, reason: "over the limit" },
+      ],
+    });
+    expect(parsePicks(raw, [3, 5, 7], 2)).toEqual([7, 3]);
+  });
+
+  it("returns null when nothing usable came back", () => {
+    expect(parsePicks("nope", [1], 2)).toBeNull();
+    expect(parsePicks('{"picks":"x"}', [1], 2)).toBeNull();
+    expect(parsePicks('{"picks":[{"id":42}]}', [1], 2)).toBeNull();
+  });
+});
+
+describe("isImageContentType", () => {
+  it("accepts JPEG and PNG only", () => {
+    expect(isImageContentType("image/jpeg")).toBe(true);
+    expect(isImageContentType("image/png; charset=binary")).toBe(true);
+    expect(isImageContentType("image/webp")).toBe(false);
+    expect(isImageContentType("text/html")).toBe(false);
+    expect(isImageContentType(null)).toBe(false);
   });
 });

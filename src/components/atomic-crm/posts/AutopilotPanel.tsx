@@ -10,6 +10,7 @@ import { getSupabaseClient } from "../providers/supabase/supabase";
 
 type Settings = {
   enabled: boolean;
+  auto_approve: boolean;
   posts_per_day: number;
   slot_times: string[];
 };
@@ -42,7 +43,7 @@ export const AutopilotPanel = () => {
   useEffect(() => {
     void getSupabaseClient()
       .from("post_autopilot_settings")
-      .select("enabled, posts_per_day, slot_times")
+      .select("enabled, auto_approve, posts_per_day, slot_times")
       .eq("id", 1)
       .maybeSingle()
       .then(({ data }) => {
@@ -71,6 +72,18 @@ export const AutopilotPanel = () => {
   const toggle = async (enabled: boolean) => {
     if (await save({ enabled })) {
       notify(enabled ? "AI writer is on" : "AI writer is off");
+    }
+  };
+
+  // With this on, posts the writer plans go to Facebook on their slot without a
+  // review step. Turn it off to go back to approving each one.
+  const toggleAutoApprove = async (auto_approve: boolean) => {
+    if (await save({ auto_approve })) {
+      notify(
+        auto_approve
+          ? "Auto-approval is on: planned posts will go out on their slots"
+          : "Auto-approval is off: posts wait for review",
+      );
     }
   };
 
@@ -113,6 +126,14 @@ export const AutopilotPanel = () => {
               onCheckedChange={(checked) => void toggle(checked)}
             />
             {settings.enabled ? "On" : "Off"}
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <Switch
+              checked={settings.auto_approve}
+              disabled={!isAdmin || busy || !settings.enabled}
+              onCheckedChange={(checked) => void toggleAutoApprove(checked)}
+            />
+            Auto-approve
           </label>
           <label className="flex flex-col gap-1 text-sm">
             Posts a day
