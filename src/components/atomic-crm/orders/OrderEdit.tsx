@@ -9,13 +9,17 @@ export const OrderEdit = () => (
     actions={false}
     redirect="list"
     // reference and balance_pence are generated columns the database refuses to write.
-    transform={({
-      reference,
-      balance_pence,
-      created_at,
-      updated_at,
-      ...rest
-    }) => rest}
+    transform={(values) => {
+      const rest = { ...values };
+      for (const key of [
+        "reference",
+        "balance_pence",
+        "created_at",
+        "updated_at",
+      ])
+        delete rest[key];
+      return rest;
+    }}
   >
     <div className="mt-2 flex">
       <Form className="flex flex-1 flex-col gap-4 pb-2">
