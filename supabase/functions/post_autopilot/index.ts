@@ -139,9 +139,9 @@ const chooseProducts = async (
       const byId = new Map(pool.map((p) => [p.id, p]));
       return ids.map((id) => byId.get(id)!);
     }
-  } catch (error) {
-    if (error instanceof GroqError || error instanceof NotConfigured)
-      throw error;
+  } catch {
+    // A failed choice is not a failed run: captions are still written from the
+    // newest listings, and the caption step reports any Groq failure itself.
   }
   return pool;
 };
