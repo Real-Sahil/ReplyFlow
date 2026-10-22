@@ -230,6 +230,18 @@ header.bg-secondary {
   border-bottom: 0.5px solid var(--border);
 }
 
+/* Each screen eases in instead of snapping into place. */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+#main-content > * {
+  animation: rise 420ms var(--ease-spring) both;
+}
+
 /* Motion: short, springy, and gone entirely for people who ask for less. */
 button,
 a,

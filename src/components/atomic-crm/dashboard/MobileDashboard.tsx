@@ -2,7 +2,7 @@ import { useGetList, useTimeout } from "ra-core";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import type { Contact, ContactNote } from "../types";
-import { DashboardActivityLog } from "./DashboardActivityLog";
+import { TodayDashboard } from "./TodayDashboard";
 import { DashboardStepper } from "./DashboardStepper";
 import MobileHeader from "../layout/MobileHeader";
 import { MobileContent } from "../layout/MobileContent";
@@ -24,7 +24,6 @@ const Wrapper = ({ children }: { children: React.ReactNode }) => {
             src={lightModeLogo}
             alt={title}
           />
-          <h1 className="text-xl font-semibold">{title}</h1>
         </div>
       </MobileHeader>
       <MobileContent>{children}</MobileContent>
@@ -80,9 +79,7 @@ export const MobileDashboard = () => {
 
   return (
     <Wrapper>
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mt-1">
-        <DashboardActivityLog />
-      </div>
+      <TodayDashboard />
     </Wrapper>
   );
 };

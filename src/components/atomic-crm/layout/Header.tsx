@@ -1,4 +1,15 @@
-import { Import, MessageCircle, Settings, User, Users } from "lucide-react";
+import {
+  Building2,
+  House,
+  Import,
+  Kanban,
+  MessageCircle,
+  Package,
+  Settings,
+  Sofa,
+  User,
+  Users,
+} from "lucide-react";
 import { CanAccess, useGetList, useTranslate, useUserMenu } from "ra-core";
 import { Link, matchPath, useLocation } from "react-router";
 import { RefreshButton } from "@/components/admin/refresh-button";
@@ -38,7 +49,7 @@ const Header = () => {
     <>
       <nav className="grow">
         <header className="bg-secondary">
-          <div className="px-4">
+          <div className="px-4 py-1.5">
             <div className="flex justify-between items-center flex-1">
               <Link
                 to="/"
@@ -54,42 +65,38 @@ const Header = () => {
                   src={lightModeLogo}
                   alt={title}
                 />
-                <h1 className="text-xl font-semibold">{title}</h1>
               </Link>
               <div>
-                <nav className="flex">
+                <nav className="flex items-center gap-1">
                   <NavigationTab
-                    label={translate("ra.page.dashboard")}
+                    label="Today"
+                    Icon={House}
                     to="/"
                     isActive={currentPath === "/"}
                   />
+                  <InboxTab active={currentPath === "/messenger_inbox"} />
                   <NavigationTab
                     label={translate("resources.contacts.name", {
                       smart_count: 2,
                     })}
+                    Icon={Users}
                     to="/contacts"
                     isActive={currentPath === "/contacts"}
-                  />
-                  <NavigationTab
-                    label={translate("resources.companies.name", {
-                      smart_count: 2,
-                    })}
-                    to="/companies"
-                    isActive={currentPath === "/companies"}
                   />
                   <NavigationTab
                     label={translate("resources.deals.name", {
                       smart_count: 2,
                     })}
+                    Icon={Kanban}
                     to="/deals"
                     isActive={currentPath === "/deals"}
                   />
-                  <InboxTab active={currentPath === "/messenger_inbox"} />
                   <NavigationTab
                     label={translate("resources.orders.name", {
                       smart_count: 2,
                       _: "Orders",
                     })}
+                    Icon={Package}
                     to="/orders"
                     isActive={currentPath === "/orders"}
                   />
@@ -98,6 +105,7 @@ const Header = () => {
                       smart_count: 2,
                       _: "Products",
                     })}
+                    Icon={Sofa}
                     to="/products"
                     isActive={currentPath === "/products"}
                   />
@@ -116,6 +124,7 @@ const Header = () => {
                     <SettingsMenu />
                     <MessengerSettingsMenu />
                   </CanAccess>
+                  <CompaniesMenu />
                   <ImportFromJsonMenuItem />
                 </UserMenu>
               </div>
@@ -134,9 +143,11 @@ const InboxTab = ({ active }: { active: boolean }) => {
   });
   return (
     <NavigationTab
-      label={total ? `Inbox (${total})` : "Inbox"}
+      label="Inbox"
+      Icon={MessageCircle}
       to="/messenger_inbox"
       isActive={active}
+      badge={total || undefined}
     />
   );
 };
@@ -145,20 +156,31 @@ const NavigationTab = ({
   label,
   to,
   isActive,
+  Icon,
+  badge,
 }: {
   label: string;
   to: string;
   isActive: boolean;
+  Icon: React.ComponentType<{ className?: string }>;
+  badge?: number;
 }) => (
   <Link
     to={to}
-    className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${
+    aria-current={isActive ? "page" : undefined}
+    className={`flex items-center gap-2 whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
       isActive
-        ? "text-secondary-foreground border-secondary-foreground"
-        : "text-secondary-foreground/70 border-transparent hover:text-secondary-foreground/80"
+        ? "bg-primary/10 text-primary"
+        : "text-muted-foreground hover:bg-muted hover:text-foreground"
     }`}
   >
+    <Icon className="size-4" />
     {label}
+    {badge ? (
+      <span className="rounded-full bg-primary px-1.5 text-[0.7rem] leading-5 text-primary-foreground tabular-nums">
+        {badge}
+      </span>
+    ) : null}
   </Link>
 );
 
@@ -220,6 +242,21 @@ const MessengerSettingsMenu = () => {
       <Link to="/messenger_settings/1" className="flex items-center gap-2">
         <MessageCircle />
         Messenger auto-replies
+      </Link>
+    </DropdownMenuItem>
+  );
+};
+
+const CompaniesMenu = () => {
+  const userMenuContext = useUserMenu();
+  if (!userMenuContext) {
+    throw new Error("<CompaniesMenu> must be used inside <UserMenu>");
+  }
+  return (
+    <DropdownMenuItem asChild onClick={userMenuContext.onClose}>
+      <Link to="/companies" className="flex items-center gap-2">
+        <Building2 />
+        Companies
       </Link>
     </DropdownMenuItem>
   );

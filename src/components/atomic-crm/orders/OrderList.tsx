@@ -10,6 +10,9 @@ import { Badge } from "@/components/ui/badge";
 import { formatPrice } from "../products/formatPrice";
 import { TopToolbar } from "../layout/TopToolbar";
 import { useConfigurationContext } from "../root/ConfigurationContext";
+import { cn } from "@/lib/utils";
+
+import { orderStatusTone } from "./statusTone";
 import { orderStatuses, orderStatusLabel } from "./statuses";
 
 type Order = {
@@ -34,16 +37,10 @@ const filters = [
 const StatusBadge = () => {
   const record = useRecordContext<Order>();
   if (!record) return null;
-  const done = ["delivered", "completed"].includes(record.status);
   return (
     <Badge
-      variant={
-        record.status === "cancelled"
-          ? "outline"
-          : done
-            ? "secondary"
-            : "default"
-      }
+      variant="secondary"
+      className={cn("border-0", orderStatusTone[record.status])}
     >
       {orderStatusLabel(record.status)}
     </Badge>
