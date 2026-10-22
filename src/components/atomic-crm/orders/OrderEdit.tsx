@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 
 import { AuditHistory } from "../audit/AuditHistory";
 import { FormToolbar } from "../layout/FormToolbar";
+import { CustomerPage } from "./CustomerPage";
 import { OrderInputs } from "./OrderInputs";
 
 const OrderHistory = () => {
@@ -22,8 +23,15 @@ export const OrderEdit = () => (
         "balance_pence",
         "created_at",
         "updated_at",
+        "tracking_token",
       ])
         delete rest[key];
+      // An empty light means "not set": drop it rather than store a blank.
+      if (rest.stage_lights) {
+        rest.stage_lights = Object.fromEntries(
+          Object.entries(rest.stage_lights).filter(([, light]) => !!light),
+        );
+      }
       return rest;
     }}
   >
@@ -32,6 +40,7 @@ export const OrderEdit = () => (
         <Card>
           <CardContent>
             <OrderInputs />
+            <CustomerPage />
             <FormToolbar />
           </CardContent>
         </Card>

@@ -188,3 +188,6 @@ verify_jwt = false
 
 [functions.meta_leadgen]
 verify_jwt = false
+
+[functions.order_tracking]
+verify_jwt = false
