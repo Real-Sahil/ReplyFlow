@@ -274,6 +274,7 @@ const DesktopAdmin = (
       <Resource name="tasks" />
       <Resource name="sales" {...sales} />
       <Resource name="tags" />
+      <Resource name="messenger_messages" />
     </Admin>
   );
 };

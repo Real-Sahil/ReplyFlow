@@ -31,6 +31,7 @@ import { ContactTasksList } from "./ContactTasksList";
 import type { Contact } from "../types";
 import { Avatar } from "./Avatar";
 import { ContactAside } from "./ContactAside";
+import { MessengerConversation } from "./MessengerConversation";
 import { MobileBackButton } from "../misc/MobileBackButton";
 
 export const ContactShow = (props: ShowBaseProps = {}) => {
@@ -302,6 +303,7 @@ const ContactShowContent = () => {
             </InfiniteListBase>
           </CardContent>
         </Card>
+        <MessengerConversation contactId={record.id as number} />
       </div>
       <ContactAside />
     </div>
