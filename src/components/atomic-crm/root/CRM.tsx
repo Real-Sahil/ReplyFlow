@@ -16,6 +16,7 @@ import { SetPasswordPage } from "@/components/supabase/set-password-page";
 import { OAuthConsentPage } from "@/components/supabase/oauth-consent-page";
 
 import companies from "../companies";
+import orders from "../orders";
 import products from "../products";
 import contacts from "../contacts";
 import { Dashboard } from "../dashboard/Dashboard";
@@ -266,6 +267,7 @@ const DesktopAdmin = (
       <Resource name="deals" {...deals} />
       <Resource name="contacts" {...contacts} />
       <Resource name="companies" {...companies} />
+      <Resource name="orders" {...orders} />
       <Resource name="products" {...products} />
       <Resource name="contact_notes" />
       <Resource name="deal_notes" />
