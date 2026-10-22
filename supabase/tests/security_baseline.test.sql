@@ -87,6 +87,7 @@ select pg_temp.fails('select * from public.contacts', 'anon must not read contac
 select pg_temp.fails('select * from public.sales', 'anon must not read staff');
 select pg_temp.fails($$select public.get_user_id_by_email('admin@example.test')$$, 'anon must not look up users by email');
 select pg_temp.fails($$select public.merge_contacts(1, 2)$$, 'anon must not merge contacts');
+select pg_temp.fails($$select public.staff_role()$$, 'anon must not call the role helpers');
 select pg_temp.ok((select count(*) from public.init_state) = 1, 'anon can still check whether the CRM is initialised');
 reset role;
 
@@ -127,6 +128,8 @@ reset role;
 select pg_temp.as_user('00000000-0000-0000-0000-0000000000a2');
 select pg_temp.fails($$select public.get_user_id_by_email('admin@example.test')$$, 'staff must not look up users by email');
 select pg_temp.fails($$truncate public.contacts$$, 'staff cannot truncate');
+select pg_temp.ok(has_function_privilege('service_role', 'public.get_user_id_by_email(text)', 'execute'), 'service_role keeps access to the helper functions');
+select pg_temp.ok(not exists (select 1 from pg_proc p where p.pronamespace = 'public'::regnamespace and p.prosecdef and has_function_privilege('authenticated', p.oid, 'execute')), 'the API exposes no security definer function to signed-in users');
 select pg_temp.fails($$insert into public.sales (first_name, last_name, email, administrator, user_id) values ('a','b','c@d.test', true, gen_random_uuid())$$,
     'staff cannot add themselves or others directly to the staff table');
 select pg_temp.ok(pg_temp.rows_affected($$update public.sales set administrator = true where email = 'agent@example.test'$$) = 0,

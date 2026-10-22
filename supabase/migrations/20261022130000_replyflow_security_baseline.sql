@@ -45,7 +45,12 @@ create trigger "05_sales_sync_role"
 
 -- 2. Helpers used by policies ---------------------------------------------
 
-create or replace function public.staff_role() returns text
+-- The privileged lookups live in the private schema, which the API does not
+-- expose. The public names are plain invokers so policies and the app can call
+-- them, and the API exposes no security definer function.
+create schema if not exists private;
+
+create or replace function private.staff_role() returns text
     language sql stable security definer
     set search_path = ''
     as $$
@@ -54,7 +59,7 @@ create or replace function public.staff_role() returns text
     limit 1
 $$;
 
-create or replace function public.staff_id() returns bigint
+create or replace function private.staff_id() returns bigint
     language sql stable security definer
     set search_path = ''
     as $$
@@ -63,12 +68,31 @@ create or replace function public.staff_id() returns bigint
     limit 1
 $$;
 
-create or replace function public.is_admin() returns boolean
+create or replace function private.is_admin() returns boolean
     language sql stable security definer
     set search_path = ''
     as $$
-    select coalesce((select public.staff_role()) = 'admin', false)
+    select coalesce((select private.staff_role()) = 'admin', false)
 $$;
+
+revoke all on function private.staff_role(), private.staff_id(), private.is_admin() from public, anon;
+grant usage on schema private to authenticated;
+grant execute on function private.staff_role(), private.staff_id(), private.is_admin() to authenticated, service_role;
+
+create or replace function public.staff_role() returns text
+    language sql stable security invoker
+    set search_path = ''
+    as $$ select private.staff_role() $$;
+
+create or replace function public.staff_id() returns bigint
+    language sql stable security invoker
+    set search_path = ''
+    as $$ select private.staff_id() $$;
+
+create or replace function public.is_admin() returns boolean
+    language sql stable security invoker
+    set search_path = ''
+    as $$ select private.is_admin() $$;
 
 -- 3. Row level security: role based -----------------------------------------
 
@@ -195,6 +219,7 @@ grant execute on function
     public.search_query(text),
     public.search_unaccent(text)
     to authenticated;
+grant execute on all functions in schema public to service_role;
 
 -- The login screen asks whether the CRM has been initialised.
 grant select on public.init_state to anon;

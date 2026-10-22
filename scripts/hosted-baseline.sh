@@ -27,7 +27,11 @@ fi
 for f in supabase/schemas/0[1-8]*.sql; do
   echo "-- $f"
   # The http extension only served the Gravatar lookup that ReplyFlow removes.
-  grep -v 'create extension if not exists "http"' "$f"
+  # The sign-up trigger gets a ReplyFlow name because the previous app that used
+  # this Supabase project left a trigger called on_auth_user_created on auth.users.
+  grep -v 'create extension if not exists "http"' "$f" \
+    | sed 's/on_auth_user_created/replyflow_on_auth_user_created/g' \
+    | sed 's/on_auth_user_updated/replyflow_on_auth_user_updated/g'
 done
 
 cat <<'SQL'
