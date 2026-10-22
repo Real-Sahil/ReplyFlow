@@ -176,3 +176,5 @@ verify_jwt = false
 verify_jwt = false
 [functions.messenger_send]
 verify_jwt = false
+[functions.comments_action]
+verify_jwt = false

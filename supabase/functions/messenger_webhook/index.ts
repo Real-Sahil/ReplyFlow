@@ -12,7 +12,12 @@ import {
   decideAutoReply,
   emptyState,
 } from "./autoReply.ts";
-import { isValidSignature, parseInboundMessages } from "./webhook.ts";
+import {
+  isValidSignature,
+  parseInboundMessages,
+  parseInboxEchoes,
+  parsePageComments,
+} from "./webhook.ts";
 import type { InboundMessage } from "./webhook.ts";
 
 const text = (body: string, status = 200) =>
@@ -102,7 +107,7 @@ const runAutoReply = async (message: InboundMessage, messageRowId: number) => {
       .select("id", { count: "exact", head: true })
       .eq("contact_id", contactId)
       .eq("direction", "outbound")
-      .not("sent_by", "is", null)
+      .or("sent_by.not.is.null,source.eq.page_inbox")
       .gt("sent_at", since);
 
     const result = decideAutoReply({
@@ -194,6 +199,37 @@ Deno.serve(async (req) => {
     payload,
     Deno.env.get("META_PAGE_ID") || undefined,
   );
+
+  for (const echo of parseInboxEchoes(
+    payload,
+    Deno.env.get("META_PAGE_ID") || undefined,
+  )) {
+    const { error } = await supabaseAdmin.rpc("record_messenger_echo", {
+      p_page_id: echo.pageId,
+      p_psid: echo.psid,
+      p_mid: echo.mid,
+      p_body: echo.body,
+      p_sent_at: echo.sentAt,
+    });
+    if (error) console.error("record_messenger_echo failed", error.message);
+  }
+
+  for (const comment of parsePageComments(
+    payload,
+    Deno.env.get("META_PAGE_ID") || undefined,
+  )) {
+    const { error } = await supabaseAdmin.rpc("record_page_comment", {
+      p_comment_id: comment.commentId,
+      p_post_id: comment.postId,
+      p_parent_id: comment.parentId,
+      p_page_id: comment.pageId,
+      p_author_id: comment.authorId,
+      p_author_name: comment.authorName,
+      p_body: comment.body,
+      p_commented_at: comment.createdAt,
+    });
+    if (error) console.error("record_page_comment failed", error.message);
+  }
 
   for (const message of messages) {
     const profile = await fetchProfile(message.psid);

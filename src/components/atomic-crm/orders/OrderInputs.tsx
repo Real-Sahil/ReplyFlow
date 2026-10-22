@@ -83,6 +83,44 @@ export const OrderInputs = () => (
       />
     </div>
 
+    <div className="flex flex-col gap-2">
+      <h6 className="text-sm font-medium text-muted-foreground">
+        Specification
+      </h6>
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <TextInput
+          source="configuration.model"
+          label="Model"
+          helperText={false}
+        />
+        <TextInput
+          source="configuration.size"
+          label="Size or layout"
+          helperText={false}
+        />
+        <TextInput
+          source="configuration.fabric"
+          label="Fabric"
+          helperText={false}
+        />
+        <TextInput
+          source="configuration.colour"
+          label="Colour"
+          helperText={false}
+        />
+        <TextInput
+          source="configuration.legs"
+          label="Legs or feet"
+          helperText={false}
+        />
+        <TextInput
+          source="configuration.extras"
+          label="Extras"
+          helperText={false}
+        />
+      </div>
+    </div>
+
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
       {money("quoted_price_pence", "Quoted (£)")}
       {money("agreed_price_pence", "Agreed (£)")}

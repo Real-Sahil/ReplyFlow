@@ -137,10 +137,15 @@ const Header = () => {
 };
 
 const InboxTab = ({ active }: { active: boolean }) => {
-  const { total } = useGetList("messenger_inbox", {
+  const { total: unread } = useGetList("messenger_inbox", {
     filter: { unread: true },
     pagination: { page: 1, perPage: 1 },
   });
+  const { total: newComments } = useGetList("page_comments", {
+    filter: { status: "new" },
+    pagination: { page: 1, perPage: 1 },
+  });
+  const total = (unread ?? 0) + (newComments ?? 0);
   return (
     <NavigationTab
       label="Inbox"

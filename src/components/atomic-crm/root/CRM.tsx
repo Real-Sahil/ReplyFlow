@@ -282,6 +282,7 @@ const DesktopAdmin = (
       <Resource name="saved_replies" {...savedReplies} />
       <Resource name="messenger_settings" {...messengerSettings} />
       <Resource name="messenger_conversation_state" />
+      <Resource name="page_comments" />
     </Admin>
   );
 };
@@ -362,6 +363,7 @@ const MobileAdmin = (
         <Resource name="messenger_messages" />
         <Resource name="messenger_inbox" {...inbox} />
         <Resource name="saved_replies" />
+        <Resource name="page_comments" />
         <Resource name="messenger_settings" {...messengerSettings} />
         <Resource name="products" {...products} />
         <Resource name="orders" {...orders} />

@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { isValidSignature, parseInboundMessages, signBody } from "./webhook";
+import {
+  isValidSignature,
+  parseInboundMessages,
+  parseInboxEchoes,
+  parsePageComments,
+  signBody,
+} from "./webhook";
 
 const payload = (messaging: unknown[], pageId = "PAGE1") => ({
   object: "page",
@@ -90,5 +96,93 @@ describe("parseInboundMessages", () => {
       ]),
     );
     expect(result[0].referral).toEqual({ ref: "ad1" });
+  });
+});
+
+describe("parseInboxEchoes", () => {
+  const echo = (message: Record<string, unknown>) =>
+    payload([
+      {
+        sender: { id: "PAGE1" },
+        recipient: { id: "U1" },
+        timestamp: 1700000000000,
+        message: { is_echo: true, ...message },
+      },
+    ]);
+
+  it("returns replies typed in the Page inbox, keyed by the customer", () => {
+    expect(parseInboxEchoes(echo({ mid: "e1", text: "Hello" }))).toEqual([
+      {
+        pageId: "PAGE1",
+        psid: "U1",
+        mid: "e1",
+        body: "Hello",
+        sentAt: new Date(1700000000000).toISOString(),
+      },
+    ]);
+  });
+
+  it("skips echoes of messages sent by an app, and customer messages", () => {
+    expect(
+      parseInboxEchoes(echo({ mid: "e1", text: "Hi", app_id: 123 })),
+    ).toEqual([]);
+    expect(
+      parseInboxEchoes(
+        payload([{ sender: { id: "U1" }, message: { mid: "m1", text: "Hi" } }]),
+      ),
+    ).toEqual([]);
+  });
+});
+
+describe("parsePageComments", () => {
+  const feed = (value: Record<string, unknown>) => ({
+    object: "page",
+    entry: [
+      { id: "PAGE1", time: 1700000000, changes: [{ field: "feed", value }] },
+    ],
+  });
+  const comment = {
+    item: "comment",
+    verb: "add",
+    comment_id: "P_1",
+    post_id: "POST1",
+    parent_id: "POST1",
+    from: { id: "U1", name: "Priya Shah" },
+    message: "Is this in stock?",
+    created_time: 1700000100,
+  };
+
+  it("extracts a new comment on a post", () => {
+    expect(parsePageComments(feed(comment))).toEqual([
+      {
+        pageId: "PAGE1",
+        commentId: "P_1",
+        postId: "POST1",
+        parentId: null,
+        authorId: "U1",
+        authorName: "Priya Shah",
+        body: "Is this in stock?",
+        createdAt: new Date(1700000100 * 1000).toISOString(),
+      },
+    ]);
+  });
+
+  it("keeps the parent of a reply to another comment", () => {
+    expect(
+      parsePageComments(feed({ ...comment, parent_id: "P_0" }))[0].parentId,
+    ).toBe("P_0");
+  });
+
+  it("ignores edits, removals, other items and incomplete events", () => {
+    expect(parsePageComments(feed({ ...comment, verb: "edited" }))).toEqual([]);
+    expect(parsePageComments(feed({ ...comment, verb: "remove" }))).toEqual([]);
+    expect(parsePageComments(feed({ ...comment, item: "reaction" }))).toEqual(
+      [],
+    );
+    expect(parsePageComments(feed({ ...comment, message: "" }))).toEqual([]);
+    expect(parsePageComments(feed({ ...comment, from: undefined }))).toEqual(
+      [],
+    );
+    expect(parsePageComments(feed(comment), "OTHER")).toEqual([]);
   });
 });

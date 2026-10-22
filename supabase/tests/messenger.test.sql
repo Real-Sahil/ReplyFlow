@@ -67,6 +67,7 @@ select pg_temp.ok((select not window_open from public.messenger_inbox where cont
 set local role anon;
 select pg_temp.fails($$select * from public.messenger_messages$$, 'anon cannot read messages');
 select pg_temp.fails($$select * from public.messenger_inbox$$, 'anon cannot read the inbox');
+select pg_temp.fails($$select * from public.page_comments$$, 'anon cannot read comments');
 select pg_temp.fails($$select * from public.saved_replies$$, 'anon cannot read saved replies');
 select pg_temp.fails($$select public.record_messenger_message('P','x','m_9','t',now(),null,null,null)$$, 'anon cannot record messages');
 reset role;
@@ -90,6 +91,26 @@ select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a1
 set local role authenticated;
 select pg_temp.ok(pg_temp.rows_affected($$update public.messenger_settings set auto_replies_enabled = true$$) = 1, 'admins can change the settings');
 reset role;
+
+-- Replies typed in the Page inbox are recorded once and count as activity.
+select pg_temp.ok(public.record_messenger_echo('PAGE1', 'PSID-2002', 'e_1', 'Hi Dana, yes we do deliver', now()) is not null, 'a Page inbox reply is recorded');
+select pg_temp.ok(public.record_messenger_echo('PAGE1', 'PSID-2002', 'e_1', 'Hi Dana, yes we do deliver', now()) is null, 'a redelivered echo is ignored');
+select pg_temp.ok((select source = 'page_inbox' and direction = 'outbound' and sent_by is null from public.messenger_messages where mid = 'e_1'), 'echo stored as an outbound Page inbox message');
+select pg_temp.ok(public.record_messenger_echo('PAGE1', 'PSID-UNKNOWN', 'e_2', 'x', now()) is null, 'echoes for unknown people are ignored');
+select pg_temp.ok((select count(*) from public.deal_notes where text like 'Replied on Facebook:%') = 1, 'the reply is logged on the enquiry');
+select pg_temp.ok(not has_function_privilege('authenticated', 'public.record_messenger_echo(text,text,text,text,timestamptz)', 'execute') and not has_function_privilege('anon', 'public.record_messenger_echo(text,text,text,text,timestamptz)', 'execute'), 'only the service role can record echoes');
+
+-- Page comments.
+select pg_temp.ok(public.record_page_comment('c_1', 'POST1', null, 'PAGE1', 'U9', 'Priya Shah', 'Is the corner sofa in stock?', now()) is not null, 'a comment is stored');
+select pg_temp.ok(public.record_page_comment('c_1', 'POST1', null, 'PAGE1', 'U9', 'Priya Shah', 'Is the corner sofa in stock?', now()) is null, 'a redelivered comment is ignored');
+select pg_temp.ok(public.record_page_comment('c_2', 'POST1', 'c_1', 'PAGE1', 'PAGE1', 'Mere & Row', 'Yes, in stock', now()) is null, 'the Page''s own comments are ignored');
+select pg_temp.ok((select status = 'new' from public.page_comments where comment_id = 'c_1'), 'new comments start as new');
+select pg_temp.ok(public.record_comment_lead((select id from public.page_comments where comment_id = 'c_1'), null) is not null, 'a comment becomes a contact');
+select pg_temp.ok((select first_name = 'Priya' and last_name = 'Shah' from public.contacts c join public.page_comments p on p.contact_id = c.id where p.comment_id = 'c_1'), 'the commenter name is split into first and last name');
+select pg_temp.ok((select count(*) from public.deals where name = 'Facebook comment: Priya Shah') = 1, 'and an open enquiry is created');
+select public.record_comment_lead((select id from public.page_comments where comment_id = 'c_1'), 'PSID-PRIYA');
+select pg_temp.ok((select messenger_psid = 'PSID-PRIYA' from public.contacts c join public.page_comments p on p.contact_id = c.id where p.comment_id = 'c_1'), 'a private reply links the Messenger conversation to the same contact');
+select pg_temp.ok((select count(*) from public.deals where name = 'Facebook comment: Priya Shah') = 1, 'no second enquiry is created');
 
 select 'ALL MESSENGER CHECKS PASSED' as result;
 rollback;
