@@ -44,7 +44,6 @@ import {
 
 import { MobileContent } from "../layout/MobileContent";
 import MobileHeader from "../layout/MobileHeader";
-import { ChangelogPage } from "../misc/ChangelogPage";
 import ImageEditorField from "../misc/ImageEditorField";
 import type { CrmDataProvider } from "../providers/types";
 import { getSalesErrorNotification } from "../sales/salesErrorNotification";
@@ -111,9 +110,8 @@ export const SettingsPageMobile = () => {
           <div className="space-y-6">
             <ProfileSection />
             <PreferencesSection />
+            <ToolsSection />
             <InboundEmailSection />
-            <McpServerSection />
-            <AboutSection />
           </div>
 
           <div className="mt-auto pt-6 space-y-3 mb-4">
@@ -548,47 +546,39 @@ const InboundEmailSection = () => {
   );
 };
 
-const McpServerSection = () => {
-  const translate = useTranslate();
-
+const ToolsSection = () => {
+  const { identity } = useGetIdentity();
+  const links = [
+    { to: "/orders", label: "Orders" },
+    { to: "/products", label: "Products" },
+    { to: "/page_posts", label: "Posts" },
+    { to: "/saved_replies", label: "Saved replies" },
+    ...(identity?.administrator
+      ? [
+          { to: "/messenger_settings/1", label: "Messenger auto-replies" },
+          { to: "/facebook", label: "Facebook connection" },
+        ]
+      : []),
+  ];
   return (
     <div>
-      <SectionLabel>
-        {translate("crm.profile.mcp.title", { _: "MCP Server" })}
-      </SectionLabel>
-      <p className="text-sm text-muted-foreground mb-2 px-1">
-        {translate("crm.profile.mcp.description", {
-          _: "Use this URL to connect your AI assistant to your CRM data via the Model Context Protocol (MCP).",
-        })}
-      </p>
+      <SectionLabel>More</SectionLabel>
       <ItemGroup className="rounded-lg border overflow-hidden">
-        <CopyPasteRow
-          value={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/mcp`}
-        />
-      </ItemGroup>
-    </div>
-  );
-};
-
-const AboutSection = () => {
-  const translate = useTranslate();
-
-  return (
-    <div>
-      <SectionLabel>{translate("crm.settings.about")}</SectionLabel>
-      <ItemGroup className="rounded-lg border overflow-hidden">
-        <Item asChild size="sm" className="cursor-pointer">
-          <Link to={ChangelogPage.path}>
-            <ItemContent>
-              <ItemTitle className="font-normal">
-                {translate("crm.changelog.title")}
-              </ItemTitle>
-            </ItemContent>
-            <ItemActions>
-              <ChevronRight className="size-4 text-muted-foreground" />
-            </ItemActions>
-          </Link>
-        </Item>
+        {links.map((link, index) => (
+          <Fragment key={link.to}>
+            {index > 0 && <ItemSeparator />}
+            <Item asChild size="sm" className="cursor-pointer">
+              <Link to={link.to}>
+                <ItemContent>
+                  <ItemTitle className="font-normal">{link.label}</ItemTitle>
+                </ItemContent>
+                <ItemActions>
+                  <ChevronRight className="size-4 text-muted-foreground" />
+                </ItemActions>
+              </Link>
+            </Item>
+          </Fragment>
+        ))}
       </ItemGroup>
     </div>
   );
