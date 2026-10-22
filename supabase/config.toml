@@ -180,3 +180,5 @@ verify_jwt = false
 verify_jwt = false
 [functions.post_publish]
 verify_jwt = false
+[functions.meta_connection]
+verify_jwt = false

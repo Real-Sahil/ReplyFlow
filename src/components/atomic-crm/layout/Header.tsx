@@ -6,6 +6,7 @@ import {
   Megaphone,
   MessageCircle,
   Package,
+  Plug,
   Settings,
   Sofa,
   User,
@@ -132,6 +133,7 @@ const Header = () => {
                   <CanAccess resource="configuration" action="edit">
                     <SettingsMenu />
                     <MessengerSettingsMenu />
+                    <FacebookMenu />
                   </CanAccess>
                   <CompaniesMenu />
                   <ImportFromJsonMenuItem />
@@ -256,6 +258,21 @@ const MessengerSettingsMenu = () => {
       <Link to="/messenger_settings/1" className="flex items-center gap-2">
         <MessageCircle />
         Messenger auto-replies
+      </Link>
+    </DropdownMenuItem>
+  );
+};
+
+const FacebookMenu = () => {
+  const userMenuContext = useUserMenu();
+  if (!userMenuContext) {
+    throw new Error("<FacebookMenu> must be used inside <UserMenu>");
+  }
+  return (
+    <DropdownMenuItem asChild onClick={userMenuContext.onClose}>
+      <Link to="/facebook" className="flex items-center gap-2">
+        <Plug />
+        Facebook connection
       </Link>
     </DropdownMenuItem>
   );

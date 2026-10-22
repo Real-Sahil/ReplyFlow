@@ -6,6 +6,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { AuthMiddleware, UserMiddleware } from "../_shared/authentication.ts";
 import { corsHeaders, OptionsMiddleware } from "../_shared/cors.ts";
 import { getUserSale } from "../_shared/getUserSale.ts";
+import { getPageToken } from "../_shared/metaToken.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { createErrorResponse } from "../_shared/utils.ts";
 import { canPrivateReply, isAction } from "./commentRules.ts";
@@ -101,7 +102,7 @@ Deno.serve((req: Request) =>
           "unhide",
           "private_reply",
         ].includes(input.action);
-        const token = Deno.env.get("META_PAGE_ACCESS_TOKEN");
+        const token = await getPageToken();
         if (needsFacebook && !token) {
           return createErrorResponse(503, "Facebook access is not set up yet", {
             code: "not_configured",

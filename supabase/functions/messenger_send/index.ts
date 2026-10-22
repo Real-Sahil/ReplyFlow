@@ -9,6 +9,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { AuthMiddleware, UserMiddleware } from "../_shared/authentication.ts";
 import { corsHeaders, OptionsMiddleware } from "../_shared/cors.ts";
 import { getUserSale } from "../_shared/getUserSale.ts";
+import { getPageToken } from "../_shared/metaToken.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { createErrorResponse } from "../_shared/utils.ts";
 import {
@@ -109,7 +110,7 @@ Deno.serve((req: Request) =>
           );
         }
 
-        const token = Deno.env.get("META_PAGE_ACCESS_TOKEN");
+        const token = await getPageToken();
         if (!token) {
           return createErrorResponse(
             503,

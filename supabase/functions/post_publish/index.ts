@@ -7,6 +7,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { AuthMiddleware, UserMiddleware } from "../_shared/authentication.ts";
 import { corsHeaders, OptionsMiddleware } from "../_shared/cors.ts";
 import { getUserSale } from "../_shared/getUserSale.ts";
+import { getPageToken } from "../_shared/metaToken.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { createErrorResponse } from "../_shared/utils.ts";
 import { buildGraphRequest, validateSchedule } from "./postRules.ts";
@@ -53,6 +54,12 @@ const ok = (data: unknown) =>
 const pageId = async () => {
   const fromEnv = Deno.env.get("META_PAGE_ID");
   if (fromEnv) return fromEnv;
+  const { data: stored } = await supabaseAdmin
+    .from("meta_connection")
+    .select("page_id")
+    .eq("id", 1)
+    .maybeSingle();
+  if (stored?.page_id) return stored.page_id as string;
   const { data } = await supabaseAdmin
     .from("messenger_messages")
     .select("page_id")
@@ -97,7 +104,7 @@ Deno.serve((req: Request) =>
           .maybeSingle();
         if (!post) return createErrorResponse(404, "Post not found");
 
-        const token = Deno.env.get("META_PAGE_ACCESS_TOKEN");
+        const token = await getPageToken();
         if (!token) {
           return createErrorResponse(503, "Facebook access is not set up yet", {
             code: "not_configured",
@@ -127,7 +134,7 @@ Deno.serve((req: Request) =>
           if (!page) {
             return createErrorResponse(
               503,
-              "The Facebook Page is not known yet. Set META_PAGE_ID.",
+              "The Facebook Page is not known yet. Save the token in Facebook connection.",
               {
                 code: "no_page",
               },

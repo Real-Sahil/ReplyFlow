@@ -112,5 +112,9 @@ select public.record_comment_lead((select id from public.page_comments where com
 select pg_temp.ok((select messenger_psid = 'PSID-PRIYA' from public.contacts c join public.page_comments p on p.contact_id = c.id where p.comment_id = 'c_1'), 'a private reply links the Messenger conversation to the same contact');
 select pg_temp.ok((select count(*) from public.deals where name = 'Facebook comment: Priya Shah') = 1, 'no second enquiry is created');
 
+-- The stored Facebook token is invisible to every API role.
+select pg_temp.ok(not has_table_privilege('authenticated', 'public.meta_connection', 'select') and not has_table_privilege('anon', 'public.meta_connection', 'select'), 'no API role can read the stored token');
+select pg_temp.ok(has_table_privilege('service_role', 'public.meta_connection', 'select, update'), 'the service role can read and update it');
+
 select 'ALL MESSENGER CHECKS PASSED' as result;
 rollback;

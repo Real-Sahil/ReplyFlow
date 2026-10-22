@@ -5,6 +5,7 @@
 //   META_PAGE_ID           optional: ignore events for any other Page
 //   META_PAGE_ACCESS_TOKEN optional: lets us look up the customer's name
 
+import { getPageToken } from "../_shared/metaToken.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import {
   type AutoReplySettings,
@@ -24,7 +25,7 @@ const text = (body: string, status = 200) =>
   new Response(body, { status, headers: { "Content-Type": "text/plain" } });
 
 const fetchProfile = async (psid: string) => {
-  const token = Deno.env.get("META_PAGE_ACCESS_TOKEN");
+  const token = await getPageToken();
   if (!token) return {};
   try {
     const response = await fetch(
@@ -79,7 +80,7 @@ const sendText = async (token: string, psid: string, text: string) => {
 // and answering Meta with an error would only make it redeliver.
 const runAutoReply = async (message: InboundMessage, messageRowId: number) => {
   try {
-    const token = Deno.env.get("META_PAGE_ACCESS_TOKEN");
+    const token = await getPageToken();
     if (!token) return;
     const { data: settings } = await supabaseAdmin
       .from("messenger_settings")

@@ -27,9 +27,13 @@ closest and tell the developer which one failed.
 ## 3. Generate the page token last
 
 1. Add the permissions above.
-2. Messenger API settings, step 2, **Generate token** for the Mere & Row Page.
-3. Supabase, Edge Functions, Secrets: set `META_PAGE_ACCESS_TOKEN` to the new value.
-4. Optional: set `META_PAGE_ID` to `1297417513461576`.
+2. In ReplyFlow, open the user menu, then **Facebook connection**. It lists what is
+   missing and walks through the steps.
+3. In Meta: Messenger API settings, step 2, **Generate token** for the Mere & Row Page.
+4. Paste the token into **Facebook connection** and save. It is checked first
+   (must be a Page token), stored privately, and used by every feature at once.
+   No Supabase secret is needed. (The `META_PAGE_ACCESS_TOKEN` secret still works
+   as a fallback.)
 
 ## 4. Checks after the token is in
 
