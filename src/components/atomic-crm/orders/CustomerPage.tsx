@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
 import { orderStatusLabel } from "./statuses";
+import { trackingLink } from "./customerPageMessage";
+import { SendOrderPage } from "./SendOrderPage";
 
 // Stages a customer can see, in order. Quoted orders are not shown to the customer.
 export const TRACKED_STAGES = [
@@ -25,21 +27,20 @@ const LIGHT_CHOICES = [
   { id: "red", name: "Red: delayed" },
 ];
 
-// The address the customer receives. Shared with the page, so it is built from the
-// same project address the app already uses.
-export const customerPageUrl = (token: string) =>
-  `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/order_tracking?token=${encodeURIComponent(token)}`;
-
 // Saved with the order. Empty lights are removed before saving (see OrderEdit), so the
 // database only ever sees green, amber or red.
 export const CustomerPage = () => {
   const record = useRecordContext<{
     tracking_token?: string;
     status: string;
+    customer_page_sent_at?: string | null;
   }>();
   const notify = useNotify();
   if (!record?.tracking_token) return null;
-  const link = customerPageUrl(record.tracking_token);
+  const link = trackingLink(
+    import.meta.env.VITE_SUPABASE_URL,
+    record.tracking_token,
+  );
 
   const copy = async () => {
     try {
@@ -62,6 +63,21 @@ export const CustomerPage = () => {
           see the stages below, so keep it to the customer. Status is{" "}
           {orderStatusLabel(record.status)}.
         </p>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <SendOrderPage />
+        {record.customer_page_sent_at && (
+          <span className="text-sm text-muted-foreground">
+            Sent on Messenger{" "}
+            {new Date(record.customer_page_sent_at).toLocaleString("en-GB", {
+              day: "numeric",
+              month: "short",
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </span>
+        )}
       </div>
 
       <div className="flex flex-wrap items-center gap-2">

@@ -1,3 +1,4 @@
+import { send } from "./messengerSend";
 import { useEffect, useState } from "react";
 import { useDataProvider, useGetList, useNotify } from "ra-core";
 import { Image as ImageIcon, Send } from "lucide-react";
@@ -13,7 +14,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
-import { getSupabaseClient } from "../providers/supabase/supabase";
 import { formatPrice } from "../products/formatPrice";
 
 type MessengerMessage = {
@@ -33,27 +33,6 @@ type ProductChoice = {
 };
 
 const WINDOW_MS = 24 * 60 * 60 * 1000;
-
-const send = async (
-  contactId: number,
-  payload: { text?: string; product_id?: number },
-) => {
-  const { data, error } = await getSupabaseClient().functions.invoke(
-    "messenger_send",
-    { method: "POST", body: { contact_id: contactId, ...payload } },
-  );
-  if (error) {
-    const details = await (async () => {
-      try {
-        return (await error.context?.json()) ?? {};
-      } catch {
-        return {};
-      }
-    })();
-    throw new Error(details.message || "Could not send the message");
-  }
-  return data;
-};
 
 const fillPlaceholders = (body: string, firstName?: string) =>
   body.replace(/\{\{\s*first_name\s*\}\}/g, firstName ?? "there");
