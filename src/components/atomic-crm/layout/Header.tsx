@@ -1,5 +1,5 @@
 import { Import, Settings, User, Users } from "lucide-react";
-import { CanAccess, useTranslate, useUserMenu } from "ra-core";
+import { CanAccess, useGetList, useTranslate, useUserMenu } from "ra-core";
 import { Link, matchPath, useLocation } from "react-router";
 import { RefreshButton } from "@/components/admin/refresh-button";
 import { ThemeModeToggle } from "@/components/admin/theme-mode-toggle";
@@ -22,6 +22,8 @@ const Header = () => {
     currentPath = "/contacts";
   } else if (matchPath("/companies/*", location.pathname)) {
     currentPath = "/companies";
+  } else if (matchPath("/messenger_inbox/*", location.pathname)) {
+    currentPath = "/messenger_inbox";
   } else if (matchPath("/orders/*", location.pathname)) {
     currentPath = "/orders";
   } else if (matchPath("/products/*", location.pathname)) {
@@ -82,6 +84,7 @@ const Header = () => {
                     to="/deals"
                     isActive={currentPath === "/deals"}
                   />
+                  <InboxTab active={currentPath === "/messenger_inbox"} />
                   <NavigationTab
                     label={translate("resources.orders.name", {
                       smart_count: 2,
@@ -120,6 +123,20 @@ const Header = () => {
         </header>
       </nav>
     </>
+  );
+};
+
+const InboxTab = ({ active }: { active: boolean }) => {
+  const { total } = useGetList("messenger_inbox", {
+    filter: { unread: true },
+    pagination: { page: 1, perPage: 1 },
+  });
+  return (
+    <NavigationTab
+      label={total ? `Inbox (${total})` : "Inbox"}
+      to="/messenger_inbox"
+      isActive={active}
+    />
   );
 };
 

@@ -141,7 +141,10 @@ const ContactShowContentMobile = () => {
           </div>
         </div>
 
-        <MessengerConversation contactId={record.id as number} />
+        <MessengerConversation
+          contactId={record.id as number}
+          firstName={record.first_name}
+        />
 
         <Tabs key={initialTab} defaultValue={initialTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3 h-10">
@@ -305,7 +308,10 @@ const ContactShowContent = () => {
             </InfiniteListBase>
           </CardContent>
         </Card>
-        <MessengerConversation contactId={record.id as number} />
+        <MessengerConversation
+          contactId={record.id as number}
+          firstName={record.first_name}
+        />
       </div>
       <ContactAside />
     </div>

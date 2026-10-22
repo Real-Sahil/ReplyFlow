@@ -51,9 +51,19 @@ update public.contacts set first_name = 'Danielle' where messenger_psid = 'PSID-
 select public.record_messenger_message('PAGE1', 'PSID-2002', 'm_6', 'Third', now(), 'Dana', 'Buyer', null);
 select pg_temp.ok((select first_name = 'Danielle' from public.contacts where messenger_psid = 'PSID-2002'), 'a name edited by staff is not overwritten');
 
+-- Inbox view: one row per conversation, unread until the contact is marked read.
+select pg_temp.ok((select count(*) from public.messenger_inbox) = 2, 'inbox has one row per conversation');
+select pg_temp.ok((select unread and window_open from public.messenger_inbox where contact_id = (select id from public.contacts where messenger_psid = 'PSID-1001')), 'a fresh inbound message is unread with the window open');
+update public.contacts set messenger_read_at = now() + interval '1 minute' where messenger_psid = 'PSID-1001';
+select pg_temp.ok((select not unread from public.messenger_inbox where contact_id = (select id from public.contacts where messenger_psid = 'PSID-1001')), 'marking read clears unread');
+update public.messenger_messages set sent_at = now() - interval '30 hours' where psid = 'PSID-1001';
+select pg_temp.ok((select not window_open from public.messenger_inbox where contact_id = (select id from public.contacts where messenger_psid = 'PSID-1001')), 'window closes after 24 hours');
+
 -- Access control.
 set local role anon;
 select pg_temp.fails($$select * from public.messenger_messages$$, 'anon cannot read messages');
+select pg_temp.fails($$select * from public.messenger_inbox$$, 'anon cannot read the inbox');
+select pg_temp.fails($$select * from public.saved_replies$$, 'anon cannot read saved replies');
 select pg_temp.fails($$select public.record_messenger_message('P','x','m_9','t',now(),null,null,null)$$, 'anon cannot record messages');
 reset role;
 insert into auth.users (id, email) values ('00000000-0000-0000-0000-0000000000a1', 'admin@example.test');
