@@ -205,6 +205,11 @@ alter default privileges in schema public revoke execute on functions from publi
 
 -- 7. Attachments: staff only -------------------------------------------------
 
+-- Upstream created this bucket public, which serves files to anyone with the
+-- link and bypasses the policies below. The app now opens files through
+-- short-lived signed links (see NoteAttachments).
+update storage.buckets set public = false where id = 'attachments';
+
 drop policy if exists "Attachments 1mt4rzk_0" on storage.objects;
 drop policy if exists "Attachments 1mt4rzk_1" on storage.objects;
 drop policy if exists "Attachments 1mt4rzk_3" on storage.objects;

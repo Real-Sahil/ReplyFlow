@@ -1,6 +1,85 @@
+import { useEffect, useState } from "react";
 import { Paperclip } from "lucide-react";
 
+import { ATTACHMENTS_BUCKET } from "../providers/commons/attachments";
+import { getSupabaseClient } from "../providers/supabase/supabase";
 import type { AttachmentNote, ContactNote, DealNote } from "../types";
+
+/** How long a signed attachment link stays valid, in seconds. */
+const SIGNED_URL_TTL_SECONDS = 3600;
+
+/**
+ * Resolves a link the browser can open for an attachment.
+ *
+ * The attachments bucket is private, so a stored file is opened through a
+ * short-lived signed link created for the signed-in user. Attachments without a
+ * storage path (demo data, files hosted elsewhere) keep their own `src`.
+ *
+ * @param attachment - The attachment to open.
+ * @returns The URL to use, or `undefined` while a signed link is being created or if it failed.
+ */
+const useAttachmentUrl = (attachment: AttachmentNote): string | undefined => {
+  const [url, setUrl] = useState<string | undefined>(
+    attachment.path ? undefined : attachment.src,
+  );
+
+  useEffect(() => {
+    if (!attachment.path) {
+      setUrl(attachment.src);
+      return;
+    }
+    let cancelled = false;
+    getSupabaseClient()
+      .storage.from(ATTACHMENTS_BUCKET)
+      .createSignedUrl(attachment.path, SIGNED_URL_TTL_SECONDS)
+      .then(({ data }) => {
+        if (!cancelled) setUrl(data?.signedUrl);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [attachment.path, attachment.src]);
+
+  return url;
+};
+
+const ImageAttachment = ({ attachment }: { attachment: AttachmentNote }) => {
+  const url = useAttachmentUrl(attachment);
+  return (
+    <a
+      href={url}
+      title={attachment.title}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <img
+        src={url}
+        alt={attachment.title}
+        className="w-[200px] h-[100px] object-cover cursor-pointer object-left border border-border"
+      />
+    </a>
+  );
+};
+
+const FileAttachment = ({ attachment }: { attachment: AttachmentNote }) => {
+  const url = useAttachmentUrl(attachment);
+  return (
+    <div className="flex items-center gap-2">
+      <Paperclip className="w-4 h-4" />
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="underline hover:no-underline"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {attachment.title}
+      </a>
+    </div>
+  );
+};
 
 /**
  * Displays persisted note attachments in note show/list views.
@@ -28,38 +107,14 @@ export const NoteAttachments = ({ note }: { note: ContactNote | DealNote }) => {
         <div className="grid grid-cols-4 gap-8">
           {imageAttachments.map((attachment: AttachmentNote, index: number) => (
             <div key={index}>
-              <a
-                href={attachment.src}
-                title={attachment.title}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <img
-                  src={attachment.src}
-                  alt={attachment.title}
-                  className="w-[200px] h-[100px] object-cover cursor-pointer object-left border border-border"
-                />
-              </a>
+              <ImageAttachment attachment={attachment} />
             </div>
           ))}
         </div>
       )}
       {otherAttachments.length > 0 &&
         otherAttachments.map((attachment: AttachmentNote, index: number) => (
-          <div key={index} className="flex items-center gap-2">
-            <Paperclip className="w-4 h-4" />
-            <a
-              href={attachment.src}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline hover:no-underline"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {attachment.title}
-            </a>
-          </div>
+          <FileAttachment key={index} attachment={attachment} />
         ))}
     </div>
   );

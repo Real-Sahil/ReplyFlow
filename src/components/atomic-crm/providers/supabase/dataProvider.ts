@@ -480,7 +480,9 @@ const uploadToBucket = async (fi: RAFile) => {
   const file = fi.rawFile;
   const fileParts = file.name.split(".");
   const fileExt = fileParts.length > 1 ? `.${file.name.split(".").pop()}` : "";
-  const fileName = `${Math.random()}${fileExt}`;
+  // The bucket is private and files are opened through signed links, but keep
+  // names unguessable anyway.
+  const fileName = `${crypto.randomUUID()}${fileExt}`;
   const filePath = `${fileName}`;
   const { error: uploadError } = await getSupabaseClient()
     .storage.from(ATTACHMENTS_BUCKET)
@@ -495,6 +497,8 @@ const uploadToBucket = async (fi: RAFile) => {
     .storage.from(ATTACHMENTS_BUCKET)
     .getPublicUrl(filePath);
 
+  // The bucket is private: this URL does not work on its own. NoteAttachments
+  // opens files through a signed link built from `path`.
   fi.path = filePath;
   fi.src = data.publicUrl;
 

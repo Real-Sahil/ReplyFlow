@@ -139,6 +139,10 @@ select pg_temp.ok(pg_temp.rows_affected($$update public.configuration set config
 select pg_temp.ok(pg_temp.rows_affected($$delete from public.contacts where id = 9002$$) = 1, 'admin can delete');
 reset role;
 
+-- Attachments are not world-readable ---------------------------------------------
+select pg_temp.ok(not exists (select 1 from storage.buckets where id = 'attachments' and public),
+    'the attachments bucket must be private');
+
 -- Third-party calls are gone ---------------------------------------------------
 select pg_temp.ok(not exists (select 1 from pg_trigger where tgname in ('company_saved', '20_contact_saved')), 'avatar and favicon triggers removed');
 select pg_temp.ok(not exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
