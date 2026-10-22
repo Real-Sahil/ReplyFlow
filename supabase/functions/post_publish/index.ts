@@ -204,13 +204,16 @@ Deno.serve((req: Request) =>
           try {
             result = await graph(token, "POST", request.path, request.body);
           } catch (error) {
-            await supabaseAdmin
-              .from("page_posts")
-              .update({
-                status: "failed",
-                error: (error as Error).message.slice(0, 500),
-              })
-              .eq("id", post.id);
+            // A block is not a failed post: leave the post as it was so it can be retried after clearing.
+            if (!(error instanceof MetaBlockedError)) {
+              await supabaseAdmin
+                .from("page_posts")
+                .update({
+                  status: "failed",
+                  error: (error as Error).message.slice(0, 500),
+                })
+                .eq("id", post.id);
+            }
             throw error;
           }
           const fbId = (result.post_id ?? result.id) as string | undefined;
