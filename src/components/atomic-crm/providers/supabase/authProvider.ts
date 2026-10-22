@@ -17,6 +17,8 @@ const getBaseAuthProvider = () =>
         id: sale.id,
         fullName: `${sale.first_name} ${sale.last_name}`,
         avatar: sale.avatar?.src,
+        administrator: sale.administrator,
+        role: sale.role,
       };
     },
   });
@@ -69,7 +71,7 @@ const getSale = async () => {
 
   const { data: dataSale, error: errorSale } = await getSupabaseClient()
     .from("sales")
-    .select("id, first_name, last_name, avatar, administrator")
+    .select("id, first_name, last_name, avatar, administrator, role")
     .match({ user_id: dataSession?.session?.user.id })
     .single();
 

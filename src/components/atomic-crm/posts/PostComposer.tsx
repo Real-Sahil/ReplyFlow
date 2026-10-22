@@ -1,28 +1,29 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   useDataProvider,
+  useGetIdentity,
   useNotify,
   useRecordContext,
   useRedirect,
 } from "ra-core";
-import { CalendarClock, ImageIcon, Send } from "lucide-react";
+import {
+  CalendarClock,
+  CheckCircle2,
+  ImageIcon,
+  Send,
+  Upload,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 
 import { ProductPicker } from "../contacts/MessengerConversation";
 import { formatPrice } from "../products/formatPrice";
 import { getSupabaseClient } from "../providers/supabase/supabase";
-
-type Post = {
-  id: number;
-  message: string;
-  product_id: number | null;
-  image_url: string | null;
-  link_url: string | null;
-  scheduled_for: string | null;
-};
+import { PostStatusBadge, type PostRow } from "./postStatus";
 
 type Product = {
   id: number;
@@ -32,6 +33,9 @@ type Product = {
   image_url: string | null;
   source_url: string | null;
 };
+
+const MAX_MEDIA_BYTES = 8 * 1024 * 1024;
+const MEDIA_TYPES = ["image/jpeg", "image/png"];
 
 const toLocalInput = (iso: string | null) => {
   if (!iso) return "";
@@ -53,9 +57,9 @@ const draftFor = (product: Product) => {
   return `${product.title}${price}`;
 };
 
-const publish = async (
+const callPublish = async (
   id: number,
-  action: "publish" | "schedule",
+  action: "publish" | "schedule" | "remove",
   scheduledFor?: string,
 ) => {
   const { error } = await getSupabaseClient().functions.invoke("post_publish", {
@@ -75,27 +79,89 @@ const publish = async (
 };
 
 export const PostComposer = () => {
-  const record = useRecordContext<Post>();
+  const record = useRecordContext<PostRow>();
   const dataProvider = useDataProvider();
   const notify = useNotify();
   const redirect = useRedirect();
+  const { identity } = useGetIdentity();
+  const isAdmin = !!(identity as { administrator?: boolean } | undefined)
+    ?.administrator;
+
   const [message, setMessage] = useState(record?.message ?? "");
   const [productId, setProductId] = useState<number | null>(
     record?.product_id ?? null,
   );
   const [imageUrl, setImageUrl] = useState(record?.image_url ?? "");
-  const [linkUrl, setLinkUrl] = useState(record?.link_url ?? "");
+  const [linkUrl, setLinkUrl] = useState("");
   const [when, setWhen] = useState(toLocalInput(record?.scheduled_for ?? null));
+  const [file, setFile] = useState<File | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [product, setProduct] = useState<Product | null>(null);
 
-  const save = async () => {
-    const data = {
-      message: message.trim(),
-      product_id: productId,
-      image_url: imageUrl.trim() || null,
-      link_url: linkUrl.trim() || null,
-    };
+  const localPreview = useMemo(
+    () => (file ? URL.createObjectURL(file) : null),
+    [file],
+  );
+  useEffect(
+    () => () => {
+      if (localPreview) URL.revokeObjectURL(localPreview);
+    },
+    [localPreview],
+  );
+
+  useEffect(() => {
+    if (!productId) return;
+    void dataProvider
+      .getOne<Product>("products", { id: productId })
+      .then(({ data }) => setProduct(data))
+      .catch(() => setProduct(null));
+  }, [productId, dataProvider]);
+
+  const status = record?.status ?? "draft";
+  const editable = ["draft", "failed", "pending_review", "approved"].includes(
+    status,
+  );
+  const canApprove = isAdmin && status === "pending_review";
+  const canPublishNow = isAdmin
+    ? ["draft", "failed", "approved"].includes(status)
+    : status === "approved";
+
+  const chooseFile = (picked: File | undefined) => {
+    if (!picked) return;
+    if (!MEDIA_TYPES.includes(picked.type)) {
+      notify("Use a JPEG or PNG photo.", { type: "error" });
+      return;
+    }
+    if (picked.size > MAX_MEDIA_BYTES) {
+      notify("Photos must be 8 MB or smaller.", { type: "error" });
+      return;
+    }
+    setFile(picked);
+  };
+
+  // Uploads the chosen photo to the private bucket and returns its path.
+  const uploadMedia = async (): Promise<Partial<PostRow>> => {
+    if (!file) return {};
+    const safe = file.name.replace(/[^A-Za-z0-9._-]/g, "_");
+    const path = `${crypto.randomUUID()}/${safe}`;
+    const { error } = await getSupabaseClient()
+      .storage.from("post-media")
+      .upload(path, file, { contentType: file.type, upsert: false });
+    if (error) throw new Error(`Photo upload failed: ${error.message}`);
+    return { media_path: path, media_name: file.name, media_type: file.type };
+  };
+
+  const values = async () => ({
+    message: message.trim(),
+    product_id: productId,
+    image_url: imageUrl.trim() || null,
+    link_url: linkUrl.trim() || null,
+    ...(file ? await uploadMedia() : {}),
+  });
+
+  const save = async (): Promise<number> => {
+    const data = await values();
     if (record?.id) {
       await dataProvider.update("page_posts", {
         id: record.id,
@@ -108,8 +174,19 @@ export const PostComposer = () => {
     return created.id as number;
   };
 
-  const run = async (action: "draft" | "publish" | "schedule") => {
-    if (!message.trim()) {
+  const setStatus = async (next: PostRow["status"]) => {
+    if (!record?.id) return;
+    await dataProvider.update("page_posts", {
+      id: record.id,
+      data: { status: next },
+      previousData: record,
+    });
+  };
+
+  const run = async (
+    action: "draft" | "submit" | "approve" | "publish" | "schedule",
+  ) => {
+    if (action !== "draft" && !message.trim()) {
       notify("Write something first.", { type: "error" });
       return;
     }
@@ -122,23 +199,35 @@ export const PostComposer = () => {
       const id = await save();
       if (action === "draft") {
         notify("Draft saved");
-      } else {
-        try {
-          await publish(
-            id,
-            action,
-            action === "schedule" ? new Date(when).toISOString() : undefined,
-          );
-          notify(
-            action === "publish"
-              ? "Posted to your Page"
-              : "Scheduled on Facebook",
-          );
-        } catch (error) {
-          notify(`Saved as a draft. ${(error as Error).message}`, {
-            type: "error",
-          });
+        redirect("list", "page_posts");
+        return;
+      }
+      if (action === "submit") {
+        await dataProvider.update("page_posts", {
+          id,
+          data: { status: "pending_review" },
+          previousData: { ...record, id } as PostRow,
+        });
+        notify("Sent to an administrator for review");
+        redirect("list", "page_posts");
+        return;
+      }
+      if (action === "approve") {
+        await setStatus("approved");
+        notify("Approved. It can now be posted or scheduled.");
+        redirect("list", "page_posts");
+        return;
+      }
+      try {
+        if (action === "schedule") {
+          await callPublish(id, "schedule", new Date(when).toISOString());
+          notify("Scheduled on Facebook");
+        } else {
+          await callPublish(id, "publish");
+          notify("Posted to your Page");
         }
+      } catch (error) {
+        notify((error as Error).message, { type: "error" });
       }
       redirect("list", "page_posts");
     } catch (error) {
@@ -148,17 +237,31 @@ export const PostComposer = () => {
     }
   };
 
+  const previewImage = localPreview ?? imageUrl;
+
   return (
-    <div className="mt-2 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_340px]">
+    <div className="mt-2 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_360px]">
       <Card>
         <CardContent className="flex flex-col gap-4">
-          <h6 className="text-lg font-semibold">
-            {record?.id ? "Edit post" : "New post"}
-          </h6>
+          <div className="flex items-center gap-2">
+            <h6 className="text-lg font-semibold">
+              {record?.id ? "Edit post" : "New post"}
+            </h6>
+            {record?.id && <PostStatusBadge status={status} />}
+          </div>
+          {!editable && (
+            <p className="text-sm text-muted-foreground">
+              This post is{" "}
+              {status === "scheduled"
+                ? "scheduled on Facebook. Cancel the schedule to change it."
+                : "already on Facebook."}
+            </p>
+          )}
           <Textarea
-            rows={8}
+            rows={7}
             maxLength={8000}
             value={message}
+            disabled={!editable}
             onChange={(event) => setMessage(event.target.value)}
             placeholder="What do you want to say?"
           />
@@ -166,19 +269,47 @@ export const PostComposer = () => {
             <Button
               variant="outline"
               size="sm"
+              disabled={!editable}
               onClick={() => setPickerOpen(true)}
             >
               <ImageIcon /> Add a product
             </Button>
-            <span className="text-xs text-muted-foreground">
-              Fills in the photo, price and website link.
-            </span>
+            <label
+              className={cn(
+                "inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md border px-3 text-sm hover:bg-accent",
+                !editable && "pointer-events-none opacity-50",
+              )}
+            >
+              <Upload className="size-4" /> {file ? file.name : "Upload photo"}
+              <input
+                type="file"
+                accept="image/jpeg,image/png"
+                className="sr-only"
+                onChange={(event) => chooseFile(event.target.files?.[0])}
+              />
+            </label>
+            {file && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setFile(null)}
+                aria-label="Remove photo"
+              >
+                <X />
+              </Button>
+            )}
+            {record?.media_path && !file && (
+              <span className="text-xs text-muted-foreground">
+                Photo saved: {record.media_path.split("/").pop()}
+              </span>
+            )}
           </div>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <label className="flex flex-col gap-1 text-sm">
-              Photo link
+              Photo link (used if no photo is uploaded)
               <Input
                 value={imageUrl}
+                disabled={!editable}
                 onChange={(event) => setImageUrl(event.target.value)}
                 placeholder="https://…"
               />
@@ -187,82 +318,139 @@ export const PostComposer = () => {
               Website link
               <Input
                 value={linkUrl}
+                disabled={!editable}
                 onChange={(event) => setLinkUrl(event.target.value)}
                 placeholder="https://…"
               />
             </label>
           </div>
           <label className="flex flex-col gap-1 text-sm md:max-w-xs">
-            Schedule for
+            Planned or scheduled for
             <Input
               type="datetime-local"
               value={when}
+              disabled={!editable}
               onChange={(event) => setWhen(event.target.value)}
             />
             <span className="text-xs text-muted-foreground">
               Facebook schedules between 10 minutes and 30 days ahead.
             </span>
           </label>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant="outline"
-              disabled={busy}
-              onClick={() => run("draft")}
-            >
-              Save draft
-            </Button>
-            <Button
-              variant="outline"
-              disabled={busy || !when}
-              onClick={() => run("schedule")}
-            >
-              <CalendarClock /> Schedule
-            </Button>
-            <Button disabled={busy} onClick={() => run("publish")}>
-              <Send /> Post now
-            </Button>
+
+          <div className="flex flex-wrap gap-2 border-t pt-4">
+            {editable && (
+              <Button
+                variant="outline"
+                disabled={busy}
+                onClick={() => run("draft")}
+              >
+                Save draft
+              </Button>
+            )}
+            {editable && !isAdmin && status !== "pending_review" && (
+              <Button
+                variant="outline"
+                disabled={busy}
+                onClick={() => run("submit")}
+              >
+                <CheckCircle2 /> Send for review
+              </Button>
+            )}
+            {canApprove && (
+              <Button
+                variant="outline"
+                disabled={busy}
+                onClick={() => run("approve")}
+              >
+                <CheckCircle2 /> Approve
+              </Button>
+            )}
+            {editable && (
+              <Button
+                variant="outline"
+                disabled={busy || !when}
+                onClick={() => run("schedule")}
+              >
+                <CalendarClock /> Schedule
+              </Button>
+            )}
+            {canPublishNow && (
+              <Button disabled={busy} onClick={() => run("publish")}>
+                <Send /> Post now
+              </Button>
+            )}
+            {editable && status === "pending_review" && !isAdmin && (
+              <span className="self-center text-sm text-muted-foreground">
+                Waiting for an administrator.
+              </span>
+            )}
           </div>
         </CardContent>
       </Card>
 
-      <Card className="h-fit gap-0 overflow-hidden py-0">
-        <div className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Preview
-        </div>
-        {imageUrl && (
-          <img
-            src={imageUrl}
-            alt=""
-            referrerPolicy="no-referrer"
-            className="aspect-4/3 w-full object-cover"
-          />
-        )}
-        <div className="whitespace-pre-wrap p-4 text-sm">
-          {message || (
+      <div className="flex flex-col gap-4">
+        <Card className="gap-0 overflow-hidden py-0">
+          <div className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Preview in the feed
+          </div>
+          <div className="mx-4 mb-3 overflow-hidden rounded-lg border bg-card">
+            <div className="flex items-center gap-2 p-3">
+              <div className="size-8 rounded-full bg-primary/20" />
+              <div className="text-sm font-medium">Mere &amp; Row</div>
+            </div>
+            <div className="whitespace-pre-wrap px-3 pb-3 text-sm">
+              {message || (
+                <span className="text-muted-foreground">
+                  Your post appears here.
+                </span>
+              )}
+              {linkUrl && !message.includes(linkUrl) && (
+                <div className="mt-2 break-all text-primary">{linkUrl}</div>
+              )}
+            </div>
+            {previewImage && (
+              <div className="aspect-[1.91/1] w-full overflow-hidden bg-muted">
+                <img
+                  src={previewImage}
+                  alt=""
+                  referrerPolicy="no-referrer"
+                  className="size-full object-cover"
+                />
+              </div>
+            )}
+          </div>
+          <p className="px-4 pb-4 text-xs text-muted-foreground">
+            Feed photos are cropped to about 1.91:1 on desktop and wider on
+            phones, so keep the subject in the centre.
+          </p>
+        </Card>
+        {product && (
+          <Card className="gap-0 p-3 text-sm">
+            <span className="font-medium">{product.title}</span>
             <span className="text-muted-foreground">
-              Your post appears here.
+              {product.price_pence != null
+                ? formatPrice(product.price_pence)
+                : ""}
             </span>
-          )}
-          {linkUrl && !message.includes(linkUrl) && (
-            <div className="mt-2 break-all text-primary">{linkUrl}</div>
-          )}
-        </div>
-      </Card>
+          </Card>
+        )}
+      </div>
 
       <ProductPicker
         open={pickerOpen}
         onClose={() => setPickerOpen(false)}
         onPick={async (picked) => {
           setPickerOpen(false);
-          const { data: product } = await dataProvider.getOne<Product>(
+          const { data: chosen } = await dataProvider.getOne<Product>(
             "products",
             { id: picked.id },
           );
-          setProductId(product.id);
-          if (product.image_url) setImageUrl(product.image_url);
-          if (product.source_url) setLinkUrl(product.source_url);
+          setProductId(chosen.id);
+          setProduct(chosen);
+          if (chosen.image_url) setImageUrl(chosen.image_url);
+          if (chosen.source_url) setLinkUrl(chosen.source_url);
           setMessage((current) =>
-            current.trim() ? current : draftFor(product),
+            current.trim() ? current : draftFor(chosen),
           );
         }}
       />

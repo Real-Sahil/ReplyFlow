@@ -104,6 +104,24 @@ Deno.serve((req: Request) =>
           .maybeSingle();
         if (!post) return createErrorResponse(404, "Post not found");
 
+        // Agents publish only approved posts. Administrators may also publish
+        // their own drafts directly.
+        if (input.action !== "remove") {
+          const publishable =
+            post.status === "approved" ||
+            (sale.administrator &&
+              ["draft", "failed", "approved"].includes(post.status));
+          if (!publishable) {
+            return createErrorResponse(
+              409,
+              post.status === "pending_review"
+                ? "This post is waiting for an administrator to approve it."
+                : "Only approved posts can be published. Submit it for review first.",
+              { code: "not_approved" },
+            );
+          }
+        }
+
         const token = await getPageToken();
         if (!token) {
           return createErrorResponse(503, "Facebook access is not set up yet", {
@@ -152,7 +170,29 @@ Deno.serve((req: Request) =>
             scheduledFor = new Date(check.unix * 1000).toISOString();
           }
 
-          const request = buildGraphRequest(page, post, scheduleUnix);
+          // Facebook fetches the photo itself, so it gets a short-lived link to our private bucket.
+          let imageUrl: string | null = post.image_url;
+          if (post.media_path) {
+            const { data: signed, error: signError } =
+              await supabaseAdmin.storage
+                .from("post-media")
+                .createSignedUrl(post.media_path, 3600);
+            if (signError || !signed?.signedUrl) {
+              return createErrorResponse(
+                500,
+                "Could not prepare the photo for Facebook",
+                {
+                  code: "media_unavailable",
+                },
+              );
+            }
+            imageUrl = signed.signedUrl;
+          }
+          const request = buildGraphRequest(
+            page,
+            { ...post, image_url: imageUrl },
+            scheduleUnix,
+          );
           let result;
           try {
             result = await graph(token, "POST", request.path, request.body);

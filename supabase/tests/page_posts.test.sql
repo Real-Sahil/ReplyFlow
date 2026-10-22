@@ -53,5 +53,19 @@ reset role;
 
 select pg_temp.ok((select count(*) from public.audit_log where table_name = 'page_posts') >= 2, 'post changes are in the history');
 
+-- Review: agents submit, only administrators approve.
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000a2');
+insert into public.page_posts (id, message) values (9002, 'Second post for review');
+select pg_temp.ok(pg_temp.rows_affected($$update public.page_posts set status = 'pending_review' where id = 9002$$) = 1, 'agents can submit a post for review');
+select pg_temp.fails($$update public.page_posts set status = 'approved' where id = 9002$$, 'agents cannot approve');
+reset role;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000a1');
+select pg_temp.ok(pg_temp.rows_affected($$update public.page_posts set status = 'approved' where id = 9002$$) = 1, 'administrators can approve');
+select pg_temp.ok((select approved_by is not null and approved_at is not null from public.page_posts where id = 9002), 'approval records who and when');
+reset role;
+
+-- Media bucket is private.
+select pg_temp.ok(exists (select 1 from storage.buckets where id = 'post-media' and not public), 'post media bucket is private');
+
 select 'ALL PAGE POST CHECKS PASSED' as result;
 rollback;
