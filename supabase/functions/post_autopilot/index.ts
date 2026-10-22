@@ -91,14 +91,12 @@ const groqChat = async (
     throw new GroqError(502, "Could not reach the AI writer.");
   }
   if (!response.ok) {
-    console.error(
-      "Groq error",
-      response.status,
-      (await response.text()).slice(0, 300),
-    );
+    // The status and the start of Groq's reason say what to fix; no key is ever echoed.
+    const reason = (await response.text()).slice(0, 160);
+    console.error("Groq error", response.status, reason);
     throw new GroqError(
       response.status,
-      "The AI writer is unavailable right now.",
+      `The AI writer is unavailable right now (Groq ${response.status}: ${reason}).`,
     );
   }
   const json = await response.json().catch(() => ({}));
