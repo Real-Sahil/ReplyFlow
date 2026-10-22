@@ -12,10 +12,17 @@ import {
   MessageCircle,
   Plus,
   Settings,
+  Sparkles,
   Users,
 } from "lucide-react";
 import { useTranslate } from "ra-core";
-import { Link, matchPath, useLocation, useMatch } from "react-router";
+import {
+  Link,
+  matchPath,
+  useLocation,
+  useMatch,
+  useNavigate,
+} from "react-router";
 import { ContactCreateSheet } from "../contacts/ContactCreateSheet";
 import { useState } from "react";
 import { NoteCreateSheet } from "../notes/NoteCreateSheet";
@@ -129,6 +136,7 @@ const CreateButton = () => {
   const [contactCreateOpen, setContactCreateOpen] = useState(false);
   const [noteCreateOpen, setNoteCreateOpen] = useState(false);
   const [taskCreateOpen, setTaskCreateOpen] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <>
@@ -181,6 +189,16 @@ const CreateButton = () => {
             }}
           >
             {translate("resources.tasks.forcedCaseName")}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            className="h-12 gap-2 px-4 text-base"
+            onSelect={() => {
+              // Opens the Posts screen with the listing picker in view.
+              navigate("/page_posts", { state: { planWithAi: true } });
+            }}
+          >
+            <Sparkles className="size-5" />
+            AI post
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

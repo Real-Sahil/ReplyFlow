@@ -6,7 +6,7 @@ import {
   useNotify,
 } from "ra-core";
 import { useMemo, useState, type ReactNode } from "react";
-import { Link } from "react-router";
+import { Link, useLocation } from "react-router";
 import { ExternalLink, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -315,6 +315,9 @@ export const PostList = () => {
   const [tab, setTab] = useState<"calendar" | "list">("calendar");
   const [stage, setStage] = useState<Stage | null>(null);
   const [source, setSource] = useState<Source>("all");
+  const location = useLocation();
+  const focusPlan = !!(location.state as { planWithAi?: boolean } | null)
+    ?.planWithAi;
   const { data, refetch, isLoading } = useGetList<PostRow>("page_posts", {
     sort: { field: "id", order: "DESC" },
     pagination: { page: 1, perPage: 200 },
@@ -346,7 +349,7 @@ export const PostList = () => {
       </div>
 
       <PostPipeline posts={all} stage={stage} onPick={setStage} />
-      <PlanWithAi />
+      <PlanWithAi focus={focusPlan} />
       <AutopilotPanel />
 
       {tab === "calendar" ? (

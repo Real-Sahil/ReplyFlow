@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useGetIdentity, useGetList, useNotify, useRefresh } from "ra-core";
 import { CalendarClock, ListChecks, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -22,8 +22,9 @@ type Product = {
 
 // Pick listings by hand. The AI writes each caption from the listing's own facts,
 // checks it, and posts it to review, or, for an administrator, schedules it.
-export const PlanWithAi = () => {
+export const PlanWithAi = ({ focus = false }: { focus?: boolean }) => {
   const notify = useNotify();
+  const rootRef = useRef<HTMLDivElement>(null);
   const refresh = useRefresh();
   const { identity } = useGetIdentity();
   const isAdmin = !!(identity as { administrator?: boolean } | undefined)
@@ -31,6 +32,17 @@ export const PlanWithAi = () => {
   const [query, setQuery] = useState("");
   const [picked, setPicked] = useState<number[]>([]);
   const [busy, setBusy] = useState(false);
+
+  // Opened from the "+" menu: bring the picker into view. The search box is not
+  // focused, so the phone keyboard does not open unasked.
+  useEffect(() => {
+    if (!focus) return;
+    // The menu gives focus back to its trigger as it closes, so wait for that first.
+    const timer = window.setTimeout(() => {
+      rootRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 150);
+    return () => window.clearTimeout(timer);
+  }, [focus]);
 
   const { data } = useGetList<Product>("products", {
     filter: { active: true },
@@ -85,7 +97,7 @@ export const PlanWithAi = () => {
   };
 
   return (
-    <Card className="gap-4 p-4">
+    <Card ref={rootRef} className="gap-4 p-4">
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <h2 className="flex items-center gap-2 font-semibold">
