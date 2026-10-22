@@ -10,6 +10,11 @@ import { AuthMiddleware, UserMiddleware } from "../_shared/authentication.ts";
 import { corsHeaders, OptionsMiddleware } from "../_shared/cors.ts";
 import { getUserSale } from "../_shared/getUserSale.ts";
 import { getPageToken } from "../_shared/metaToken.ts";
+import {
+  assertMetaOpen,
+  MetaBlockedError,
+  recordIfActionBlock,
+} from "../_shared/metaCircuit.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { createErrorResponse } from "../_shared/utils.ts";
 import {
@@ -42,6 +47,14 @@ const sendToMeta = async (
   psid: string,
   message: OutgoingMessage,
 ): Promise<string> => {
+  try {
+    await assertMetaOpen();
+  } catch (error) {
+    if (error instanceof MetaBlockedError) {
+      throw new SendError(503, error.message, "meta_blocked");
+    }
+    throw error;
+  }
   let response: Response;
   try {
     response = await fetch("https://graph.facebook.com/v21.0/me/messages", {
@@ -62,6 +75,7 @@ const sendToMeta = async (
   }
   const meta = await response.json().catch(() => ({}));
   if (!response.ok || !meta.message_id) {
+    await recordIfActionBlock(meta);
     console.error("Send API error", response.status, meta?.error?.code);
     throw new SendError(
       502,

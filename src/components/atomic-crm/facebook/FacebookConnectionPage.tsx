@@ -10,6 +10,11 @@ import { getSupabaseClient } from "../providers/supabase/supabase";
 
 type CheckItem = { name: string; why: string; ok: boolean };
 type Status = {
+  circuit?: {
+    blocked: boolean;
+    reason: string | null;
+    blocked_at: string | null;
+  };
   source: "app" | "secret" | "none";
   secrets: { app_secret: boolean; verify_token: boolean };
   token_valid: boolean;
@@ -128,6 +133,41 @@ export const FacebookConnectionPage = () => {
           <RefreshCw className={cn(loading && "animate-spin")} /> Check again
         </Button>
       </div>
+
+      {status?.circuit?.blocked && (
+        <Card className="border-destructive/40">
+          <CardContent className="flex flex-col gap-3">
+            <h6 className="text-lg font-semibold text-destructive">
+              Facebook has blocked this Page
+            </h6>
+            <p className="text-sm">
+              Meta reported an action block (error 368). Every feature has
+              stopped sending to Facebook so the block is not made worse. Check
+              the Page in Facebook first, then clear the block here.
+            </p>
+            {status.circuit.reason && (
+              <p className="text-xs text-muted-foreground">
+                Meta said: {status.circuit.reason}
+              </p>
+            )}
+            <div>
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  try {
+                    setStatus(await call("clear_block"));
+                    notify("Block cleared. Sending can resume.");
+                  } catch (error) {
+                    notify((error as Error).message, { type: "error" });
+                  }
+                }}
+              >
+                I've checked Facebook: clear the block
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardContent className="flex flex-col gap-1">

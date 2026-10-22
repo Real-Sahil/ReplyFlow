@@ -8,6 +8,7 @@ import { AuthMiddleware, UserMiddleware } from "../_shared/authentication.ts";
 import { corsHeaders, OptionsMiddleware } from "../_shared/cors.ts";
 import { getUserSale } from "../_shared/getUserSale.ts";
 import { getPageToken } from "../_shared/metaToken.ts";
+import { circuitState, recordIfActionBlock } from "../_shared/metaCircuit.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { createErrorResponse } from "../_shared/utils.ts";
 import {
@@ -26,6 +27,7 @@ const get = async (path: string, token: string) => {
       signal: AbortSignal.timeout(8000),
     });
     const json = await response.json().catch(() => ({}));
+    if (!response.ok) await recordIfActionBlock(json);
     return { ok: response.ok, json };
   } catch {
     return {
@@ -41,6 +43,25 @@ const ok = (data: unknown) =>
   });
 
 const checkConnection = async () => {
+  // While Meta has blocked the Page, send no Graph traffic at all: report the block only.
+  const circuit = await circuitState();
+  if (circuit.blocked) {
+    return {
+      source: "none",
+      circuit,
+      secrets: {
+        app_secret: !!Deno.env.get("META_APP_SECRET"),
+        verify_token: !!Deno.env.get("META_VERIFY_TOKEN"),
+      },
+      token_valid: false,
+      problem:
+        "Facebook has blocked actions from this Page. Nothing is sent until you clear the block below, after checking the Page in Facebook.",
+      page: null,
+      saved_at: null,
+      expiry: null,
+      ...compareRequirements(null, null),
+    };
+  }
   const { data: stored } = await supabaseAdmin
     .from("meta_connection")
     .select("page_access_token, page_id, page_name, saved_at")
@@ -59,6 +80,7 @@ const checkConnection = async () => {
   if (!token) {
     return {
       source,
+      circuit,
       secrets,
       token_valid: false,
       problem: "No page token is saved yet.",
@@ -121,6 +143,7 @@ const checkConnection = async () => {
     page,
     saved_at: stored?.saved_at ?? null,
     expiry,
+    circuit,
     ...compareRequirements(scopes, subscribed),
   };
 };
@@ -148,6 +171,20 @@ Deno.serve((req: Request) =>
         }
 
         if (input.action === "status") return ok(await checkConnection());
+
+        if (input.action === "clear_block") {
+          await supabaseAdmin
+            .from("meta_circuit")
+            .update({
+              blocked: false,
+              reason: null,
+              blocked_at: null,
+              cleared_by: sale.id,
+              cleared_at: new Date().toISOString(),
+            })
+            .eq("id", 1);
+          return ok(await checkConnection());
+        }
 
         if (input.action === "clear_token") {
           await supabaseAdmin

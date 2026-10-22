@@ -8,6 +8,11 @@ import { AuthMiddleware, UserMiddleware } from "../_shared/authentication.ts";
 import { corsHeaders, OptionsMiddleware } from "../_shared/cors.ts";
 import { getUserSale } from "../_shared/getUserSale.ts";
 import { getPageToken } from "../_shared/metaToken.ts";
+import {
+  assertMetaOpen,
+  MetaBlockedError,
+  recordIfActionBlock,
+} from "../_shared/metaCircuit.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { createErrorResponse } from "../_shared/utils.ts";
 import { buildGraphRequest, validateSchedule } from "./postRules.ts";
@@ -22,6 +27,7 @@ const graph = async (
   path: string,
   body?: Record<string, unknown>,
 ) => {
+  await assertMetaOpen();
   let response: Response;
   try {
     response = await fetch(`${GRAPH}/${path}`, {
@@ -38,6 +44,7 @@ const graph = async (
   }
   const json = await response.json().catch(() => ({}));
   if (!response.ok) {
+    await recordIfActionBlock(json);
     console.error("Graph error", method, response.status, json?.error?.code);
     throw new MetaError(
       json?.error?.message ?? "Facebook rejected the request",
@@ -230,6 +237,11 @@ Deno.serve((req: Request) =>
             fb_post_id: fbId,
           });
         } catch (error) {
+          if (error instanceof MetaBlockedError) {
+            return createErrorResponse(503, error.message, {
+              code: "meta_blocked",
+            });
+          }
           if (error instanceof MetaError) {
             return createErrorResponse(502, error.message, {
               code: "meta_error",

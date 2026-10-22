@@ -6,6 +6,7 @@
 //   META_PAGE_ACCESS_TOKEN optional: lets us look up the customer's name
 
 import { getPageToken } from "../_shared/metaToken.ts";
+import { assertMetaOpen, recordIfActionBlock } from "../_shared/metaCircuit.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import {
   type AutoReplySettings,
@@ -28,6 +29,7 @@ const fetchProfile = async (psid: string) => {
   const token = await getPageToken();
   if (!token) return {};
   try {
+    await assertMetaOpen();
     const response = await fetch(
       `https://graph.facebook.com/v21.0/${encodeURIComponent(psid)}?fields=first_name,last_name`,
       {
@@ -55,6 +57,7 @@ const fetchProfile = async (psid: string) => {
 };
 
 const sendText = async (token: string, psid: string, text: string) => {
+  await assertMetaOpen();
   const response = await fetch("https://graph.facebook.com/v21.0/me/messages", {
     method: "POST",
     headers: {
@@ -70,6 +73,7 @@ const sendText = async (token: string, psid: string, text: string) => {
   });
   const meta = await response.json().catch(() => ({}));
   if (!response.ok || !meta.message_id) {
+    await recordIfActionBlock(meta);
     throw new Error(`Send API ${response.status} ${meta?.error?.code ?? ""}`);
   }
   return meta.message_id as string;
