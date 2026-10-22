@@ -141,6 +141,8 @@ const ContactShowContentMobile = () => {
           </div>
         </div>
 
+        <MessengerConversation contactId={record.id as number} />
+
         <Tabs key={initialTab} defaultValue={initialTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3 h-10">
             <TabsTrigger value="notes">

@@ -22,7 +22,15 @@ const fetchProfile = async (psid: string) => {
         signal: AbortSignal.timeout(3000),
       },
     );
-    if (!response.ok) return {};
+    if (!response.ok) {
+      // Usually a token or permission problem; visible in the function logs.
+      console.error(
+        "Profile lookup failed",
+        response.status,
+        (await response.text()).slice(0, 300),
+      );
+      return {};
+    }
     const profile = await response.json();
     return {
       first: profile.first_name as string | undefined,

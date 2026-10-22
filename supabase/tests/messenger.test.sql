@@ -44,6 +44,13 @@ select pg_temp.ok((select first_name = 'Messenger' and last_name = 'enquiry 2002
 update public.deals set created_at = now() - interval '48 hours' where contact_ids = (select array[id] from public.contacts where messenger_psid = 'PSID-2002');
 select pg_temp.ok(public.generate_followup_tasks() >= 1, 'unanswered Messenger enquiry gets a follow-up task');
 
+-- A placeholder name is replaced once the real name is known, and edits are kept.
+select public.record_messenger_message('PAGE1', 'PSID-2002', 'm_5', 'Hello again', now(), 'Dana', 'Buyer', null);
+select pg_temp.ok((select first_name = 'Dana' and last_name = 'Buyer' from public.contacts where messenger_psid = 'PSID-2002'), 'placeholder name replaced by the real name');
+update public.contacts set first_name = 'Danielle' where messenger_psid = 'PSID-2002';
+select public.record_messenger_message('PAGE1', 'PSID-2002', 'm_6', 'Third', now(), 'Dana', 'Buyer', null);
+select pg_temp.ok((select first_name = 'Danielle' from public.contacts where messenger_psid = 'PSID-2002'), 'a name edited by staff is not overwritten');
+
 -- Access control.
 set local role anon;
 select pg_temp.fails($$select * from public.messenger_messages$$, 'anon cannot read messages');
@@ -52,7 +59,7 @@ reset role;
 insert into auth.users (id, email) values ('00000000-0000-0000-0000-0000000000a1', 'admin@example.test');
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a1', true);
 set local role authenticated;
-select pg_temp.ok((select count(*) from public.messenger_messages) = 4, 'staff can read messages');
+select pg_temp.ok((select count(*) from public.messenger_messages) = 6, 'staff can read messages');
 select pg_temp.fails($$select public.record_messenger_message('P','x','m_9','t',now(),null,null,null)$$, 'staff cannot call the intake function');
 reset role;
 select 'ALL MESSENGER CHECKS PASSED' as result;
