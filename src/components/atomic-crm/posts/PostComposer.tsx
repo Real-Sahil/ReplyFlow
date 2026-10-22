@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   ImageIcon,
   Send,
+  Sparkles,
   Upload,
   X,
 } from "lucide-react";
@@ -76,6 +77,32 @@ const callPublish = async (
     })();
     throw new Error(details.message || "Facebook did not accept the post");
   }
+};
+
+// The AI writer's caption for the chosen product. Nothing is saved until the
+// person saves the post themselves.
+const callWriteWithAi = async (productId: number): Promise<string> => {
+  const { data, error } = await getSupabaseClient().functions.invoke<{
+    data: { message: string };
+  }>("post_autopilot", {
+    method: "POST",
+    body: { product_id: productId },
+  });
+  if (error) {
+    const details = await (async () => {
+      try {
+        return (await error.context?.json()) ?? {};
+      } catch {
+        return {};
+      }
+    })();
+    throw new Error(
+      details.message || "The AI writer could not write this one",
+    );
+  }
+  const message = data?.data?.message;
+  if (!message) throw new Error("The AI writer returned nothing. Try again.");
+  return message;
 };
 
 export const PostComposer = () => {
@@ -183,6 +210,24 @@ export const PostComposer = () => {
     });
   };
 
+  const writeWithAi = async () => {
+    if (!productId) {
+      notify("Add a product first, then the AI writer can use its details.", {
+        type: "error",
+      });
+      return;
+    }
+    setBusy(true);
+    try {
+      setMessage(await callWriteWithAi(productId));
+      notify("Caption written. Check it before you save.");
+    } catch (error) {
+      notify((error as Error).message, { type: "error" });
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const run = async (
     action: "draft" | "submit" | "approve" | "publish" | "schedule",
   ) => {
@@ -214,7 +259,13 @@ export const PostComposer = () => {
       }
       if (action === "approve") {
         await setStatus("approved");
-        notify("Approved. It can now be posted or scheduled.");
+        // A post planned in a slot goes to Facebook on approval; no second click.
+        if (when) {
+          await callPublish(id, "schedule", new Date(when).toISOString());
+          notify("Approved and scheduled on Facebook");
+        } else {
+          notify("Approved. It can now be posted or scheduled.");
+        }
         redirect("list", "page_posts");
         return;
       }
@@ -273,6 +324,14 @@ export const PostComposer = () => {
               onClick={() => setPickerOpen(true)}
             >
               <ImageIcon /> Add a product
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!editable || !productId || busy}
+              onClick={() => void writeWithAi()}
+            >
+              <Sparkles /> Write with AI
             </Button>
             <label
               className={cn(
@@ -362,7 +421,7 @@ export const PostComposer = () => {
                 disabled={busy}
                 onClick={() => run("approve")}
               >
-                <CheckCircle2 /> Approve
+                <CheckCircle2 /> {when ? "Approve and schedule" : "Approve"}
               </Button>
             )}
             {editable && (

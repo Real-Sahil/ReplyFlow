@@ -13,6 +13,7 @@ import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 import { getSupabaseClient } from "../providers/supabase/supabase";
+import { AutopilotPanel } from "./AutopilotPanel";
 import { PostCalendar } from "./PostCalendar";
 import { PostComposer } from "./PostComposer";
 import { PostStatusBadge, type PostRow } from "./postStatus";
@@ -173,6 +174,7 @@ export const PostList = () => {
           </Link>
         </Button>
       </div>
+      <AutopilotPanel />
       {tab === "calendar" ? <PostCalendar /> : <ListView />}
     </div>
   );
