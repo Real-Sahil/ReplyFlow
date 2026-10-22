@@ -6,6 +6,7 @@ import { SelectField } from "@/components/admin/select-field";
 import { Card, CardContent } from "@/components/ui/card";
 
 import { CompanyAvatar } from "../companies/CompanyAvatar";
+import { LeadBandBadge } from "./LeadBandBadge";
 import { useConfigurationContext } from "../root/ConfigurationContext";
 import type { Deal } from "../types";
 
@@ -92,6 +93,11 @@ export const DealCardContent = ({
                 optionValue="value"
               />
             </p>
+            {deal.lead_band && (
+              <span className="mt-2 flex">
+                <LeadBandBadge band={deal.lead_band} score={deal.lead_score} />
+              </span>
+            )}
           </CardContent>
         </Card>
       </RecordContextProvider>

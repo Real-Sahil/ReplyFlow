@@ -121,6 +121,9 @@ export type Deal = {
   category: string;
   stage: string;
   description: string;
+  // Lead score for open deals, refreshed every 15 minutes (see refresh_lead_scores).
+  lead_score?: number;
+  lead_band?: "frio" | "morno" | "quente";
   amount: number;
   created_at: string;
   updated_at: string;
