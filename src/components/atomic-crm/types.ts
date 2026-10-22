@@ -119,6 +119,7 @@ export type Deal = {
   company_id: Identifier;
   contact_ids: Identifier[];
   category: string;
+  custom_fields?: Record<string, unknown>;
   stage: string;
   description: string;
   // Lead score for open deals, refreshed every 15 minutes (see refresh_lead_scores).

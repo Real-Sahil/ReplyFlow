@@ -28,6 +28,8 @@ import { useConfigurationContext } from "../root/ConfigurationContext";
 import type { Deal } from "../types";
 import { ContactList } from "./ContactList";
 import { DealTimeline } from "./DealTimeline";
+import { CustomFieldValues } from "./customFields";
+import { DealQuotes } from "../quotes/DealQuotes";
 import { findDealLabel, formatISODateString } from "./dealUtils";
 
 export const DealShow = ({ open, id }: { open: boolean; id?: string }) => {
@@ -139,7 +141,15 @@ const DealShowContent = () => {
               <span className="text-sm">
                 {findDealLabel(dealStages, record.stage)}
               </span>
+              <CustomFieldValues
+                category={record.category}
+                values={record.custom_fields}
+              />
             </div>
+            <CustomFieldValues
+              category={record.category}
+              values={record.custom_fields}
+            />
           </div>
 
           {!!record.contact_ids?.length && (
@@ -169,6 +179,10 @@ const DealShowContent = () => {
 
           <div className="m-4 space-y-6">
             <Separator />
+            <DealQuotes
+              dealId={Number(record.id)}
+              contactIds={(record.contact_ids ?? []).map(Number)}
+            />
             <DealTimeline dealId={record.id} />
             <InfiniteListBase
               resource="deal_notes"

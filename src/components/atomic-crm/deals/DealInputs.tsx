@@ -12,6 +12,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { contactOptionText } from "../misc/ContactOption";
 import { useConfigurationContext } from "../root/ConfigurationContext";
 import { AutocompleteCompanyInput } from "../companies/AutocompleteCompanyInput.tsx";
+import { CustomFieldInputs } from "./customFields";
 
 export const DealInputs = () => {
   const isMobile = useIsMobile();
@@ -100,6 +101,7 @@ const DealMiscInputs = () => {
         helperText={false}
         validate={required()}
       />
+      <CustomFieldInputs />
     </div>
   );
 };
