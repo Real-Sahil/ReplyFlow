@@ -27,6 +27,23 @@ Delete that schema yourself when you no longer need the data.
    Supabase's default grants, so `authenticated` and `service_role` had none.
 5. `replyflow_private_role_helpers`: role helpers moved to the `private` schema.
 
+## Phase 2 (23 October 2026)
+
+- `replyflow_orders_followups_1_tables_triggers` and `_2_engine_security` apply
+  `migrations/20261023090000_replyflow_orders_followups.sql` in two parts.
+- `replyflow_followups_schedule` enables `pg_cron` and runs
+  `generate_followup_tasks()` every 15 minutes (job `replyflow-followups`).
+- App settings (`public.configuration`) were set for a UK furniture business:
+  title ReplyFlow, currency GBP, stages New enquiry / Quote sent / Negotiating /
+  Sold / Lost / On hold (values unchanged because the dashboard hard-codes `won`
+  and `lost`), furniture categories, and two extra task types. Edit them under
+  Settings in the app.
+- Edge functions `users` and `update_password` were deployed from the repo files,
+  flattened into one folder with the shared helpers, because the deploy tool has
+  no folder structure. They use the built-in `SUPABASE_ANON_KEY`.
+- The two old `gardenos` sign-ups are banned (not deleted) until removed in the
+  dashboard.
+
 ## Still to do by hand
 
 - Run `merge_contacts.sql` in the Supabase SQL editor.
