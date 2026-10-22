@@ -112,9 +112,11 @@ const SourceTag = ({ source }: { source?: PostRow["source"] }) => (
 const ListView = ({
   posts,
   refetch,
+  loading,
 }: {
   posts: PostRow[];
   refetch: () => void;
+  loading: boolean;
 }) => {
   const notify = useNotify();
   const [busyId, setBusyId] = useState<number | null>(null);
@@ -136,6 +138,33 @@ const ListView = ({
       void refetch();
     }
   };
+
+  if (loading) {
+    // Placeholder rows while the posts load, so the screen never goes blank.
+    return (
+      <Card className="gap-0 overflow-hidden p-0" aria-busy="true">
+        <ul className="divide-y">
+          {[0, 1, 2, 3].map((row) => (
+            <li
+              key={row}
+              className="grid grid-cols-[56px_minmax(0,1fr)] items-center gap-x-4 gap-y-2 px-4 py-3 md:grid-cols-[56px_minmax(0,2.2fr)_minmax(0,1.2fr)_minmax(0,1.6fr)]"
+            >
+              <div className="size-14 animate-pulse rounded-lg bg-muted" />
+              <div className="min-w-0 space-y-2">
+                <div className="h-4 w-3/4 animate-pulse rounded bg-muted" />
+                <div className="h-3 w-1/2 animate-pulse rounded bg-muted" />
+              </div>
+              <div className="hidden h-4 w-28 animate-pulse rounded bg-muted md:block" />
+              <div className="hidden h-6 w-24 animate-pulse rounded-full bg-muted md:block" />
+            </li>
+          ))}
+        </ul>
+        <span className="sr-only" role="status">
+          Loading posts
+        </span>
+      </Card>
+    );
+  }
 
   if (!posts.length) {
     return (
@@ -286,7 +315,7 @@ export const PostList = () => {
   const [tab, setTab] = useState<"calendar" | "list">("calendar");
   const [stage, setStage] = useState<Stage | null>(null);
   const [source, setSource] = useState<Source>("all");
-  const { data, refetch } = useGetList<PostRow>("page_posts", {
+  const { data, refetch, isLoading } = useGetList<PostRow>("page_posts", {
     sort: { field: "id", order: "DESC" },
     pagination: { page: 1, perPage: 200 },
   });
@@ -349,7 +378,7 @@ export const PostList = () => {
               </FilterChip>
             )}
           </div>
-          <ListView posts={visible} refetch={refetch} />
+          <ListView posts={visible} refetch={refetch} loading={isLoading} />
         </>
       )}
     </div>

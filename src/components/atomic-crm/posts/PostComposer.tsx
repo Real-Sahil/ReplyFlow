@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { ProductPicker } from "../contacts/MessengerConversation";
 import { formatPrice } from "../products/formatPrice";
 import { getSupabaseClient } from "../providers/supabase/supabase";
+import { AiWriting } from "./AiWriting";
 import { PostStatusBadge, type PostRow } from "./postStatus";
 
 type Product = {
@@ -331,7 +332,13 @@ export const PostComposer = () => {
               disabled={!editable || !productId || busy}
               onClick={() => void writeWithAi()}
             >
-              <Sparkles /> Write with AI
+              {busy ? (
+                <AiWriting label="Writing the caption…" />
+              ) : (
+                <>
+                  <Sparkles /> Write with AI
+                </>
+              )}
             </Button>
             <label
               className={cn(

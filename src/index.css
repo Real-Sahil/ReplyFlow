@@ -296,3 +296,38 @@ a[href] > [data-slot="card"]:hover {
     overscroll-behavior-y: none;
   }
 }
+
+/* "AI is writing" label. The shimmer idea follows bklit-ui's shimmering text (MIT);
+   the motion is plain CSS and stops for people who ask for reduced motion. */
+@keyframes ai-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+.ai-shimmer {
+  background: linear-gradient(
+      90deg,
+      currentColor 0%,
+      currentColor 40%,
+      color-mix(in oklab, currentColor 35%, transparent) 50%,
+      currentColor 60%,
+      currentColor 100%
+    )
+    0 0 / 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: ai-shimmer 1.6s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-shimmer {
+    animation: none;
+    background: none;
+    color: inherit;
+  }
+}

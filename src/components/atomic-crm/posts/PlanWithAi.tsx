@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 import { formatPrice } from "../products/formatPrice";
+import { AiWriting } from "./AiWriting";
 import { getSupabaseClient } from "../providers/supabase/supabase";
 
 const MAX_SELECTED = 10;
@@ -160,7 +161,13 @@ export const PlanWithAi = () => {
           disabled={busy || picked.length === 0}
           onClick={() => run(false)}
         >
-          <Sparkles /> Write for review
+          {busy ? (
+            <AiWriting label="Writing captions…" />
+          ) : (
+            <>
+              <Sparkles /> Write for review
+            </>
+          )}
         </Button>
         {isAdmin && (
           <Button
