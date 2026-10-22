@@ -5,8 +5,9 @@ import { TextInput } from "@/components/admin/text-input";
 
 // Prices are stored in pence and edited in pounds.
 const toPounds = (pence: number | null) => (pence == null ? "" : pence / 100);
-const toPence = (pounds: string | number | null) =>
-  pounds === "" || pounds == null ? null : Math.round(Number(pounds) * 100);
+// NumberInput types parse as returning a number, but an empty field must clear the price.
+const toPence = (pounds: string) =>
+  (pounds === "" ? null : Math.round(Number(pounds) * 100)) as number;
 
 export const ProductInputs = () => (
   <div className="flex flex-col gap-4 p-1">
