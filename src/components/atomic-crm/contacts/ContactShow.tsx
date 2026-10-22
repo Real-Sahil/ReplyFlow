@@ -31,7 +31,7 @@ import { ContactTasksList } from "./ContactTasksList";
 import type { Contact } from "../types";
 import { Avatar } from "./Avatar";
 import { ContactAside } from "./ContactAside";
-import { AuditHistory } from "../audit/AuditHistory";
+import { ContactActivity } from "../audit/AuditHistory";
 import { MessengerConversation } from "./MessengerConversation";
 import { MobileBackButton } from "../misc/MobileBackButton";
 
@@ -241,6 +241,7 @@ const ContactShowContentMobile = () => {
                   <TagsListEdit />
                 </div>
               </div>
+              <ContactActivity contactId={record.id} />
             </div>
           </TabsContent>
         </Tabs>
@@ -313,7 +314,7 @@ const ContactShowContent = () => {
           contactId={record.id as number}
           firstName={record.first_name}
         />
-        <AuditHistory table="contacts" recordId={record.id} />
+        <ContactActivity contactId={record.id} />
       </div>
       <ContactAside />
     </div>
