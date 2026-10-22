@@ -4,6 +4,7 @@ import { History } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 import { getSupabaseClient } from "../providers/supabase/supabase";
+import { useConfigurationContext } from "../root/ConfigurationContext";
 import { orderStatusLabel } from "../orders/statuses";
 import { formatPrice } from "../products/formatPrice";
 
@@ -53,8 +54,13 @@ const recordLabels: Record<string, string> = {
   products: "Product",
 };
 
-const show = (key: string, value: unknown): string => {
+const show = (
+  key: string,
+  value: unknown,
+  stageLabel: (value: string) => string,
+): string => {
   if (value === null || value === undefined || value === "") return "empty";
+  if (key === "stage" && typeof value === "string") return stageLabel(value);
   if (key.endsWith("_pence") && typeof value === "number")
     return formatPrice(value);
   if (key === "status" && typeof value === "string")
@@ -63,12 +69,12 @@ const show = (key: string, value: unknown): string => {
   return String(value).slice(0, 120);
 };
 
-const describe = (entry: AuditEntry) => {
+const describe = (entry: AuditEntry, stageLabel: (value: string) => string) => {
   if (entry.action === "insert") return ["Created"];
   if (entry.action === "delete") return ["Deleted"];
   return Object.entries(entry.changes).map(([key, change]) => {
     const { old, new: next } = change as { old: unknown; new: unknown };
-    return `${labels[key] ?? key}: ${show(key, old)} → ${show(key, next)}`;
+    return `${labels[key] ?? key}: ${show(key, old, stageLabel)} → ${show(key, next, stageLabel)}`;
   });
 };
 
@@ -84,6 +90,10 @@ export const AuditEntryList = ({
   const { data: staff } = useGetList<Staff>("sales", {
     pagination: { page: 1, perPage: 100 },
   });
+  const { dealStages } = useConfigurationContext();
+  // Deal stages are stored as codes; show the label people see on the board.
+  const stageLabel = (value: string) =>
+    dealStages.find((stage) => stage.value === value)?.label ?? value;
   if (!entries.length) return null;
   const who = (id: number | null) => {
     const person = staff?.find((s) => s.id === id);
@@ -111,7 +121,7 @@ export const AuditEntryList = ({
                   minute: "2-digit",
                 })}
               </div>
-              {describe(entry).map((line) => (
+              {describe(entry, stageLabel).map((line) => (
                 <div key={line}>{line}</div>
               ))}
             </li>

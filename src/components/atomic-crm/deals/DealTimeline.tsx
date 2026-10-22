@@ -104,64 +104,70 @@ export const DealTimeline = ({ dealId }: { dealId: number | string }) => {
 
       {data && data.length > 0 && (
         <ol className="flex flex-col">
-          {data.map((event) => {
-            const actor =
-              event.kind === "note" ||
-              event.kind === "stage" ||
-              event.kind === "message"
-                ? who(event.detail?.actor_id)
-                : null;
-            return (
-              <li
-                key={event.event_id}
-                className="relative grid grid-cols-[12px_minmax(0,1fr)] gap-x-3 pb-5 last:pb-0"
-              >
-                <span
-                  aria-hidden="true"
-                  className={cn(
-                    "mt-1.5 size-2.5 rounded-full",
-                    kindTone[event.kind],
-                  )}
-                />
-                <div className="min-w-0 space-y-1">
-                  <div className="flex flex-wrap items-baseline gap-x-2 text-xs text-muted-foreground">
-                    <span className="font-medium text-foreground">
-                      {kindLabel(event)}
-                    </span>
-                    {event.kind === "comment" && event.detail?.author && (
-                      <span>· {event.detail.author}</span>
+          {data
+            // Notes are listed in the editable notes section below, so skip them here.
+            .filter((event) => event.kind !== "note")
+            .map((event) => {
+              const actor =
+                event.kind === "note" ||
+                event.kind === "stage" ||
+                event.kind === "message"
+                  ? who(event.detail?.actor_id)
+                  : null;
+              return (
+                <li
+                  key={event.event_id}
+                  className="relative grid grid-cols-[12px_minmax(0,1fr)] gap-x-3 pb-5 last:pb-0"
+                >
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      "mt-1.5 size-2.5 rounded-full",
+                      kindTone[event.kind],
                     )}
-                    {actor && <span>· {actor}</span>}
-                    <time dateTime={event.happened_at} className="tabular-nums">
-                      {new Date(event.happened_at).toLocaleString("en-GB", {
-                        day: "numeric",
-                        month: "short",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </time>
-                  </div>
+                  />
+                  <div className="min-w-0 space-y-1">
+                    <div className="flex flex-wrap items-baseline gap-x-2 text-xs text-muted-foreground">
+                      <span className="font-medium text-foreground">
+                        {kindLabel(event)}
+                      </span>
+                      {event.kind === "comment" && event.detail?.author && (
+                        <span>· {event.detail.author}</span>
+                      )}
+                      {actor && <span>· {actor}</span>}
+                      <time
+                        dateTime={event.happened_at}
+                        className="tabular-nums"
+                      >
+                        {new Date(event.happened_at).toLocaleString("en-GB", {
+                          day: "numeric",
+                          month: "short",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </time>
+                    </div>
 
-                  {event.kind === "stage" && (
-                    <p className="text-sm">
-                      {stageName(event.detail?.from)} →{" "}
-                      {stageName(event.detail?.to)}
-                    </p>
-                  )}
-                  {event.body && (
-                    <p className="whitespace-pre-line break-words text-sm">
-                      {event.body}
-                    </p>
-                  )}
-                  {event.kind === "comment" && event.detail?.reply && (
-                    <p className="whitespace-pre-line break-words border-l-2 pl-3 text-sm text-muted-foreground">
-                      Replied: {event.detail.reply}
-                    </p>
-                  )}
-                </div>
-              </li>
-            );
-          })}
+                    {event.kind === "stage" && (
+                      <p className="text-sm">
+                        {stageName(event.detail?.from)} →{" "}
+                        {stageName(event.detail?.to)}
+                      </p>
+                    )}
+                    {event.body && (
+                      <p className="whitespace-pre-line break-words text-sm">
+                        {event.body}
+                      </p>
+                    )}
+                    {event.kind === "comment" && event.detail?.reply && (
+                      <p className="whitespace-pre-line break-words border-l-2 pl-3 text-sm text-muted-foreground">
+                        Replied: {event.detail.reply}
+                      </p>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
         </ol>
       )}
     </section>
