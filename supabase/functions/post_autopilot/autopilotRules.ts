@@ -269,3 +269,21 @@ export const parsePicks = (
 // planned, so a dead or non-image link never reaches the queue.
 export const isImageContentType = (contentType: string | null) =>
   !!contentType && /^image\/(jpeg|png|webp)\b/i.test(contentType);
+
+// The listings an administrator or agent picked by hand: distinct whole ids, at
+// most ten per request. Anything else is refused rather than guessed at.
+export const MAX_SELECTED = 10;
+
+export const parseSelection = (input: unknown): number[] | null => {
+  if (
+    !Array.isArray(input) ||
+    input.length === 0 ||
+    input.length > MAX_SELECTED
+  ) {
+    return null;
+  }
+  const ids = input.map((id) => (typeof id === "number" ? id : Number.NaN));
+  if (ids.some((id) => !Number.isInteger(id) || id <= 0)) return null;
+  if (new Set(ids).size !== ids.length) return null;
+  return ids;
+};

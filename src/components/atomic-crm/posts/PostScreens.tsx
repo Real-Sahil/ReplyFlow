@@ -16,6 +16,7 @@ import { getSupabaseClient } from "../providers/supabase/supabase";
 import { AutopilotPanel } from "./AutopilotPanel";
 import { PostCalendar } from "./PostCalendar";
 import { PostComposer } from "./PostComposer";
+import { PlanWithAi } from "./PlanWithAi";
 import { PostPipeline } from "./PostPipeline";
 import { PostStatusBadge, type PostRow } from "./postStatus";
 
@@ -316,6 +317,7 @@ export const PostList = () => {
       </div>
 
       <PostPipeline posts={all} stage={stage} onPick={setStage} />
+      <PlanWithAi />
       <AutopilotPanel />
 
       {tab === "calendar" ? (

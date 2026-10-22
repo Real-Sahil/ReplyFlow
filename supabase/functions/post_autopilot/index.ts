@@ -26,6 +26,7 @@ import {
   nextFreeSlots,
   parseDraft,
   parsePicks,
+  parseSelection,
   type ProductFacts,
   SYSTEM_PROMPT,
   validSlotTimes,
@@ -341,6 +342,92 @@ const suggest = async (
   }
 };
 
+// Listings an administrator or agent chose by hand. Each caption is written and
+// checked, and the post goes to review, or, for an administrator who asked for it,
+// is approved so the scheduled job queues it on its slot.
+const draftSelected = async (
+  user: Parameters<typeof getUserSale>[0],
+  body: { product_ids?: unknown; schedule?: unknown },
+) => {
+  const sale = await getUserSale(user);
+  if (!sale || sale.disabled || sale.role === "viewer") {
+    return createErrorResponse(403, "Not allowed to write posts");
+  }
+  const ids = parseSelection(body.product_ids);
+  if (!ids) {
+    return createErrorResponse(400, "Choose between 1 and 10 listings.");
+  }
+  const schedule = body.schedule === true;
+  if (schedule && !sale.administrator) {
+    return createErrorResponse(403, "Only an administrator can schedule posts");
+  }
+
+  const { data: rows } = await supabaseAdmin
+    .from("products")
+    .select(PRODUCT_FIELDS)
+    .in("id", ids);
+  const byId = new Map(
+    ((rows ?? []) as CandidateProduct[]).map((p) => [p.id, p]),
+  );
+  const skipped: string[] = [];
+  const products: CandidateProduct[] = [];
+  for (const id of ids) {
+    const product = byId.get(id);
+    if (!product) skipped.push(`product ${id}: not found`);
+    else if (!product.image_url) skipped.push(`product ${id}: no photo`);
+    else products.push(product);
+  }
+
+  const settings = await loadSettings();
+  const slots = nextFreeSlots({
+    now: new Date(),
+    slotTimes: validSlotTimes(settings?.slot_times ?? ["12:00", "18:00"]),
+    taken: await plannedTimes(),
+    count: products.length,
+    timeZone: settings?.timezone ?? "Europe/London",
+  });
+
+  let created = 0;
+  for (const product of products) {
+    const slot = slots[created];
+    if (!slot) {
+      skipped.push(`product ${product.id}: no free slot`);
+      continue;
+    }
+    try {
+      if (!(await photoOk(product.image_url))) {
+        skipped.push(`product ${product.id}: photo could not be used`);
+        continue;
+      }
+      const message = await draftFor(product);
+      const now = new Date().toISOString();
+      const { error } = await supabaseAdmin.from("page_posts").insert({
+        message,
+        product_id: product.id,
+        image_url: product.image_url,
+        link_url: product.source_url,
+        status: schedule ? "approved" : "pending_review",
+        scheduled_for: slot.toISOString(),
+        submitted_at: now,
+        approved_by: schedule ? sale.id : null,
+        approved_at: schedule ? now : null,
+        created_by: sale.id,
+        source: "ai",
+        ai_model: modelName(),
+      });
+      if (error) throw new Error(error.message);
+      created++;
+    } catch (error) {
+      if (error instanceof GroqError || error instanceof NotConfigured) {
+        skipped.push((error as Error).message);
+        break;
+      }
+      skipped.push(`product ${product.id}: ${(error as Error).message}`);
+    }
+  }
+  return json({ data: { created, scheduled: schedule, skipped } });
+};
+
 Deno.serve((req: Request) =>
   OptionsMiddleware(req, async (req) => {
     if (req.method !== "POST") {
@@ -357,7 +444,16 @@ Deno.serve((req: Request) =>
     }
 
     return AuthMiddleware(req, (req) =>
-      UserMiddleware(req, (req, user) => suggest(req, user!)),
+      UserMiddleware(req, async (req, user) => {
+        const body = await req
+          .clone()
+          .json()
+          .catch(() => ({}));
+        if (body?.action === "draft_selected") {
+          return draftSelected(user!, body);
+        }
+        return suggest(req, user!);
+      }),
     );
   }),
 );

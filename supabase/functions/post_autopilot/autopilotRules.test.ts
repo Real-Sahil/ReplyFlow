@@ -9,6 +9,7 @@ import {
   validSlotTimes,
   parsePicks,
   isImageContentType,
+  parseSelection,
   zonedToUtc,
 } from "./autopilotRules";
 
@@ -192,5 +193,23 @@ describe("JSON in a model reply", () => {
       parseDraft('Sure! Here it is: {"message":"Cosy evenings."} Enjoy.'),
     ).toBe("Cosy evenings.");
     expect(parsePicks('Picks: {"picks":[{"id":2}]}', [2], 1)).toEqual([2]);
+  });
+});
+
+describe("parseSelection", () => {
+  it("accepts distinct positive whole ids up to the limit", () => {
+    expect(parseSelection([3, 1, 2])).toEqual([3, 1, 2]);
+  });
+
+  it("refuses empty, duplicate, non-integer or oversized selections", () => {
+    expect(parseSelection([])).toBeNull();
+    expect(parseSelection([1, 1])).toBeNull();
+    expect(parseSelection([1.5])).toBeNull();
+    expect(parseSelection(["2"])).toBeNull();
+    expect(parseSelection([0])).toBeNull();
+    expect(parseSelection("1")).toBeNull();
+    expect(
+      parseSelection(Array.from({ length: 11 }, (_, i) => i + 1)),
+    ).toBeNull();
   });
 });
