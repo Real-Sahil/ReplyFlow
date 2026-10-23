@@ -82,6 +82,69 @@ const Row = ({
   </div>
 );
 
+// The plain view of the connection: what works for customers, not the Meta checklist.
+const serviceLines = (status: Status) => {
+  const connected = status.token_valid;
+  const allowed = (name: string) =>
+    status.permissions.find((p) => p.name === name)?.ok ?? false;
+  const subscribed = (name: string) =>
+    status.subscriptions.find((s) => s.name === name)?.ok ?? false;
+  const pageName = status.page?.name ?? "your Page";
+  return [
+    {
+      title: "Facebook Page",
+      ok: connected,
+      detail: connected
+        ? `Connected to ${pageName}`
+        : "Not connected. Use Connect Facebook Pages above.",
+    },
+    {
+      title: "Customer messages",
+      ok: connected && subscribed("messages") && allowed("pages_messaging"),
+      detail: "Messages from customers arrive and can be answered here.",
+    },
+    {
+      title: "Comments on posts",
+      ok: connected && subscribed("feed") && allowed("pages_read_engagement"),
+      detail: "Comments on your Page posts are picked up.",
+    },
+    {
+      title: "Publishing posts",
+      ok: connected && allowed("pages_manage_posts"),
+      detail: "Posts can be published and scheduled to the Page.",
+    },
+  ];
+};
+
+const ServiceStatus = ({ status }: { status: Status }) => {
+  const lines = serviceLines(status);
+  const allWorking = lines.every((line) => line.ok);
+  return (
+    <Card>
+      <CardContent className="flex flex-col gap-2">
+        <div>
+          <h2 className="text-lg font-semibold">Service status</h2>
+          <p className="text-sm text-muted-foreground">
+            {allWorking
+              ? "Everything is working."
+              : "Some features are paused. Reconnect Facebook to restore them."}
+          </p>
+        </div>
+        <div className="divide-y">
+          {lines.map((line) => (
+            <Row
+              key={line.title}
+              ok={line.ok}
+              title={line.title}
+              detail={line.detail}
+            />
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
 export const FacebookConnectionPage = () => {
   const notify = useNotify();
   const [status, setStatus] = useState<Status | null>(null);
@@ -116,9 +179,6 @@ export const FacebookConnectionPage = () => {
       setSaving(false);
     }
   };
-
-  const missingPermissions = status?.permissions.filter((p) => !p.ok) ?? [];
-  const missingSubscriptions = status?.subscriptions.filter((s) => !s.ok) ?? [];
 
   return (
     <div className="mx-auto mt-2 flex max-w-3xl flex-col gap-4">
@@ -173,82 +233,12 @@ export const FacebookConnectionPage = () => {
         </Card>
       )}
 
-      <Card>
-        <CardContent className="flex flex-col gap-1">
-          <h6 className="mb-1 text-lg font-semibold">Status</h6>
-          {!status && (
-            <p className="text-sm text-muted-foreground">Checking…</p>
-          )}
-          {status && (
-            <>
-              <Row
-                ok={status.token_valid}
-                title={
-                  status.token_valid
-                    ? `Connected to ${status.page?.name ?? "your Page"}`
-                    : "Not connected"
-                }
-                detail={
-                  status.problem ??
-                  (status.source === "connected"
-                    ? "Connected with Facebook Login. Tokens are stored encrypted."
-                    : status.source === "app"
-                      ? "Token pasted by hand"
-                      : status.source === "secret"
-                        ? "Token set as a Supabase secret"
-                        : undefined)
-                }
-              />
-              {status.expiry && (
-                <Row
-                  ok={status.expiry.never || (status.expiry.daysLeft ?? 0) > 7}
-                  title={
-                    status.expiry.never
-                      ? "Token does not expire"
-                      : `Token expires in ${status.expiry.daysLeft} days`
-                  }
-                />
-              )}
-              <Row
-                ok={status.secrets.app_secret}
-                title="App secret is set (checks incoming messages)"
-              />
-              <Row
-                ok={status.secrets.verify_token}
-                title="Verify token is set (webhook handshake)"
-              />
-            </>
-          )}
-        </CardContent>
-      </Card>
-
-      {status && (
+      {status ? (
+        <ServiceStatus status={status} />
+      ) : (
         <Card>
-          <CardContent className="flex flex-col gap-4">
-            <div>
-              <h6 className="text-lg font-semibold">What the token allows</h6>
-              {missingPermissions.length > 0 && (
-                <p className="text-sm text-muted-foreground">
-                  {missingPermissions.length} missing. Add them in Meta first,
-                  then generate a new token below.
-                </p>
-              )}
-              {status.permissions.map((p) => (
-                <Row key={p.name} ok={p.ok} title={p.name} detail={p.why} />
-              ))}
-            </div>
-            <div>
-              <h6 className="text-lg font-semibold">Page subscriptions</h6>
-              {missingSubscriptions.length > 0 && (
-                <p className="text-sm text-muted-foreground">
-                  Tick the missing fields under Messenger API settings, Add
-                  Subscriptions.
-                </p>
-              )}
-              {status.subscriptions.map((s) => (
-                <Row key={s.name} ok={s.ok} title={s.name} detail={s.why} />
-              ))}
-            </div>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">Checking…</p>
           </CardContent>
         </Card>
       )}
