@@ -70,9 +70,11 @@ const checkConnection = async () => {
   const token = await getPageToken();
   const source = stored?.page_access_token
     ? "app"
-    : Deno.env.get("META_PAGE_ACCESS_TOKEN")
-      ? "secret"
-      : "none";
+    : token
+      ? "connected"
+      : Deno.env.get("META_PAGE_ACCESS_TOKEN")
+        ? "secret"
+        : "none";
   const secrets = {
     app_secret: !!Deno.env.get("META_APP_SECRET"),
     verify_token: !!Deno.env.get("META_VERIFY_TOKEN"),
@@ -83,7 +85,7 @@ const checkConnection = async () => {
       circuit,
       secrets,
       token_valid: false,
-      problem: "No page token is saved yet.",
+      problem: "Facebook is not connected yet.",
       ...compareRequirements(null, null),
     };
   }

@@ -200,7 +200,7 @@ const publish = async (
     if (!page) {
       return createErrorResponse(
         503,
-        "The Facebook Page is not known yet. Save the token in Facebook connection.",
+        "The Facebook Page is not known yet. Connect Facebook first.",
         {
           code: "no_page",
         },

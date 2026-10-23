@@ -1,20 +1,17 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNotify } from "ra-core";
-import { Plus, Star, Trash2 } from "lucide-react";
+import { Star, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 import { listPages, managePage, type ManagedPage } from "./metaPages";
 
 // The Pages the team can post to and reply from. Pick one in the list to make it the default
-// for posts that do not name a Page. Adding a Page needs its Page access token; Facebook checks it.
+// for posts that do not name a Page. Pages are added with Connect Facebook above.
 export const MetaPagesCard = () => {
   const notify = useNotify();
   const queryClient = useQueryClient();
-  const [token, setToken] = useState("");
   const [busy, setBusy] = useState(false);
   const { data: pages = [], isPending } = useQuery({
     queryKey: ["meta_pages"],
@@ -42,10 +39,6 @@ export const MetaPagesCard = () => {
     } finally {
       setBusy(false);
     }
-  };
-
-  const add = async () => {
-    if (await run({ action: "add", token }, "Page added")) setToken("");
   };
 
   return (
@@ -115,28 +108,6 @@ export const MetaPagesCard = () => {
             ))}
           </ul>
         )}
-
-        <div className="flex flex-col gap-2 border-t pt-4">
-          <Label htmlFor="page-token">
-            Add a Page (paste its Page access token)
-          </Label>
-          <div className="flex flex-col gap-2 md:flex-row">
-            <Input
-              id="page-token"
-              type="password"
-              autoComplete="off"
-              value={token}
-              onChange={(event) => setToken(event.target.value)}
-            />
-            <Button onClick={add} disabled={busy || token.trim().length < 20}>
-              <Plus /> Add Page
-            </Button>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            The token is checked with Facebook and stored on the server. It is
-            not shown again.
-          </p>
-        </div>
       </CardContent>
     </Card>
   );

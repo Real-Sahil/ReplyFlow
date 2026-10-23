@@ -1,3 +1,4 @@
+import { ConnectFacebookCard } from "./ConnectFacebookCard";
 import { MetaPagesCard } from "./MetaPagesCard";
 import { useCallback, useEffect, useState } from "react";
 import { useNotify } from "ra-core";
@@ -16,7 +17,7 @@ type Status = {
     reason: string | null;
     blocked_at: string | null;
   };
-  source: "app" | "secret" | "none";
+  source: "app" | "connected" | "secret" | "none";
   secrets: { app_secret: boolean; verify_token: boolean };
   token_valid: boolean;
   problem: string | null;
@@ -121,6 +122,7 @@ export const FacebookConnectionPage = () => {
 
   return (
     <div className="mx-auto mt-2 flex max-w-3xl flex-col gap-4">
+      <ConnectFacebookCard />
       <MetaPagesCard />
       <div className="flex items-center">
         <h1 className="flex-1 text-2xl font-semibold tracking-tight">
@@ -188,11 +190,13 @@ export const FacebookConnectionPage = () => {
                 }
                 detail={
                   status.problem ??
-                  (status.source === "app"
-                    ? "Token saved in ReplyFlow"
-                    : status.source === "secret"
-                      ? "Token set as a Supabase secret"
-                      : undefined)
+                  (status.source === "connected"
+                    ? "Connected with Facebook Login. Tokens are stored encrypted."
+                    : status.source === "app"
+                      ? "Token pasted by hand"
+                      : status.source === "secret"
+                        ? "Token set as a Supabase secret"
+                        : undefined)
                 }
               />
               {status.expiry && (
@@ -249,67 +253,73 @@ export const FacebookConnectionPage = () => {
         </Card>
       )}
 
-      <Card>
-        <CardContent className="flex flex-col gap-3">
-          <h6 className="text-lg font-semibold">Add or replace the token</h6>
-          <ol className="flex list-decimal flex-col gap-1.5 pl-5 text-sm">
-            <li>
-              Open your app in{" "}
-              <a
-                className="inline-flex items-center gap-1 text-primary"
-                href="https://developers.facebook.com/apps/"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Meta for Developers <ExternalLink className="size-3" />
-              </a>
-              , then <b>Use cases</b>.
-            </li>
-            <li>
-              Add any missing permissions from the list above (Customize on each
-              use case).
-            </li>
-            <li>
-              Open <b>Customize</b> on Messenger, then{" "}
-              <b>Messenger API Settings</b>. In step 2, next to your Page, click{" "}
-              <b>Generate token</b>.
-            </li>
-            <li>
-              Copy the whole token and paste it below. It is checked before it
-              is saved.
-            </li>
-          </ol>
-          <Input
-            type="password"
-            autoComplete="off"
-            placeholder="Paste the Page access token"
-            value={token}
-            onChange={(event) => setToken(event.target.value)}
-          />
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              onClick={save}
-              disabled={saving || token.trim().length < 20}
-            >
-              Save token
-            </Button>
-            {status?.source === "app" && (
+      <details className="rounded-xl border bg-card text-card-foreground">
+        <summary className="cursor-pointer p-4 text-sm font-medium">
+          Advanced: paste a Page token by hand (only if Connect Facebook cannot
+          be used)
+        </summary>
+        <Card className="rounded-t-none border-0 border-t shadow-none">
+          <CardContent className="flex flex-col gap-3">
+            <h6 className="text-lg font-semibold">Add or replace the token</h6>
+            <ol className="flex list-decimal flex-col gap-1.5 pl-5 text-sm">
+              <li>
+                Open your app in{" "}
+                <a
+                  className="inline-flex items-center gap-1 text-primary"
+                  href="https://developers.facebook.com/apps/"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Meta for Developers <ExternalLink className="size-3" />
+                </a>
+                , then <b>Use cases</b>.
+              </li>
+              <li>
+                Add any missing permissions from the list above (Customize on
+                each use case).
+              </li>
+              <li>
+                Open <b>Customize</b> on Messenger, then{" "}
+                <b>Messenger API Settings</b>. In step 2, next to your Page,
+                click <b>Generate token</b>.
+              </li>
+              <li>
+                Copy the whole token and paste it below. It is checked before it
+                is saved.
+              </li>
+            </ol>
+            <Input
+              type="password"
+              autoComplete="off"
+              placeholder="Paste the Page access token"
+              value={token}
+              onChange={(event) => setToken(event.target.value)}
+            />
+            <div className="flex flex-wrap items-center gap-2">
               <Button
-                variant="ghost"
-                onClick={async () => {
-                  setStatus(await call("clear_token"));
-                  notify("Token removed");
-                }}
+                onClick={save}
+                disabled={saving || token.trim().length < 20}
               >
-                Remove saved token
+                Save token
               </Button>
-            )}
-            <span className="text-xs text-muted-foreground">
-              The token is stored privately and never shown again.
-            </span>
-          </div>
-        </CardContent>
-      </Card>
+              {status?.source === "app" && (
+                <Button
+                  variant="ghost"
+                  onClick={async () => {
+                    setStatus(await call("clear_token"));
+                    notify("Token removed");
+                  }}
+                >
+                  Remove saved token
+                </Button>
+              )}
+              <span className="text-xs text-muted-foreground">
+                The token is stored privately and never shown again.
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      </details>
     </div>
   );
 };

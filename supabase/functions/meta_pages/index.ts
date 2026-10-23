@@ -76,20 +76,11 @@ Deno.serve((req: Request) =>
               { code: "not_a_page_token" },
             );
           }
-          const { data: existing } = await supabaseAdmin
-            .from("meta_pages")
-            .select("page_id")
-            .eq("is_default", true)
-            .maybeSingle();
-          const { error } = await supabaseAdmin.from("meta_pages").upsert(
-            {
-              page_id: page.pageId,
-              name: page.name,
-              access_token: token,
-              is_default: !existing,
-            },
-            { onConflict: "page_id" },
-          );
+          const { error } = await supabaseAdmin.rpc("meta_page_store", {
+            p_page_id: page.pageId,
+            p_name: page.name,
+            p_token: token,
+          });
           if (error) {
             return createErrorResponse(500, "The Page could not be saved");
           }
@@ -107,11 +98,11 @@ Deno.serve((req: Request) =>
         }
 
         if (input.action === "remove") {
-          const { error, count } = await supabaseAdmin
-            .from("meta_pages")
-            .delete({ count: "exact" })
-            .eq("page_id", pageId);
-          if (error || !count) {
+          const { data: removed, error } = await supabaseAdmin.rpc(
+            "meta_page_forget",
+            { p_page_id: pageId },
+          );
+          if (error || !removed) {
             return createErrorResponse(404, "That Page is not on the list");
           }
           return ok({ removed: pageId });
