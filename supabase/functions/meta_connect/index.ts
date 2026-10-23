@@ -15,10 +15,7 @@ import { getUserSale } from "../_shared/getUserSale.ts";
 import { assertMetaOpen, recordIfActionBlock } from "../_shared/metaCircuit.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { createErrorResponse } from "../_shared/utils.ts";
-import {
-  REQUIRED_PERMISSIONS,
-  REQUIRED_SUBSCRIPTIONS,
-} from "../meta_connection/connectionStatus.ts";
+import { REQUIRED_SUBSCRIPTIONS } from "../meta_connection/connectionStatus.ts";
 import { signState, verifyState } from "./state.ts";
 
 const API = "v21.0";
@@ -28,6 +25,10 @@ const APP_URL =
   Deno.env.get("APP_URL") ?? "https://replyflow-nine-gamma.vercel.app";
 const REDIRECT_URI = `${Deno.env.get("SUPABASE_URL")}/functions/v1/meta_connect/callback`;
 const MAX_PAGE_LISTS = 10;
+// The Facebook Login configuration: it lists the permissions and asks for the Pages to
+// connect, so the person can tick them. The ID is not a secret.
+const LOGIN_CONFIG_ID =
+  Deno.env.get("META_LOGIN_CONFIG_ID") ?? "1440084998088354";
 
 const ok = (data: unknown) =>
   new Response(JSON.stringify({ data }), {
@@ -43,7 +44,7 @@ const dialogUrl = (state: string) =>
     redirect_uri: REDIRECT_URI,
     state,
     response_type: "code",
-    scope: REQUIRED_PERMISSIONS.map((p) => p.name).join(","),
+    config_id: LOGIN_CONFIG_ID,
   })}`;
 
 // One Graph call. Throws with Facebook's message when the call fails.
