@@ -2,10 +2,11 @@
 // Secrets (set in the Supabase dashboard, never in the repo):
 //   META_APP_SECRET        app secret, used to verify every delivery's signature
 //   META_VERIFY_TOKEN      any long random string, also entered in Meta's webhook setup
-//   META_PAGE_ID           optional: ignore events for any other Page
+//   META_PAGE_ID           optional: one more Page to accept. Pages added in the app are
+//                          accepted automatically; with no Pages configured, all are accepted
 //   META_PAGE_ACCESS_TOKEN optional: lets us look up the customer's name
 
-import { getPageToken } from "../_shared/metaToken.ts";
+import { getPageToken, getPageTokenFor } from "../_shared/metaToken.ts";
 import { assertMetaOpen, recordIfActionBlock } from "../_shared/metaCircuit.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import {
@@ -25,8 +26,23 @@ import type { InboundMessage } from "./webhook.ts";
 const text = (body: string, status = 200) =>
   new Response(body, { status, headers: { "Content-Type": "text/plain" } });
 
-const fetchProfile = async (psid: string) => {
-  const token = await getPageToken();
+// The Pages this webhook accepts: every Page on the list, plus META_PAGE_ID if set. Null means
+// nothing is configured yet, so every Page is accepted, as before.
+const allowedPages = async (): Promise<Set<string> | null> => {
+  const ids = new Set<string>();
+  const fromEnv = Deno.env.get("META_PAGE_ID");
+  if (fromEnv) ids.add(fromEnv);
+  const { data } = await supabaseAdmin.from("meta_pages").select("page_id");
+  for (const row of data ?? []) ids.add(String(row.page_id));
+  return ids.size ? ids : null;
+};
+
+// The token of the Page a message arrived on, falling back to the connected Page.
+const tokenFor = async (pageId: string) =>
+  (await getPageTokenFor(pageId)) ?? (await getPageToken());
+
+const fetchProfile = async (psid: string, pageId: string) => {
+  const token = await tokenFor(pageId);
   if (!token) return {};
   try {
     await assertMetaOpen();
@@ -84,7 +100,7 @@ const sendText = async (token: string, psid: string, text: string) => {
 // and answering Meta with an error would only make it redeliver.
 const runAutoReply = async (message: InboundMessage, messageRowId: number) => {
   try {
-    const token = await getPageToken();
+    const token = await tokenFor(message.pageId);
     if (!token) return;
     const { data: settings } = await supabaseAdmin
       .from("messenger_settings")
@@ -200,14 +216,15 @@ Deno.serve(async (req) => {
     return text("Bad request", 400);
   }
 
-  const messages = parseInboundMessages(
-    payload,
-    Deno.env.get("META_PAGE_ID") || undefined,
+  const allowed = await allowedPages();
+  const accept = (pageId: string) => !allowed || allowed.has(pageId);
+
+  const messages = parseInboundMessages(payload).filter((m) =>
+    accept(m.pageId),
   );
 
-  for (const echo of parseInboxEchoes(
-    payload,
-    Deno.env.get("META_PAGE_ID") || undefined,
+  for (const echo of parseInboxEchoes(payload).filter((e) =>
+    accept(e.pageId),
   )) {
     const { error } = await supabaseAdmin.rpc("record_messenger_echo", {
       p_page_id: echo.pageId,
@@ -219,9 +236,8 @@ Deno.serve(async (req) => {
     if (error) console.error("record_messenger_echo failed", error.message);
   }
 
-  for (const comment of parsePageComments(
-    payload,
-    Deno.env.get("META_PAGE_ID") || undefined,
+  for (const comment of parsePageComments(payload).filter((c) =>
+    accept(c.pageId),
   )) {
     const { error } = await supabaseAdmin.rpc("record_page_comment", {
       p_comment_id: comment.commentId,
@@ -237,7 +253,7 @@ Deno.serve(async (req) => {
   }
 
   for (const message of messages) {
-    const profile = await fetchProfile(message.psid);
+    const profile = await fetchProfile(message.psid, message.pageId);
     const { data: rowId, error } = await supabaseAdmin.rpc(
       "record_messenger_message",
       {

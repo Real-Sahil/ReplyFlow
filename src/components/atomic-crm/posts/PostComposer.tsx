@@ -124,6 +124,9 @@ export const PostComposer = () => {
     record?.product_id ?? null,
   );
   const [imageUrl, setImageUrl] = useState(record?.image_url ?? "");
+  const [altText, setAltText] = useState(
+    (record as { alt_text?: string | null } | undefined)?.alt_text ?? "",
+  );
   const [linkUrl, setLinkUrl] = useState("");
   const [when, setWhen] = useState(toLocalInput(record?.scheduled_for ?? null));
   const [file, setFile] = useState<File | null>(null);
@@ -190,6 +193,7 @@ export const PostComposer = () => {
     page_id: pageId || null,
     product_id: productId,
     image_url: imageUrl.trim() || null,
+    alt_text: altText.trim() || null,
     link_url: linkUrl.trim() || null,
     ...(file ? await uploadMedia() : {}),
   });
@@ -389,6 +393,16 @@ export const PostComposer = () => {
                 disabled={!editable}
                 onChange={(event) => setImageUrl(event.target.value)}
                 placeholder="https://…"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-sm md:col-span-2">
+              Describe the photo (alt text, read aloud by screen readers)
+              <Input
+                value={altText}
+                maxLength={200}
+                disabled={!editable}
+                onChange={(event) => setAltText(event.target.value)}
+                placeholder="e.g. Grey three-seater sofa with oak legs"
               />
             </label>
             <label className="flex flex-col gap-1 text-sm">
