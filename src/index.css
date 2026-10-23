@@ -194,6 +194,16 @@ input[type="time"] {
   }
 }
 
+/* On phones the page itself never scrolls: the content area does, so the bottom bar stays at
+   the bottom of the screen on every tab. */
+@media (max-width: 767px) {
+  html,
+  body {
+    height: 100%;
+    overflow: hidden;
+  }
+}
+
 body {
   font-family:
     ui-sans-serif,
