@@ -21,8 +21,7 @@ import { signState, verifyState } from "./state.ts";
 const API = "v21.0";
 const GRAPH = `https://graph.facebook.com/${API}`;
 const APP_ID = Deno.env.get("META_APP_ID") ?? "1407701608185434";
-const APP_URL =
-  Deno.env.get("APP_URL") ?? "https://replyflow-nine-gamma.vercel.app";
+const APP_URL = Deno.env.get("APP_URL") ?? "https://replyflow-sahil.vercel.app";
 const REDIRECT_URI = `${Deno.env.get("SUPABASE_URL")}/functions/v1/meta_connect/callback`;
 const MAX_PAGE_LISTS = 10;
 // The Facebook Login configuration: it lists the permissions and asks for the Pages to
