@@ -1,19 +1,44 @@
 import { useEffect, useRef, useState } from "react";
-import { Form, required, useLogin, useNotify, useTranslate } from "ra-core";
+import {
+  Form,
+  minLength,
+  required,
+  useLogin,
+  useNotify,
+  useTranslate,
+} from "ra-core";
 import type { SubmitHandler, FieldValues } from "react-hook-form";
 import { Link, useLocation, useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
 import { TextInput } from "@/components/admin/text-input";
 import { Notification } from "@/components/admin/notification";
+import { cn } from "@/lib/utils";
 import { useConfigurationContext } from "@/components/atomic-crm/root/ConfigurationContext.tsx";
+import { getSupabaseClient } from "../providers/supabase/supabase";
 import { SSOAuthButton } from "./SSOAuthButton";
 import {
   disableEmailPasswordAuthentication,
   googleWorkplaceDomain,
 } from "./authConfig";
 
+const SIGNUP_CLOSED_MESSAGE =
+  "Sign-up is by invitation. Ask an administrator for an invitation.";
+
+// Reads the reason from a failed function call: the function answers with { message, code }.
+const readFunctionError = async (error: unknown) => {
+  const response = (error as { context?: Response })?.context;
+  const body = await response?.json?.().catch(() => null);
+  return {
+    message: (body?.message as string | undefined) ?? null,
+    code: (body?.code as string | undefined) ?? null,
+  };
+};
+
 /**
  * Login page displayed when authentication is enabled and the user is not authenticated.
+ *
+ * One card holds both forms. The coloured panel slides between "Sign in" and
+ * "Create account" on click; on a phone the forms stack and a link switches between them.
  *
  * Automatically shown when an unauthenticated user tries to access a protected route.
  * Handles login via authProvider.login() and displays error notifications on failure.
@@ -25,6 +50,8 @@ export const LoginPage = (props: { redirectTo?: string }) => {
   const { darkModeLogo, title } = useConfigurationContext();
   const { redirectTo } = props;
   const [loading, setLoading] = useState(false);
+  const [signingUp, setSigningUp] = useState(false);
+  const [signupMessage, setSignupMessage] = useState<string | null>(null);
   const hasDisplayedRecoveryNotification = useRef(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -88,25 +115,63 @@ export const LoginPage = (props: { redirectTo?: string }) => {
       });
   };
 
+  const handleSignUp: SubmitHandler<FieldValues> = async (values) => {
+    setLoading(true);
+    setSignupMessage(null);
+    const { error } = await getSupabaseClient().functions.invoke("onboard", {
+      body: values,
+    });
+    setLoading(false);
+    if (error) {
+      const { message, code } = await readFunctionError(error);
+      setSignupMessage(
+        code === "signup_closed"
+          ? SIGNUP_CLOSED_MESSAGE
+          : (message ?? "The account could not be created. Try again."),
+      );
+      return;
+    }
+    notify("Check your email to confirm your address, then sign in.", {
+      type: "success",
+    });
+    setSigningUp(false);
+  };
+
+  const switchMode = () => {
+    setSignupMessage(null);
+    setSigningUp((current) => !current);
+  };
+
+  // Both forms stay mounted so the slide is smooth. On a phone only the active one shows.
+  const signInPaneClass = cn(
+    "w-full px-8 py-10 transition-all duration-700 ease-in-out motion-reduce:transition-none md:absolute md:inset-y-0 md:left-0 md:w-1/2 md:flex md:flex-col md:justify-center",
+    signingUp
+      ? "hidden md:flex md:-translate-x-6 md:opacity-0 md:pointer-events-none"
+      : "flex flex-col justify-center",
+  );
+  const signUpPaneClass = cn(
+    "w-full px-8 py-10 transition-all duration-700 ease-in-out motion-reduce:transition-none md:absolute md:inset-y-0 md:left-1/2 md:w-1/2 md:flex md:flex-col md:justify-center",
+    signingUp
+      ? "flex flex-col justify-center"
+      : "hidden md:flex md:translate-x-6 md:opacity-0 md:pointer-events-none",
+  );
+  // Sits on the right beside the sign-in form, and slides across to the left for sign-up.
+  const overlayClass = cn(
+    "hidden flex-col items-center justify-center gap-4 bg-primary p-10 text-center text-primary-foreground transition-transform duration-700 ease-in-out motion-reduce:transition-none md:absolute md:inset-y-0 md:left-1/2 md:flex md:w-1/2",
+    signingUp ? "md:-translate-x-full" : "md:translate-x-0",
+  );
+
   return (
-    <div className="min-h-screen flex">
-      <div className="relative grid w-full lg:grid-cols-2">
-        <div className="relative hidden h-full flex-col bg-muted p-10 text-white dark:border-r lg:flex">
-          <div className="absolute inset-0 bg-zinc-900" />
-          <div className="relative z-20 flex items-center text-lg font-medium">
-            <img className="h-6 mr-2" src={darkModeLogo} alt={title} />
-            {title}
-          </div>
-        </div>
-        <div className="flex flex-col justify-center w-full p-4 lg:p-8">
-          <div className="w-full space-y-6 lg:mx-auto lg:w-[350px]">
-            <div className="text-center">
-              <h1 className="text-2xl font-semibold tracking-tight">
-                {translate("ra.auth.sign_in")}
-              </h1>
-            </div>
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-8">
+      <div className="w-full max-w-4xl">
+        <div className="relative min-h-[560px] overflow-hidden rounded-2xl border bg-card shadow-xl">
+          {/* Sign in */}
+          <div className={signInPaneClass} aria-hidden={signingUp}>
+            <h1 className="mb-6 text-center text-2xl font-semibold tracking-tight md:text-left">
+              {translate("ra.auth.sign_in")}
+            </h1>
             {disableEmailPasswordAuthentication ? null : (
-              <Form className="space-y-8" onSubmit={handleSubmit}>
+              <Form className="space-y-6" onSubmit={handleSubmit}>
                 <TextInput
                   label="ra.auth.email"
                   source="email"
@@ -119,19 +184,20 @@ export const LoginPage = (props: { redirectTo?: string }) => {
                   type="password"
                   validate={required()}
                 />
-                <div className="flex flex-col gap-4">
-                  <Button
-                    type="submit"
-                    className="cursor-pointer"
-                    disabled={loading}
-                  >
-                    {translate("ra.auth.sign_in")}
-                  </Button>
-                </div>
+                <Button
+                  type="submit"
+                  className="w-full cursor-pointer"
+                  disabled={loading || signingUp}
+                >
+                  {translate("ra.auth.sign_in")}
+                </Button>
               </Form>
             )}
             {googleWorkplaceDomain ? (
-              <SSOAuthButton className="w-full" domain={googleWorkplaceDomain}>
+              <SSOAuthButton
+                className="mt-4 w-full"
+                domain={googleWorkplaceDomain}
+              >
                 {translate("crm.auth.sign_in_google_workspace", {
                   _: "Sign in with Google Workplace",
                 })}
@@ -140,21 +206,110 @@ export const LoginPage = (props: { redirectTo?: string }) => {
             {disableEmailPasswordAuthentication ? null : (
               <Link
                 to={"/forgot-password"}
-                className="block text-sm text-center hover:underline"
+                className="mt-4 block text-center text-sm hover:underline md:text-left"
               >
                 {translate("ra-supabase.auth.forgot_password", {
                   _: "Forgot password?",
                 })}
               </Link>
             )}
-            <a
-              href="/privacy.html"
-              className="block text-xs text-center text-muted-foreground hover:underline"
+            <button
+              type="button"
+              onClick={switchMode}
+              className="mt-6 text-center text-sm text-muted-foreground hover:underline md:hidden"
             >
-              Privacy policy
-            </a>
+              New here? Create an account
+            </button>
+          </div>
+
+          {/* Create account */}
+          <div className={signUpPaneClass} aria-hidden={!signingUp}>
+            <h2 className="mb-6 text-center text-2xl font-semibold tracking-tight md:text-left">
+              Create account
+            </h2>
+            <Form className="space-y-5" onSubmit={handleSignUp}>
+              <TextInput
+                label="Business name"
+                source="organisation_name"
+                validate={required()}
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <TextInput
+                  label="First name"
+                  source="first_name"
+                  validate={required()}
+                />
+                <TextInput
+                  label="Last name"
+                  source="last_name"
+                  validate={required()}
+                />
+              </div>
+              <TextInput
+                label="ra.auth.email"
+                source="email"
+                type="email"
+                validate={required()}
+              />
+              <TextInput
+                label="ra.auth.password"
+                source="password"
+                type="password"
+                validate={[required(), minLength(10)]}
+              />
+              {signupMessage ? (
+                <p role="status" className="text-sm text-destructive">
+                  {signupMessage}
+                </p>
+              ) : null}
+              <Button
+                type="submit"
+                className="w-full cursor-pointer"
+                disabled={loading || !signingUp}
+              >
+                Sign up
+              </Button>
+            </Form>
+            <button
+              type="button"
+              onClick={switchMode}
+              className="mt-6 text-center text-sm text-muted-foreground hover:underline md:hidden"
+            >
+              Already have an account? Sign in
+            </button>
+          </div>
+
+          {/* Coloured panel: invites the other form on wide screens */}
+          <div className={overlayClass} aria-hidden="true">
+            <img
+              className="mb-2 h-8 brightness-0 invert"
+              src={darkModeLogo}
+              alt=""
+            />
+            <h2 className="text-3xl font-semibold tracking-tight">
+              {signingUp ? "Welcome Back!" : "New to " + title + "?"}
+            </h2>
+            <p className="max-w-xs text-sm opacity-90">
+              {signingUp
+                ? "Sign in to pick up your pipeline, orders and messages where you left them."
+                : "Set up your business on ReplyFlow and invite your team."}
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              className="cursor-pointer border-primary-foreground bg-transparent text-primary-foreground hover:bg-primary-foreground hover:text-primary"
+              onClick={switchMode}
+            >
+              {signingUp ? "Sign in" : "Create account"}
+            </Button>
           </div>
         </div>
+        <a
+          href="/privacy.html"
+          className="mt-4 block text-center text-xs text-muted-foreground hover:underline"
+        >
+          Privacy policy
+        </a>
       </div>
       <Notification />
     </div>

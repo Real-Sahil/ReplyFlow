@@ -37,6 +37,7 @@ export const extractAndUploadAttachments = async (
     ContentType: string;
     ContentLength: number;
   }[],
+  organisationId: number,
 ): Promise<Attachment[]> => {
   return (
     await Promise.all(
@@ -59,7 +60,8 @@ export const extractAndUploadAttachments = async (
 
         const fileParts = Name.split(".");
         const fileExt = fileParts.length > 1 ? `.${Name.split(".").pop()}` : "";
-        const fileName = `${Math.random()}${fileExt}`;
+        // Files live in the folder of the organisation that received the email.
+        const fileName = `${organisationId}/${Math.random()}${fileExt}`;
         const { error: uploadError } = await supabaseAdmin.storage
           .from("attachments")
           .upload(fileName, decodedContent);

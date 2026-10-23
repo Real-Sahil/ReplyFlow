@@ -20,6 +20,7 @@ import type {
 import type { ConfigurationContextValue } from "../../root/ConfigurationContext";
 import { ATTACHMENTS_BUCKET } from "../commons/attachments";
 import { getIsInitialized } from "./authProvider";
+import { storagePath } from "./organisationFolder";
 import { getSupabaseClient } from "./supabase";
 
 const getBaseDataProvider = () =>
@@ -494,7 +495,7 @@ const uploadToBucket = async (fi: RAFile) => {
   // The bucket is private and files are opened through signed links, but keep
   // names unguessable anyway.
   const fileName = `${crypto.randomUUID()}${fileExt}`;
-  const filePath = `${fileName}`;
+  const filePath = await storagePath(fileName);
   const { error: uploadError } = await getSupabaseClient()
     .storage.from(ATTACHMENTS_BUCKET)
     .upload(filePath, dataContent);

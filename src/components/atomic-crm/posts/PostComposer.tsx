@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { ProductPicker } from "../contacts/MessengerConversation";
 import { PagePicker } from "./PagePicker";
 import { formatPrice } from "../products/formatPrice";
+import { storagePath } from "../providers/supabase/organisationFolder";
 import { getSupabaseClient } from "../providers/supabase/supabase";
 import { AiWriting } from "./AiWriting";
 import { PostStatusBadge, type PostRow } from "./postStatus";
@@ -180,7 +181,7 @@ export const PostComposer = () => {
   const uploadMedia = async (): Promise<Partial<PostRow>> => {
     if (!file) return {};
     const safe = file.name.replace(/[^A-Za-z0-9._-]/g, "_");
-    const path = `${crypto.randomUUID()}/${safe}`;
+    const path = await storagePath(`${crypto.randomUUID()}/${safe}`);
     const { error } = await getSupabaseClient()
       .storage.from("post-media")
       .upload(path, file, { contentType: file.type, upsert: false });

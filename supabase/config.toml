@@ -185,6 +185,9 @@ verify_jwt = false
 [functions.meta_connect]
 verify_jwt = false
 
+[functions.onboard]
+verify_jwt = false
+
 [functions.web_enquiry]
 verify_jwt = false
 

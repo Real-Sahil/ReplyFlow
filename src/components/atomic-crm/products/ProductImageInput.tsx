@@ -5,6 +5,7 @@ import { ImagePlus } from "lucide-react";
 import { TextInput } from "@/components/admin/text-input";
 import { Button } from "@/components/ui/button";
 
+import { storagePath } from "../providers/supabase/organisationFolder";
 import { getSupabaseClient } from "../providers/supabase/supabase";
 
 const BUCKET = "product-images";
@@ -31,7 +32,7 @@ export const ProductImageInput = () => {
     }
     setUploading(true);
     const safe = file.name.replace(/[^A-Za-z0-9._-]/g, "_");
-    const path = `${crypto.randomUUID()}/${safe}`;
+    const path = await storagePath(`${crypto.randomUUID()}/${safe}`);
     const client = getSupabaseClient();
     const { error } = await client.storage
       .from(BUCKET)
