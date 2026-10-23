@@ -191,3 +191,6 @@ verify_jwt = false
 
 [functions.order_tracking]
 verify_jwt = false
+
+[functions.go]
+verify_jwt = false

@@ -109,6 +109,46 @@ const SourceTag = ({ source }: { source?: PostRow["source"] }) => (
   </span>
 );
 
+// A published post can be offered again every 60 days as a draft (see recycle_evergreen_posts).
+const EvergreenToggle = ({
+  post,
+  onChanged,
+}: {
+  post: PostRow & { evergreen?: boolean };
+  onChanged: () => void;
+}) => {
+  const notify = useNotify();
+  const [busy, setBusy] = useState(false);
+  const on = !!post.evergreen;
+  const toggle = async () => {
+    setBusy(true);
+    const { error } = await getSupabaseClient().rpc("set_post_evergreen", {
+      p_id: post.id,
+      p_value: !on,
+    });
+    setBusy(false);
+    if (error) {
+      notify("Could not change this post", { type: "error" });
+      return;
+    }
+    notify(
+      on ? "Removed from evergreen" : "Will be offered again every 60 days",
+    );
+    void onChanged();
+  };
+  return (
+    <Button
+      size="sm"
+      variant="ghost"
+      aria-pressed={on}
+      disabled={busy}
+      onClick={toggle}
+    >
+      {on ? "Evergreen: on" : "Make evergreen"}
+    </Button>
+  );
+};
+
 const ListView = ({
   posts,
   refetch,
@@ -239,6 +279,9 @@ const ListView = ({
                       </a>
                     </Button>
                   )}
+                  {post.status === "published" && (
+                    <EvergreenToggle post={post} onChanged={refetch} />
+                  )}
                   {(post.status === "scheduled" ||
                     post.status === "published") && (
                     <Button
@@ -341,6 +384,9 @@ export const PostList = () => {
           Posts
         </h1>
         <Tabs tab={tab} onChange={setTab} />
+        <Button asChild variant="outline">
+          <Link to="/links">Tracked links</Link>
+        </Button>
         <Button asChild>
           <Link to="/page_posts/create">
             <Plus /> New post

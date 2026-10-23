@@ -1,4 +1,5 @@
 import { send } from "./messengerSend";
+import { InternalNotes } from "./InternalNotes";
 import { useEffect, useState } from "react";
 import { useDataProvider, useGetList, useNotify } from "ra-core";
 import { Image as ImageIcon, Send } from "lucide-react";
@@ -275,6 +276,7 @@ export const MessengerConversation = ({
           contact them another way.
         </p>
       )}
+      <InternalNotes contactId={contactId} />
     </div>
   );
 
