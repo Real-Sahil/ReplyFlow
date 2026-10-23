@@ -1,7 +1,7 @@
 // Creates a new business on ReplyFlow: its organisation, and its first administrator.
 // Sign-up stays closed until the SIGNUP_OPEN secret is "true" (see the tenancy plan).
-// The administrator gets the same invitation email as a staff invite, which confirms the
-// address before they can sign in. Any step that fails is rolled back.
+// The account is confirmed when it is created, so no confirmation email is sent for now.
+// Any step that fails is rolled back.
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { corsHeaders, OptionsMiddleware } from "../_shared/cors.ts";
@@ -78,6 +78,7 @@ Deno.serve((req: Request) =>
         await supabaseAdmin.auth.admin.createUser({
           email,
           password,
+          email_confirm: true,
           user_metadata: { first_name: firstName, last_name: lastName },
         });
       if (userError || !created.user) {
@@ -107,10 +108,6 @@ Deno.serve((req: Request) =>
         })
         .eq("user_id", userId);
       if (saleError) throw saleError;
-
-      const { error: inviteError } =
-        await supabaseAdmin.auth.admin.inviteUserByEmail(email);
-      if (inviteError) throw inviteError;
 
       await supabaseAdmin.from("signup_grants").delete().eq("email", email);
     } catch (error) {

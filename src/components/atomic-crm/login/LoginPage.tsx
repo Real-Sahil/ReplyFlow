@@ -131,7 +131,7 @@ export const LoginPage = (props: { redirectTo?: string }) => {
       );
       return;
     }
-    notify("Check your email to confirm your address, then sign in.", {
+    notify("Your account is ready. Sign in with your email and password.", {
       type: "success",
     });
     setSigningUp(false);
