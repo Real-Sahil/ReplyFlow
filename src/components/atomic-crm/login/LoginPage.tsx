@@ -157,14 +157,27 @@ export const LoginPage = (props: { redirectTo?: string }) => {
   );
   // Sits on the right beside the sign-in form, and slides across to the left for sign-up.
   const overlayClass = cn(
-    "hidden flex-col items-center justify-center gap-4 bg-primary p-10 text-center text-primary-foreground transition-transform duration-700 ease-in-out motion-reduce:transition-none md:absolute md:inset-y-0 md:left-1/2 md:flex md:w-1/2",
+    "hidden flex-col items-center justify-center gap-4 overflow-hidden bg-black p-10 text-center text-white transition-transform duration-700 ease-in-out motion-reduce:transition-none md:absolute md:inset-y-0 md:left-1/2 md:flex md:w-1/2",
     signingUp ? "md:-translate-x-full" : "md:translate-x-0",
   );
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-8">
-      <div className="w-full max-w-4xl">
-        <div className="relative min-h-[560px] overflow-hidden rounded-2xl border bg-card shadow-xl">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-zinc-500 px-4 py-8">
+      {/* Blurred backdrop: black at the top left, blue at the bottom left, grey on the right */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -left-40 -top-40 h-[70%] w-[55%] rounded-full bg-black blur-3xl"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -bottom-40 -left-32 h-[80%] w-[60%] rounded-full bg-blue-800 blur-3xl"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-y-0 right-0 w-1/2 bg-zinc-400/70 blur-2xl"
+      />
+      <div className="relative w-full max-w-4xl">
+        <div className="relative min-h-[560px] overflow-hidden rounded-2xl border bg-card shadow-2xl">
           {/* Sign in */}
           <div className={signInPaneClass} aria-hidden={signingUp}>
             <h1 className="mb-6 text-center text-2xl font-semibold tracking-tight md:text-left">
@@ -281,15 +294,28 @@ export const LoginPage = (props: { redirectTo?: string }) => {
 
           {/* Coloured panel: invites the other form on wide screens */}
           <div className={overlayClass} aria-hidden="true">
+            {/* Vertical blue light streaks, brightest at the bottom */}
+            <div
+              className="pointer-events-none absolute inset-0 opacity-90"
+              style={{
+                backgroundImage:
+                  "repeating-linear-gradient(90deg, transparent 0 18px, rgba(37, 99, 235, 0.9) 22px, rgba(37, 99, 235, 0) 30px, transparent 38px 56px)",
+                maskImage:
+                  "linear-gradient(to top, black 0%, black 35%, transparent 80%)",
+                WebkitMaskImage:
+                  "linear-gradient(to top, black 0%, black 35%, transparent 80%)",
+                filter: "blur(1px)",
+              }}
+            />
             <img
-              className="mb-2 h-8 brightness-0 invert"
+              className="relative mb-2 h-8 brightness-0 invert"
               src={darkModeLogo}
               alt=""
             />
-            <h2 className="text-3xl font-semibold tracking-tight">
+            <h2 className="relative text-3xl font-semibold tracking-tight">
               {signingUp ? "Welcome Back!" : "New to " + title + "?"}
             </h2>
-            <p className="max-w-xs text-sm opacity-90">
+            <p className="relative max-w-xs text-sm opacity-90">
               {signingUp
                 ? "Sign in to pick up your pipeline, orders and messages where you left them."
                 : "Set up your business on ReplyFlow and invite your team."}
@@ -297,7 +323,7 @@ export const LoginPage = (props: { redirectTo?: string }) => {
             <Button
               type="button"
               variant="outline"
-              className="cursor-pointer border-primary-foreground bg-transparent text-primary-foreground hover:bg-primary-foreground hover:text-primary"
+              className="relative cursor-pointer rounded-full border-white bg-transparent text-white hover:bg-white hover:text-black"
               onClick={switchMode}
             >
               {signingUp ? "Sign in" : "Create account"}

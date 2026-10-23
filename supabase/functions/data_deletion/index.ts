@@ -72,10 +72,21 @@ Deno.serve(async (req: Request) => {
     });
   }
 
+  // The person belongs to the organisation whose contact has this Messenger id. No match
+  // leaves the organisation empty for staff to check, rather than assigning Mere & Row.
+  const { data: contact } = await supabaseAdmin
+    .from("contacts")
+    .select("organisation_id")
+    .eq("messenger_psid", verified.userId)
+    .limit(1)
+    .maybeSingle();
+
   const code = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
-  const { error } = await supabaseAdmin
-    .from("data_deletion_requests")
-    .insert({ code, meta_user_id: verified.userId });
+  const { error } = await supabaseAdmin.from("data_deletion_requests").insert({
+    code,
+    meta_user_id: verified.userId,
+    organisation_id: contact?.organisation_id ?? null,
+  });
   if (error) {
     console.error("Deletion request not recorded", error.message);
     return new Response(JSON.stringify({ error: "Try again later" }), {
