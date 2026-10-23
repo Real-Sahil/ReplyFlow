@@ -119,7 +119,11 @@ const ConversationsCard = ({ inbox }: { inbox: InboxRow[] }) => {
           View all <ArrowRight className="size-3.5" />
         </Link>
       </div>
-      <div className="inline-flex w-full rounded-full bg-muted p-1 text-sm">
+      <div
+        role="group"
+        aria-label="Show"
+        className="inline-flex w-full rounded-full bg-muted p-1 text-sm"
+      >
         {(
           [
             ["reply", `Need a reply (${needsReply.length})`],
@@ -130,6 +134,7 @@ const ConversationsCard = ({ inbox }: { inbox: InboxRow[] }) => {
             key={key}
             type="button"
             onClick={() => setView(key)}
+            aria-pressed={view === key}
             className={cn(
               "flex-1 rounded-full px-3 py-1.5 transition-colors",
               view === key
@@ -187,6 +192,8 @@ const ConversationsCard = ({ inbox }: { inbox: InboxRow[] }) => {
 export const TodayDashboard = () => {
   const { identity } = useGetIdentity();
   const { currency, dealStages } = useConfigurationContext();
+  const endOfToday = new Date();
+  endOfToday.setHours(23, 59, 59, 999);
 
   const { data: inbox } = useGetList<InboxRow>("messenger_inbox", {
     sort: { field: "last_sent_at", order: "DESC" },
@@ -200,14 +207,24 @@ export const TodayDashboard = () => {
     filter: { "archived_at@is": null },
     pagination: { page: 1, perPage: 500 },
   });
+  // Counts come from the server, so they are right beyond the rows fetched above.
+  const { total: dueTaskTotal } = useGetList<Task>("tasks", {
+    filter: {
+      "done_date@is": null,
+      "due_date@lte": endOfToday.toISOString(),
+    },
+    pagination: { page: 1, perPage: 1 },
+  });
+  const { total: quoteTotal } = useGetList<Deal>("deals", {
+    filter: { "archived_at@is": null, stage: "proposal-sent" },
+    pagination: { page: 1, perPage: 1 },
+  });
   const { data: orders } = useGetList<OrderRow>("orders", {
     sort: { field: "id", order: "DESC" },
     pagination: { page: 1, perPage: 200 },
   });
 
   const needsReply = (inbox ?? []).filter((c) => c.unread && c.window_open);
-  const endOfToday = new Date();
-  endOfToday.setHours(23, 59, 59, 999);
   const dueTasks = (tasks ?? []).filter(
     (t) => t.due_date && new Date(t.due_date).getTime() <= endOfToday.getTime(),
   );
@@ -241,12 +258,12 @@ export const TodayDashboard = () => {
             month: "long",
           })}
         </p>
-        <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
+        <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">
           {greeting()}
           {identity?.fullName
             ? `, ${String(identity.fullName).split(" ")[0]}`
             : ""}
-        </h1>
+        </h2>
       </header>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -268,12 +285,12 @@ export const TodayDashboard = () => {
               <OverviewStat
                 to="/"
                 label="Follow-ups due"
-                value={dueTasks.length}
+                value={dueTaskTotal ?? dueTasks.length}
               />
               <OverviewStat
                 to="/deals"
                 label="Quotes out"
-                value={quotes.length}
+                value={quoteTotal ?? quotes.length}
                 hint={
                   quoteValue
                     ? formatPrice(quoteValue * 100, currency)
@@ -349,7 +366,7 @@ export const TodayDashboard = () => {
                   <Clock className="size-4" /> Follow-ups due
                 </div>
                 <div className="text-3xl font-semibold tabular-nums">
-                  {dueTasks.length}
+                  {dueTaskTotal ?? dueTasks.length}
                 </div>
                 <div className="text-xs text-muted-foreground">
                   Due today or overdue

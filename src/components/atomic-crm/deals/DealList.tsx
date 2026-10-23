@@ -90,7 +90,7 @@ const DealLayout = () => {
   const matchShow = matchPath("/deals/:id/show", location.pathname);
   const matchEdit = matchPath("/deals/:id", location.pathname);
 
-  const { data, isPending, filterValues } = useListContext();
+  const { data, total, isPending, filterValues } = useListContext();
   const hasFilters = filterValues && Object.keys(filterValues).length > 0;
 
   if (isPending) return null;
@@ -106,6 +106,16 @@ const DealLayout = () => {
 
   return (
     <div className="w-full">
+      {total !== undefined && data && total > data.length ? (
+        // The pipeline loads its first page only. Say so, rather than hiding deals silently.
+        <p
+          role="status"
+          className="mb-3 rounded-xl bg-muted px-4 py-2 text-sm text-muted-foreground"
+        >
+          Showing {data.length} of {total} deals. Use the filters to narrow the
+          list.
+        </p>
+      ) : null}
       <DealListContent />
       <DealArchivedList />
       <DealCreate open={!!matchCreate} />

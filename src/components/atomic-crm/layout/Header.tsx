@@ -134,7 +134,7 @@ const RailLink = ({
   >
     <Icon className="size-5" />
     {badge ? (
-      <span className="absolute -right-1 -top-1 rounded-full bg-rose-500 px-1.5 text-[0.65rem] leading-4 font-semibold text-white tabular-nums">
+      <span className="absolute -right-1 -top-1 rounded-full bg-rose-600 px-1.5 text-xs leading-4 font-semibold text-white tabular-nums">
         {badge}
       </span>
     ) : null}

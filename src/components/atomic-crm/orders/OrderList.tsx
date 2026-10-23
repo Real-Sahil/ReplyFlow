@@ -86,7 +86,7 @@ export const OrderList = () => {
           <CreateButton label="New order" />
         </TopToolbar>
       }
-      pagination={<ListPagination rowsPerPageOptions={[10, 25, 50]} />}
+      pagination={<ListPagination rowsPerPageOptions={[25, 50, 100]} />}
     >
       <DataTable bulkActionButtons={false} rowClick="edit">
         <DataTable.Col source="reference" label="Order" />

@@ -90,7 +90,7 @@ export const MobileNavigation = () => {
           className="flex h-full flex-col items-center justify-center gap-0.5 rounded-xl text-muted-foreground"
         >
           <MoreHorizontal className="size-6" />
-          <span className="text-[0.65rem] font-medium">More</span>
+          <span className="text-xs font-medium">More</span>
         </button>
       </div>
       <MoreSheet open={moreOpen} onOpenChange={setMoreOpen} />
@@ -125,7 +125,7 @@ const NavigationButton = ({
     >
       <Icon className="size-5" />
     </span>
-    <span className="text-[0.65rem] font-medium">{label}</span>
+    <span className="text-xs font-medium">{label}</span>
   </Link>
 );
 
@@ -158,11 +158,11 @@ const InboxButton = ({ isActive }: { isActive: boolean }) => {
         <MessageCircle className="size-5" />
       </span>
       {total ? (
-        <span className="absolute right-3 top-1 rounded-full bg-rose-500 px-1.5 text-[0.6rem] leading-4 font-semibold text-white tabular-nums">
+        <span className="absolute right-3 top-1 rounded-full bg-rose-600 px-1.5 text-xs leading-4 font-semibold text-white tabular-nums">
           {total}
         </span>
       ) : null}
-      <span className="text-[0.65rem] font-medium">Inbox</span>
+      <span className="text-xs font-medium">Inbox</span>
     </Link>
   );
 };
