@@ -1,5 +1,6 @@
 import {
   Building2,
+  MoreHorizontal,
   House,
   Import,
   Kanban,
@@ -18,6 +19,11 @@ import { RefreshButton } from "@/components/admin/refresh-button";
 import { ThemeModeToggle } from "@/components/admin/theme-mode-toggle";
 import { UserMenu } from "@/components/admin/user-menu";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 import { useConfigurationContext } from "../root/ConfigurationContext";
 import { ImportPage } from "../misc/ImportPage";
@@ -75,6 +81,7 @@ export const SideRail = () => {
           ),
         )}
       </nav>
+      <MoreMenu />
     </aside>
   );
 };
@@ -132,6 +139,80 @@ const RailLink = ({
       </span>
     ) : null}
   </Link>
+);
+
+// Links that used to sit only in the user menu, grouped so they are easy to find.
+const MoreLink = ({
+  to,
+  label,
+  Icon,
+}: {
+  to: string;
+  label: string;
+  Icon: React.ComponentType<{ className?: string }>;
+}) => (
+  <Link
+    to={to}
+    className="flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm hover:bg-accent hover:text-accent-foreground"
+  >
+    <Icon className="size-4 text-muted-foreground" />
+    {label}
+  </Link>
+);
+
+const MoreGroup = ({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) => (
+  <div className="flex flex-col gap-0.5">
+    <p className="px-2.5 pt-2 pb-1 text-xs font-medium text-muted-foreground">
+      {title}
+    </p>
+    {children}
+  </div>
+);
+
+const MoreMenu = () => (
+  <Popover>
+    <PopoverTrigger asChild>
+      <button
+        type="button"
+        aria-label="More"
+        title="More"
+        className="mt-auto flex size-11 items-center justify-center rounded-2xl text-sidebar-foreground/75 transition-colors hover:bg-white/15 hover:text-sidebar-foreground"
+      >
+        <MoreHorizontal className="size-5" />
+      </button>
+    </PopoverTrigger>
+    <PopoverContent side="right" align="end" className="w-64 p-2">
+      <MoreGroup title="Workspace">
+        <CanAccess resource="sales" action="list">
+          <MoreLink to="/sales" label="Team" Icon={Users} />
+        </CanAccess>
+        <MoreLink to="/companies" label="Companies" Icon={Building2} />
+        <MoreLink to={ImportPage.path} label="Import data" Icon={Import} />
+      </MoreGroup>
+      <CanAccess resource="configuration" action="edit">
+        <MoreGroup title="Channels">
+          <MoreLink to="/facebook" label="Facebook connection" Icon={Plug} />
+          <MoreLink
+            to="/messenger_settings/1"
+            label="Messenger auto-replies"
+            Icon={MessageCircle}
+          />
+        </MoreGroup>
+      </CanAccess>
+      <MoreGroup title="Account">
+        <CanAccess resource="configuration" action="edit">
+          <MoreLink to="/settings" label="Settings" Icon={Settings} />
+        </CanAccess>
+        <MoreLink to="/profile" label="My profile" Icon={User} />
+      </MoreGroup>
+    </PopoverContent>
+  </Popover>
 );
 
 // Top bar: the section name, search, theme, refresh and the user menu.
