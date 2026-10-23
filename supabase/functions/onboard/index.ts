@@ -11,7 +11,14 @@ import { parseOnboarding } from "./onboardRules.ts";
 
 const signupOpen = () => Deno.env.get("SIGNUP_OPEN") === "true";
 
-const rollback = async (organisationId: number, userId?: string) => {
+// Removes what a failed sign-up left behind. The grant lets the sign-up trigger accept
+// the email, so it is removed as well.
+const rollback = async (
+  organisationId: number,
+  email: string,
+  userId?: string,
+) => {
+  await supabaseAdmin.from("signup_grants").delete().eq("email", email);
   if (userId) {
     await supabaseAdmin.from("sales").delete().eq("user_id", userId);
     await supabaseAdmin.auth.admin.deleteUser(userId);
@@ -54,18 +61,27 @@ Deno.serve((req: Request) =>
     }
     const organisationId = Number(organisation.id);
 
+    // The grant lets the sign-up trigger accept this one email, and says which
+    // organisation it belongs to.
+    const { error: grantError } = await supabaseAdmin
+      .from("signup_grants")
+      .insert({ email, organisation_id: organisationId });
+    if (grantError) {
+      console.error("Could not record the sign-up grant", grantError);
+      await rollback(organisationId, email);
+      return createErrorResponse(500, "Could not start the sign-up");
+    }
+
     let userId: string | undefined;
     try {
-      // app_metadata is set by the server only, and lets the sign-up trigger accept the user.
       const { data: created, error: userError } =
         await supabaseAdmin.auth.admin.createUser({
           email,
           password,
           user_metadata: { first_name: firstName, last_name: lastName },
-          app_metadata: { replyflow_invited: true },
         });
       if (userError || !created.user) {
-        await rollback(organisationId);
+        await rollback(organisationId, email);
         if (userError?.code === "email_exists") {
           return createErrorResponse(
             409,
@@ -95,9 +111,11 @@ Deno.serve((req: Request) =>
       const { error: inviteError } =
         await supabaseAdmin.auth.admin.inviteUserByEmail(email);
       if (inviteError) throw inviteError;
+
+      await supabaseAdmin.from("signup_grants").delete().eq("email", email);
     } catch (error) {
       console.error("Onboarding failed, rolling back", error);
-      await rollback(organisationId, userId);
+      await rollback(organisationId, email, userId);
       return createErrorResponse(
         500,
         "Could not finish setting up the business",
