@@ -147,6 +147,12 @@ export const LoginPage = (props: { redirectTo?: string }) => {
                 })}
               </Link>
             )}
+            <a
+              href="/privacy.html"
+              className="block text-xs text-center text-muted-foreground hover:underline"
+            >
+              Privacy policy
+            </a>
           </div>
         </div>
       </div>
