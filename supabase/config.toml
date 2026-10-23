@@ -194,3 +194,6 @@ verify_jwt = false
 
 [functions.go]
 verify_jwt = false
+
+[functions.data_deletion]
+verify_jwt = false
