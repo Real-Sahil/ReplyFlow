@@ -1,7 +1,8 @@
 # Privacy policy: Mere & Row (draft for publishing on the website)
 
-**Who we are.** Mere & Row is a sofa business. Our address is [COMPANY ADDRESS]. You can
-contact us at [PRIVACY EMAIL]. [ICO REGISTRATION NUMBER, if registered].
+**Who we are.** Mere & Row is a sofa business operated by DOTED LTD, registered in England and
+Wales under company number 14958214. Our registered office is Rawdon Hill Farm, Greengates Road,
+Holmfirth, HD9 3RG. You can contact us at admin@dotedco.co.uk.
 
 **What we collect.**
 - Details you give us when you enquire: name, email address, phone number and what you are
@@ -21,10 +22,10 @@ and removed on request. Order and payment records are kept for the period the la
 hosting), Meta (Facebook and Messenger), and Postmark (email). We do not sell your data.
 
 **Your rights.** You can ask to see, correct or delete your data. To delete data you sent via
-Facebook or Messenger, follow the steps at [LINK TO DATA DELETION PAGE]. For anything else,
-contact us at [PRIVACY EMAIL].
+Facebook or Messenger, send a deletion request from Facebook's data settings. For anything else,
+contact us at admin@dotedco.co.uk.
 
 **Changes.** We update this page when our practices change. The date of the last change is
 shown below.
 
-Last updated: [DATE]
+Last updated: 23 October 2026
