@@ -38,6 +38,7 @@ export const ConnectFacebookCard = () => {
   const queryClient = useQueryClient();
   const [link, setLink] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState<string | null>(null);
   const { data: pages = [] } = useQuery({
     queryKey: ["meta_pages"],
     queryFn: listPages,
@@ -82,20 +83,23 @@ export const ConnectFacebookCard = () => {
 
   const connectNow = async () => {
     setBusy(true);
+    setProblem(null);
     try {
       window.location.assign(await startLink());
     } catch (error) {
-      notify((error as Error).message, { type: "error" });
+      // Kept on the card, not only in a toast, so the reason stays visible.
+      setProblem((error as Error).message);
       setBusy(false);
     }
   };
 
   const makeLink = async () => {
     setBusy(true);
+    setProblem(null);
     try {
       setLink(await startLink());
     } catch (error) {
-      notify((error as Error).message, { type: "error" });
+      setProblem((error as Error).message);
     } finally {
       setBusy(false);
     }
@@ -135,6 +139,12 @@ export const ConnectFacebookCard = () => {
             Get a link for a Page admin
           </Button>
         </div>
+
+        {problem && (
+          <p role="alert" className="text-sm text-destructive">
+            {problem}
+          </p>
+        )}
 
         {link && (
           <div className="flex flex-col gap-2 rounded-md border p-3">
