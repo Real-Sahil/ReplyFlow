@@ -1,5 +1,6 @@
 import {
   Building2,
+  ChevronLeft,
   MoreHorizontal,
   House,
   Import,
@@ -219,13 +220,34 @@ const MoreMenu = () => (
 export const TopBar = () => {
   const location = useLocation();
   const active = sectionFor(location.pathname);
-  const label = SECTIONS.find((s) => s.path === active)?.label ?? "ReplyFlow";
+  const section = SECTIONS.find((s) => s.path === active);
+  const segments = location.pathname.split("/").filter(Boolean);
+  // A record page: /contacts/12/show, or /contacts/create.
+  const isRecord = !!section && section.path !== "/" && segments.length > 1;
+  const recordTitle =
+    segments[1] === "create"
+      ? "New record"
+      : /^\d+$/.test(segments[1] ?? "")
+        ? "Record"
+        : null;
+  const title =
+    isRecord && recordTitle ? recordTitle : (section?.label ?? "ReplyFlow");
   return (
     <header className="flex items-center justify-between gap-3 rounded-3xl bg-card px-4 py-3 shadow-sm md:px-6">
       <div className="min-w-0">
-        <p className="text-xs text-muted-foreground">Workspace</p>
+        {isRecord && section ? (
+          <Link
+            to={section.path}
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
+          >
+            <ChevronLeft className="size-3.5" aria-hidden />
+            {section.label}
+          </Link>
+        ) : (
+          <p className="text-xs text-muted-foreground">Workspace</p>
+        )}
         <h1 className="truncate text-lg font-semibold tracking-tight">
-          {label}
+          {title}
         </h1>
       </div>
       <div className="flex shrink-0 items-center gap-1">
