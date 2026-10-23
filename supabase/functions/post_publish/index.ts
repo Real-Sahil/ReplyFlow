@@ -7,7 +7,11 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { AuthMiddleware, UserMiddleware } from "../_shared/authentication.ts";
 import { corsHeaders, OptionsMiddleware } from "../_shared/cors.ts";
 import { getUserSale } from "../_shared/getUserSale.ts";
-import { getPageToken } from "../_shared/metaToken.ts";
+import {
+  getDefaultPage,
+  getPageToken,
+  getPageTokenFor,
+} from "../_shared/metaToken.ts";
 import {
   assertMetaOpen,
   MetaBlockedError,
@@ -87,6 +91,20 @@ const autopilotCall = async (req: Request) => {
   return data === true;
 };
 
+// The Page a post goes to. A post that names a Page only ever uses that Page's token, so it
+// cannot end up on another Page by accident. A post without one uses the default Page on the
+// list, and falls back to the connected Page if the list is empty.
+const choosePage = async (
+  pageIdOnPost: string | null,
+): Promise<{ pageId: string | null; token: string | null }> => {
+  if (pageIdOnPost) {
+    return { pageId: pageIdOnPost, token: await getPageTokenFor(pageIdOnPost) };
+  }
+  const fallback = await getDefaultPage();
+  if (fallback) return fallback;
+  return { pageId: null, token: await getPageToken() };
+};
+
 const publish = async (
   req: Request,
   sale: {
@@ -151,7 +169,8 @@ const publish = async (
     }
   }
 
-  const token = await getPageToken();
+  const chosen = await choosePage(post.page_id ? String(post.page_id) : null);
+  const token = chosen.token;
   if (!token) {
     return createErrorResponse(503, "Facebook access is not set up yet", {
       code: "not_configured",
@@ -177,7 +196,7 @@ const publish = async (
     ) {
       return createErrorResponse(409, "This post is already on Facebook");
     }
-    const page = await pageId();
+    const page = chosen.pageId ?? (await pageId());
     if (!page) {
       return createErrorResponse(
         503,

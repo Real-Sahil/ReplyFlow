@@ -3,8 +3,10 @@ import { bestSlots, MIN_POSTS_PER_SLOT } from "./bestTime";
 
 // January dates: London is on GMT then, so UTC and London time are the same.
 // 5 January 2026 is a Monday.
-const monday6pm = (week: number) => new Date(Date.UTC(2026, 0, 5 + week * 7, 18, 0)).toISOString();
-const tuesday9am = (week: number) => new Date(Date.UTC(2026, 0, 6 + week * 7, 9, 0)).toISOString();
+const monday6pm = (week: number) =>
+  new Date(Date.UTC(2026, 0, 5 + week * 7, 18, 0)).toISOString();
+const tuesday9am = (week: number) =>
+  new Date(Date.UTC(2026, 0, 6 + week * 7, 9, 0)).toISOString();
 
 describe("bestSlots", () => {
   it("ranks slots by average engagement, read on the London clock", () => {
@@ -32,6 +34,8 @@ describe("bestSlots", () => {
   });
 
   it("skips posts with a missing date or engagement", () => {
-    expect(bestSlots([{ published_at: "not a date", engagement: 5 }]).enough).toBe(false);
+    expect(
+      bestSlots([{ published_at: "not a date", engagement: 5 }]).enough,
+    ).toBe(false);
   });
 });

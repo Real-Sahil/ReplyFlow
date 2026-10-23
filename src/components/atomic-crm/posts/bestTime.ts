@@ -13,10 +13,21 @@ const LONDON = new Intl.DateTimeFormat("en-GB", {
   hour12: false,
 });
 
-export type Slot = { day: string; hour: number; average: number; posts: number };
+export type Slot = {
+  day: string;
+  hour: number;
+  average: number;
+  posts: number;
+};
 
-export const bestSlots = (posts: PastPost[], count = 3): { slots: Slot[]; enough: boolean } => {
-  const buckets = new Map<string, { total: number; posts: number; day: string; hour: number }>();
+export const bestSlots = (
+  posts: PastPost[],
+  count = 3,
+): { slots: Slot[]; enough: boolean } => {
+  const buckets = new Map<
+    string,
+    { total: number; posts: number; day: string; hour: number }
+  >();
   for (const post of posts) {
     const time = Date.parse(post.published_at);
     if (Number.isNaN(time) || !Number.isFinite(post.engagement)) continue;
@@ -31,7 +42,12 @@ export const bestSlots = (posts: PastPost[], count = 3): { slots: Slot[]; enough
   }
   const slots = [...buckets.values()]
     .filter((b) => b.posts >= MIN_POSTS_PER_SLOT)
-    .map((b) => ({ day: b.day, hour: b.hour, average: b.total / b.posts, posts: b.posts }))
+    .map((b) => ({
+      day: b.day,
+      hour: b.hour,
+      average: b.total / b.posts,
+      posts: b.posts,
+    }))
     .sort((a, b) => b.average - a.average)
     .slice(0, count);
   return { slots, enough: slots.length > 0 };

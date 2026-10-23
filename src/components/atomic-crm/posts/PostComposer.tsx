@@ -22,6 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
 import { ProductPicker } from "../contacts/MessengerConversation";
+import { PagePicker } from "./PagePicker";
 import { formatPrice } from "../products/formatPrice";
 import { getSupabaseClient } from "../providers/supabase/supabase";
 import { AiWriting } from "./AiWriting";
@@ -116,6 +117,9 @@ export const PostComposer = () => {
     ?.administrator;
 
   const [message, setMessage] = useState(record?.message ?? "");
+  const [pageId, setPageId] = useState<string>(
+    (record as { page_id?: string | null } | undefined)?.page_id ?? "",
+  );
   const [productId, setProductId] = useState<number | null>(
     record?.product_id ?? null,
   );
@@ -183,6 +187,7 @@ export const PostComposer = () => {
 
   const values = async () => ({
     message: message.trim(),
+    page_id: pageId || null,
     product_id: productId,
     image_url: imageUrl.trim() || null,
     link_url: linkUrl.trim() || null,
@@ -310,6 +315,11 @@ export const PostComposer = () => {
                 : "already on Facebook."}
             </p>
           )}
+          <PagePicker
+            value={pageId}
+            onChange={setPageId}
+            disabled={!editable}
+          />
           <Textarea
             rows={7}
             maxLength={8000}

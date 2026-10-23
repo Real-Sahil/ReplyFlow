@@ -197,3 +197,6 @@ verify_jwt = false
 
 [functions.data_deletion]
 verify_jwt = false
+
+[functions.meta_pages]
+verify_jwt = false

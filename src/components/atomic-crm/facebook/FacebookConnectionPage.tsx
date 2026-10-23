@@ -1,3 +1,4 @@
+import { MetaPagesCard } from "./MetaPagesCard";
 import { useCallback, useEffect, useState } from "react";
 import { useNotify } from "ra-core";
 import { Check, ExternalLink, RefreshCw, X } from "lucide-react";
@@ -120,6 +121,7 @@ export const FacebookConnectionPage = () => {
 
   return (
     <div className="mx-auto mt-2 flex max-w-3xl flex-col gap-4">
+      <MetaPagesCard />
       <div className="flex items-center">
         <h1 className="flex-1 text-2xl font-semibold tracking-tight">
           Facebook connection

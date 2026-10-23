@@ -14,3 +14,33 @@ export const getPageToken = async (): Promise<string | null> => {
     null
   );
 };
+
+// The token for one Page the team has added (see meta_pages). Null if that Page is not on
+// the list.
+export const getPageTokenFor = async (
+  pageId: string,
+): Promise<string | null> => {
+  const { data } = await supabaseAdmin
+    .from("meta_pages")
+    .select("access_token")
+    .eq("page_id", pageId)
+    .maybeSingle();
+  return (data?.access_token as string | null) ?? null;
+};
+
+// The Page and token used when a post does not name one: the default on the list, if any.
+export const getDefaultPage = async (): Promise<{
+  pageId: string;
+  token: string;
+} | null> => {
+  const { data } = await supabaseAdmin
+    .from("meta_pages")
+    .select("page_id, access_token")
+    .eq("is_default", true)
+    .maybeSingle();
+  if (!data?.access_token) return null;
+  return {
+    pageId: String(data.page_id),
+    token: String(data.access_token),
+  };
+};

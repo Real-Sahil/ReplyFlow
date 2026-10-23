@@ -9,7 +9,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { AuthMiddleware, UserMiddleware } from "../_shared/authentication.ts";
 import { corsHeaders, OptionsMiddleware } from "../_shared/cors.ts";
 import { getUserSale } from "../_shared/getUserSale.ts";
-import { getPageToken } from "../_shared/metaToken.ts";
+import { getPageToken, getPageTokenFor } from "../_shared/metaToken.ts";
 import {
   assertMetaOpen,
   MetaBlockedError,
@@ -190,6 +190,11 @@ Deno.serve((req: Request) =>
           );
         }
 
+        // Replies go out from the Page the customer messaged. An older conversation without a
+        // known Page uses the connected Page, as before.
+        const replyToken =
+          (await getPageTokenFor(String(last.page_id))) ?? token;
+
         const outgoing: Array<{ message: OutgoingMessage; logged: string }> =
           [];
         if (hasProduct) {
@@ -225,7 +230,11 @@ Deno.serve((req: Request) =>
         const sentIds: string[] = [];
         try {
           for (const item of outgoing) {
-            const messageId = await sendToMeta(token, last.psid, item.message);
+            const messageId = await sendToMeta(
+              replyToken,
+              last.psid,
+              item.message,
+            );
             sentIds.push(messageId);
             await supabaseAdmin.from("messenger_messages").insert({
               mid: messageId,
