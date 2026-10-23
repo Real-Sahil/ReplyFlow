@@ -156,14 +156,27 @@ const callback = async (url: URL) => {
     const pages = await listPages(String(longLived.access_token));
     if (pages.length === 0) return back("connect=no_pages");
 
+    // The Pages belong to the organisation of the administrator who made the link.
+    const { data: sale } = await supabaseAdmin
+      .from("sales")
+      .select("organisation_id")
+      .eq("id", Number(saleId))
+      .maybeSingle();
+    if (!sale?.organisation_id) return back("connect=failed");
+
     let subscribeFailed = 0;
     for (const page of pages) {
       const { error } = await supabaseAdmin.rpc("meta_page_store", {
         p_page_id: page.id,
         p_name: page.name,
         p_token: page.access_token,
+        p_organisation_id: Number(sale.organisation_id),
       });
-      if (error) throw new Error(error.message);
+      if (error) {
+        // A Page already connected to another business cannot be taken over.
+        if (error.code === "42501") return back("connect=page_taken");
+        throw new Error(error.message);
+      }
       if (!(await subscribePage(page.id, page.access_token))) subscribeFailed++;
     }
 

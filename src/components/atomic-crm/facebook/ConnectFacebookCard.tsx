@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNotify } from "ra-core";
 import { Copy, Facebook } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
 import { getSupabaseClient } from "../providers/supabase/supabase";
+import { listPages } from "./metaPages";
 
 // Asks the server for a Facebook link. The link carries a signed, expiring state, so it
 // only works for this app and only until it expires.
@@ -37,6 +38,11 @@ export const ConnectFacebookCard = () => {
   const queryClient = useQueryClient();
   const [link, setLink] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const { data: pages = [] } = useQuery({
+    queryKey: ["meta_pages"],
+    queryFn: listPages,
+  });
+  const connectedCount = pages.length;
 
   // Show the result of a return from Facebook once, then clear it from the address.
   useEffect(() => {
@@ -61,6 +67,8 @@ export const ConnectFacebookCard = () => {
         expired: "That link has expired. Ask for a new one.",
         no_pages:
           "No Pages were ticked. Connect again and tick the Pages you manage.",
+        page_taken:
+          "One of those Pages is already connected to another business, so it was not added. Connect the others, or ask that business to remove it first.",
         failed: "Facebook could not be connected. Try again.",
       };
       notify(
@@ -111,13 +119,17 @@ export const ConnectFacebookCard = () => {
           <h2 className="text-lg font-semibold">Connect Facebook</h2>
           <p className="text-sm text-muted-foreground">
             You do not need a developer account or a token. Sign in to Facebook,
-            approve ReplyFlow, and tick the Pages you manage.
+            approve ReplyFlow, and tick every Page you manage. You can connect
+            more than one Page, and add more later.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <Button onClick={connectNow} disabled={busy}>
-            <Facebook /> Connect Facebook
+            <Facebook />{" "}
+            {connectedCount === 0
+              ? "Connect Facebook Pages"
+              : "Add another Page"}
           </Button>
           <Button variant="outline" onClick={makeLink} disabled={busy}>
             Get a link for a Page admin

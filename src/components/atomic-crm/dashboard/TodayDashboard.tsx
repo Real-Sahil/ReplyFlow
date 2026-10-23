@@ -9,6 +9,7 @@ import {
   Reply,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { FacebookPagesPrompt } from "../facebook/FacebookPagesPrompt";
 import { cn } from "@/lib/utils";
 
 import { formatPrice } from "../products/formatPrice";
@@ -151,6 +152,7 @@ export const TodayDashboard = () => {
 
   return (
     <div className="mt-2 flex flex-col gap-6">
+      <FacebookPagesPrompt />
       <div>
         <h1 className="text-3xl font-semibold tracking-tight">
           {greeting()}

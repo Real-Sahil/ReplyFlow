@@ -28,14 +28,27 @@ const checkPageToken = async (token: string) => {
   return { pageId: String(json.id), name: String(json.name ?? "") };
 };
 
-const setDefault = async (pageId: string) => {
+// True when the Page is on this organisation's list. Pages of other organisations are invisible.
+const ownsPage = async (pageId: string, organisationId: number) => {
+  const { data } = await supabaseAdmin
+    .from("meta_pages")
+    .select("page_id")
+    .eq("page_id", pageId)
+    .eq("organisation_id", organisationId)
+    .maybeSingle();
+  return !!data;
+};
+
+const setDefault = async (pageId: string, organisationId: number) => {
   await supabaseAdmin
     .from("meta_pages")
     .update({ is_default: false })
+    .eq("organisation_id", organisationId)
     .eq("is_default", true);
   const { error, count } = await supabaseAdmin
     .from("meta_pages")
     .update({ is_default: true }, { count: "exact" })
+    .eq("organisation_id", organisationId)
     .eq("page_id", pageId);
   return !error && (count ?? 1) > 0;
 };
@@ -80,6 +93,7 @@ Deno.serve((req: Request) =>
             p_page_id: page.pageId,
             p_name: page.name,
             p_token: token,
+            p_organisation_id: Number(sale.organisation_id),
           });
           if (error) {
             return createErrorResponse(500, "The Page could not be saved");
@@ -91,13 +105,19 @@ Deno.serve((req: Request) =>
         if (!pageId) return createErrorResponse(400, "Choose a Page.");
 
         if (input.action === "default") {
-          if (!(await setDefault(pageId))) {
+          if (!(await ownsPage(pageId, Number(sale.organisation_id)))) {
+            return createErrorResponse(404, "That Page is not on the list");
+          }
+          if (!(await setDefault(pageId, Number(sale.organisation_id)))) {
             return createErrorResponse(404, "That Page is not on the list");
           }
           return ok({ page_id: pageId });
         }
 
         if (input.action === "remove") {
+          if (!(await ownsPage(pageId, Number(sale.organisation_id)))) {
+            return createErrorResponse(404, "That Page is not on the list");
+          }
           const { data: removed, error } = await supabaseAdmin.rpc(
             "meta_page_forget",
             { p_page_id: pageId },
