@@ -111,7 +111,7 @@ const runAutoReply = async (message: InboundMessage, messageRowId: number) => {
 
     const { data: row } = await supabaseAdmin
       .from("messenger_messages")
-      .select("contact_id, deal_id")
+      .select("contact_id, deal_id, organisation_id")
       .eq("id", messageRowId)
       .single();
     if (!row?.contact_id) return;
@@ -142,6 +142,7 @@ const runAutoReply = async (message: InboundMessage, messageRowId: number) => {
     // Save progress first, so a crash while sending never repeats a question.
     await supabaseAdmin.from("messenger_conversation_state").upsert({
       contact_id: contactId,
+      organisation_id: row.organisation_id,
       ...result.state,
       updated_at: new Date().toISOString(),
     });
@@ -156,11 +157,13 @@ const runAutoReply = async (message: InboundMessage, messageRowId: number) => {
         deal_id: row.deal_id,
         body: text,
         direction: "outbound",
+        organisation_id: row.organisation_id,
       });
     }
 
     if (result.finishedAnswers && row.deal_id) {
       await supabaseAdmin.from("deal_notes").insert({
+        organisation_id: row.organisation_id,
         deal_id: row.deal_id,
         text:
           "Quick questions answered on Messenger:\n" +
@@ -171,6 +174,7 @@ const runAutoReply = async (message: InboundMessage, messageRowId: number) => {
     }
     if (result.handoffRequested) {
       await supabaseAdmin.from("tasks").insert({
+        organisation_id: row.organisation_id,
         contact_id: contactId,
         deal_id: row.deal_id,
         text: "Customer asked for a person on Messenger: reply to them",

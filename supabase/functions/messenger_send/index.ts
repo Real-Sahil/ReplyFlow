@@ -170,8 +170,9 @@ Deno.serve((req: Request) =>
 
         const { data: last } = await supabaseAdmin
           .from("messenger_messages")
-          .select("psid, page_id, deal_id, sent_at")
+          .select("psid, page_id, deal_id, sent_at, organisation_id")
           .eq("contact_id", input.contact_id)
+          .eq("organisation_id", sale.organisation_id)
           .eq("direction", "inbound")
           .order("sent_at", { ascending: false })
           .limit(1)
@@ -204,6 +205,7 @@ Deno.serve((req: Request) =>
               "title, price_pence, original_price_pence, source_url, image_url",
             )
             .eq("id", input.product_id)
+            .eq("organisation_id", sale.organisation_id)
             .maybeSingle();
           if (!product) {
             return createErrorResponse(404, "Product not found");
@@ -242,6 +244,7 @@ Deno.serve((req: Request) =>
               psid: last.psid,
               contact_id: input.contact_id,
               deal_id: last.deal_id,
+              organisation_id: last.organisation_id,
               body: item.logged,
               direction: "outbound",
               sent_by: sale.id,
@@ -260,6 +263,7 @@ Deno.serve((req: Request) =>
         // A logged reply counts as activity, which closes the "reply to enquiry" reminder.
         if (last.deal_id) {
           await supabaseAdmin.from("deal_notes").insert({
+            organisation_id: last.organisation_id,
             deal_id: last.deal_id,
             text: `Replied on Messenger: ${outgoing.map((o) => o.logged).join(" / ")}`.slice(
               0,
