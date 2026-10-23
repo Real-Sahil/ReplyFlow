@@ -1,75 +1,54 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        background-color: #f4f4f4;
-        margin: 0;
-        padding: 0;
-      }
-      .container {
-        width: 100%;
-        max-width: 600px;
-        margin: 0 auto;
-        background-color: #ffffff;
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-      }
-      .header {
-        text-align: center;
-        padding: 10px 0;
-      }
-      .header h2 {
-        margin: 0;
-        color: #333333;
-      }
-      .content {
-        padding: 20px;
-        line-height: 1.6;
-        color: #555555;
-      }
-      .content p {
-        margin: 0 0 10px;
-      }
-      .button {
-        display: block;
-        width: 200px;
-        margin: 20px auto;
-        padding: 10px;
-        text-align: center;
-        background-color: #007bff;
-        color: #ffffff !important;
-        text-decoration: none;
-        border-radius: 5px;
-      }
-    </style>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Reset your ReplyFlow password</title>
   </head>
-  <body>
-    <div class="container">
-      <div class="header">
-        <h2>Reset Your Atomic CRM Password</h2>
-      </div>
-      <div class="content">
-        <p>Hello,</p>
-        <p>
-          We've received a request to reset the password for the Atomic CRM
-          account associated with the email {{ .Email }}. No changes have been
-          made to your account yet.
-        </p>
-        <p>You can reset your password by clicking the button below.</p>
-        <p>
-          <a href="{{ .ConfirmationURL }}/auth-callback.html" class="button"
-            >Reset your password</a
-          >
-        </p>
-        <p>
-          If you did not request a new password, please contact the Atomic CRM
-          administrator immediately.
-        </p>
-        <p>The Atomic CRM team</p>
-      </div>
-    </div>
+  <body style="margin:0;padding:0;background-color:#f3f4f6;font-family:Arial,Helvetica,sans-serif;color:#111827;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f3f4f6;padding:32px 16px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background-color:#ffffff;border-radius:12px;overflow:hidden;">
+            <tr>
+              <td style="background-color:#0a0a0a;padding:24px 32px;">
+                <span style="font-size:20px;font-weight:700;color:#ffffff;letter-spacing:0.2px;">ReplyFlow</span>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:32px;">
+                <h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;color:#111827;">Reset your password</h1>
+                <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#374151;">
+                  We received a request to reset the password for your ReplyFlow account. Choose a new password using the button below.
+                </p>
+                <table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0;">
+                  <tr>
+                    <td align="center" style="border-radius:8px;background-color:#1d4ed8;">
+                      <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:12px 24px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:8px;">Reset password</a>
+                    </td>
+                  </tr>
+                </table>
+                <p style="margin:0 0 8px;font-size:13px;line-height:1.6;color:#6b7280;">
+                  If the button does not work, copy this link into your browser:
+                </p>
+                <p style="margin:0 0 24px;font-size:13px;line-height:1.6;word-break:break-all;color:#1d4ed8;">
+                  {{ .ConfirmationURL }}
+                </p>
+                <p style="margin:0;font-size:13px;line-height:1.6;color:#6b7280;">
+                  If you did not request a reset, you can ignore this email. Your password will not change.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:20px 32px;border-top:1px solid #e5e7eb;">
+                <p style="margin:0;font-size:12px;line-height:1.6;color:#9ca3af;">
+                  Sent to {{ .Email }} by ReplyFlow.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
   </body>
 </html>
