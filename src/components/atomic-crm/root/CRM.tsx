@@ -1,6 +1,7 @@
 import { TransactionsPage } from "../orders/TransactionsPage";
 import { TrackedLinksPage } from "../links/TrackedLinksPage";
 import { PostImport } from "../posts/PostImport";
+import { AccountsPage } from "../accounts/AccountsPage";
 import type {
   CoreAdminProps,
   AuthProvider,
@@ -274,6 +275,7 @@ const DesktopAdmin = (
         <Route path="/transactions" element={<TransactionsPage />} />
         <Route path="/links" element={<TrackedLinksPage />} />
         <Route path="/posts/import" element={<PostImport />} />
+        <Route path="/accounts" element={<AccountsPage />} />
         <Route path={ChangelogPage.path} element={<ChangelogPage />} />
       </CustomRoutes>
       <Resource name="deals" {...deals} />
@@ -364,6 +366,7 @@ const MobileAdmin = (
           <Route path="/transactions" element={<TransactionsPage />} />
           <Route path="/links" element={<TrackedLinksPage />} />
           <Route path="/posts/import" element={<PostImport />} />
+          <Route path="/accounts" element={<AccountsPage />} />
         </CustomRoutes>
         <Resource
           name="contacts"

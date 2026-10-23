@@ -77,6 +77,9 @@ export const OrderList = () => {
       actions={
         <TopToolbar>
           <Button asChild variant="outline" size="sm">
+            <Link to="/accounts">Account</Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
             <Link to="/transactions">Transactions</Link>
           </Button>
           <ExportDialogButton config={ordersExport()} />

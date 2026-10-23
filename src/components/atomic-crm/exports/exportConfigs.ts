@@ -284,3 +284,41 @@ export const productsExport = (): ExportConfig => ({
     created: day(row.created_at),
   }),
 });
+
+// The account, as it is recorded: one line per delivered and paid order, with the date and time
+// the order became both. Read from the account_ledger view.
+export const accountExport = (): ExportConfig => ({
+  filename: "account",
+  title: "Account",
+  table: "account_ledger",
+  select:
+    "order_id, reference, product, customer, price_pence, paid_pence, entry_at",
+  dateColumn: "entry_at",
+  dateKind: "timestamp",
+  filters: [],
+  columns: [
+    { key: "date", label: "Date" },
+    { key: "time", label: "Time" },
+    { key: "order", label: "Order" },
+    { key: "product", label: "Product" },
+    { key: "customer", label: "Customer" },
+    { key: "price", label: "Price (£)" },
+    { key: "paid", label: "Paid (£)" },
+  ],
+  toRow: (row: Row) => {
+    const when = new Date(String(row.entry_at));
+    return {
+      date: when.toLocaleDateString("en-CA", { timeZone: "Europe/London" }),
+      time: when.toLocaleTimeString("en-GB", {
+        timeZone: "Europe/London",
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      order: text(row.reference),
+      product: text(row.product),
+      customer: text(row.customer),
+      price: pounds(row.price_pence),
+      paid: pounds(row.paid_pence),
+    };
+  },
+});
