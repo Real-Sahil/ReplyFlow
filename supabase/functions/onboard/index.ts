@@ -74,7 +74,10 @@ Deno.serve((req: Request) =>
           );
         }
         console.error("Could not create the user", userError);
-        return createErrorResponse(400, "Could not create the account");
+        return createErrorResponse(
+          400,
+          userError?.message ?? "Could not create the account",
+        );
       }
       userId = created.user.id;
 
