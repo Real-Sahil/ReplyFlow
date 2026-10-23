@@ -385,6 +385,9 @@ export const PostList = () => {
         </h1>
         <Tabs tab={tab} onChange={setTab} />
         <Button asChild variant="outline">
+          <Link to="/posts/import">Import drafts</Link>
+        </Button>
+        <Button asChild variant="outline">
           <Link to="/links">Tracked links</Link>
         </Button>
         <Button asChild>
