@@ -8,7 +8,7 @@
 //   META_PAGE_ACCESS_TOKEN optional fallback for the Page token (see metaToken.ts)
 
 import { isValidSignature } from "../messenger_webhook/webhook.ts";
-import { getPageToken, getPageTokenFor } from "../_shared/metaToken.ts";
+import { getPageTokenFor } from "../_shared/metaToken.ts";
 import { assertMetaOpen, recordIfActionBlock } from "../_shared/metaCircuit.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import {
@@ -38,7 +38,7 @@ const organisationFor = async (pageId: string): Promise<number> => {
 };
 
 const fetchLead = async (leadgenId: string, pageId: string): Promise<Lead> => {
-  const token = (await getPageTokenFor(pageId)) ?? (await getPageToken());
+  const token = await getPageTokenFor(pageId);
   if (!token) throw new Error("No Page access token is set");
   await assertMetaOpen();
   const response = await fetch(

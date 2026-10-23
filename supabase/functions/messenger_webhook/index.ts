@@ -6,7 +6,7 @@
 //                          accepted automatically; with no Pages configured, all are accepted
 //   META_PAGE_ACCESS_TOKEN optional: lets us look up the customer's name
 
-import { getPageToken, getPageTokenFor } from "../_shared/metaToken.ts";
+import { getPageTokenFor } from "../_shared/metaToken.ts";
 import { assertMetaOpen, recordIfActionBlock } from "../_shared/metaCircuit.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import {
@@ -37,9 +37,8 @@ const allowedPages = async (): Promise<Set<string> | null> => {
   return ids.size ? ids : null;
 };
 
-// The token of the Page a message arrived on, falling back to the connected Page.
-const tokenFor = async (pageId: string) =>
-  (await getPageTokenFor(pageId)) ?? (await getPageToken());
+// The token of the Page a message arrived on. Never another Page's token.
+const tokenFor = async (pageId: string) => getPageTokenFor(pageId);
 
 const fetchProfile = async (psid: string, pageId: string) => {
   const token = await tokenFor(pageId);

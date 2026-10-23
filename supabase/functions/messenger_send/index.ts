@@ -130,7 +130,7 @@ Deno.serve((req: Request) =>
           );
         }
 
-        const token = await getPageToken();
+        const token = await getPageToken(Number(sale.organisation_id));
         if (!token) {
           return createErrorResponse(
             503,

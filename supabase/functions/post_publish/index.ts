@@ -62,24 +62,6 @@ const ok = (data: unknown) =>
     headers: { "Content-Type": "application/json", ...corsHeaders },
   });
 
-const pageId = async () => {
-  const fromEnv = Deno.env.get("META_PAGE_ID");
-  if (fromEnv) return fromEnv;
-  const { data: stored } = await supabaseAdmin
-    .from("meta_connection")
-    .select("page_id")
-    .eq("id", 1)
-    .maybeSingle();
-  if (stored?.page_id) return stored.page_id as string;
-  const { data } = await supabaseAdmin
-    .from("messenger_messages")
-    .select("page_id")
-    .order("id", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  return (data?.page_id as string | undefined) ?? null;
-};
-
 // The scheduled autopilot job sends the key from Vault. It may only schedule posts
 // an administrator has already approved, checked below.
 const autopilotCall = async (req: Request) => {
@@ -101,9 +83,10 @@ const choosePage = async (
   if (pageIdOnPost) {
     return { pageId: pageIdOnPost, token: await getPageTokenFor(pageIdOnPost) };
   }
+  if (organisationId === undefined) return { pageId: null, token: null };
   const fallback = await getDefaultPage(organisationId);
   if (fallback) return fallback;
-  return { pageId: null, token: await getPageToken() };
+  return { pageId: null, token: await getPageToken(organisationId) };
 };
 
 const publish = async (
@@ -207,7 +190,7 @@ const publish = async (
     ) {
       return createErrorResponse(409, "This post is already on Facebook");
     }
-    const page = chosen.pageId ?? (await pageId());
+    const page = chosen.pageId;
     if (!page) {
       return createErrorResponse(
         503,

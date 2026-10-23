@@ -42,7 +42,7 @@ const ok = (data: unknown) =>
     headers: { "Content-Type": "application/json", ...corsHeaders },
   });
 
-const checkConnection = async () => {
+const checkConnection = async (organisationId: number) => {
   // While Meta has blocked the Page, send no Graph traffic at all: report the block only.
   const circuit = await circuitState();
   if (circuit.blocked) {
@@ -67,12 +67,12 @@ const checkConnection = async () => {
     .select("page_access_token, page_id, page_name, saved_at")
     .eq("id", 1)
     .maybeSingle();
-  const token = await getPageToken();
+  const token = await getPageToken(organisationId);
   const source = stored?.page_access_token
     ? "app"
     : token
       ? "connected"
-      : Deno.env.get("META_PAGE_ACCESS_TOKEN")
+      : organisationId === 1 && Deno.env.get("META_PAGE_ACCESS_TOKEN")
         ? "secret"
         : "none";
   const secrets = {
@@ -172,7 +172,8 @@ Deno.serve((req: Request) =>
           return createErrorResponse(400, "Invalid request");
         }
 
-        if (input.action === "status") return ok(await checkConnection());
+        if (input.action === "status")
+          return ok(await checkConnection(Number(sale.organisation_id)));
 
         if (input.action === "clear_block") {
           await supabaseAdmin
@@ -185,7 +186,7 @@ Deno.serve((req: Request) =>
               cleared_at: new Date().toISOString(),
             })
             .eq("id", 1);
-          return ok(await checkConnection());
+          return ok(await checkConnection(Number(sale.organisation_id)));
         }
 
         // The pasted token is the one shared fallback, so only Mere & Row may change it.
@@ -212,7 +213,7 @@ Deno.serve((req: Request) =>
               saved_at: new Date().toISOString(),
             })
             .eq("id", 1);
-          return ok(await checkConnection());
+          return ok(await checkConnection(Number(sale.organisation_id)));
         }
 
         if (input.action === "save_token") {
@@ -258,7 +259,7 @@ Deno.serve((req: Request) =>
               saved_at: new Date().toISOString(),
             })
             .eq("id", 1);
-          return ok(await checkConnection());
+          return ok(await checkConnection(Number(sale.organisation_id)));
         }
 
         return createErrorResponse(400, "Unknown action");

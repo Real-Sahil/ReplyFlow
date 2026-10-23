@@ -6,7 +6,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { AuthMiddleware, UserMiddleware } from "../_shared/authentication.ts";
 import { corsHeaders, OptionsMiddleware } from "../_shared/cors.ts";
 import { getUserSale } from "../_shared/getUserSale.ts";
-import { getPageToken, getPageTokenFor } from "../_shared/metaToken.ts";
+import { getPageTokenFor } from "../_shared/metaToken.ts";
 import {
   assertMetaOpen,
   MetaBlockedError,
@@ -111,9 +111,7 @@ Deno.serve((req: Request) =>
           "private_reply",
         ].includes(input.action);
         // The comment's own Page answers, so a reply never goes out from another business's Page.
-        const token =
-          (await getPageTokenFor(String(comment.page_id))) ??
-          (await getPageToken());
+        const token = await getPageTokenFor(String(comment.page_id));
         if (needsFacebook && !token) {
           return createErrorResponse(503, "Facebook access is not set up yet", {
             code: "not_configured",
