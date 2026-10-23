@@ -44,6 +44,8 @@ const dialogUrl = (state: string) =>
     state,
     response_type: "code",
     config_id: LOGIN_CONFIG_ID,
+    // Show the permission and Page screens again, even when the app was approved before.
+    auth_type: "rerequest",
   })}`;
 
 // One Graph call. Throws with Facebook's message when the call fails.
