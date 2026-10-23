@@ -6,7 +6,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { AuthMiddleware, UserMiddleware } from "../_shared/authentication.ts";
 import { corsHeaders, OptionsMiddleware } from "../_shared/cors.ts";
 import { getUserSale } from "../_shared/getUserSale.ts";
-import { getPageToken } from "../_shared/metaToken.ts";
+import { getPageToken, getPageTokenFor } from "../_shared/metaToken.ts";
 import {
   assertMetaOpen,
   MetaBlockedError,
@@ -100,6 +100,7 @@ Deno.serve((req: Request) =>
           .from("page_comments")
           .select("*")
           .eq("id", input.id)
+          .eq("organisation_id", sale.organisation_id)
           .maybeSingle();
         if (!comment) return createErrorResponse(404, "Comment not found");
 
@@ -109,7 +110,10 @@ Deno.serve((req: Request) =>
           "unhide",
           "private_reply",
         ].includes(input.action);
-        const token = await getPageToken();
+        // The comment's own Page answers, so a reply never goes out from another business's Page.
+        const token =
+          (await getPageTokenFor(String(comment.page_id))) ??
+          (await getPageToken());
         if (needsFacebook && !token) {
           return createErrorResponse(503, "Facebook access is not set up yet", {
             code: "not_configured",
@@ -193,6 +197,7 @@ Deno.serve((req: Request) =>
                   body: text,
                   direction: "outbound",
                   sent_by: sale.id,
+                  organisation_id: comment.organisation_id,
                 });
               }
               return ok({ status: "replied", contact_id: contactId });

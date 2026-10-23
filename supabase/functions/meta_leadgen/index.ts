@@ -8,7 +8,7 @@
 //   META_PAGE_ACCESS_TOKEN optional fallback for the Page token (see metaToken.ts)
 
 import { isValidSignature } from "../messenger_webhook/webhook.ts";
-import { getPageToken } from "../_shared/metaToken.ts";
+import { getPageToken, getPageTokenFor } from "../_shared/metaToken.ts";
 import { assertMetaOpen, recordIfActionBlock } from "../_shared/metaCircuit.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import {
@@ -27,8 +27,18 @@ type Lead = {
   form_id?: string;
 };
 
-const fetchLead = async (leadgenId: string): Promise<Lead> => {
-  const token = await getPageToken();
+// The organisation that owns the Page a lead came from. Pages not on the list use Mere & Row.
+const organisationFor = async (pageId: string): Promise<number> => {
+  const { data } = await supabaseAdmin
+    .from("meta_pages")
+    .select("organisation_id")
+    .eq("page_id", pageId)
+    .maybeSingle();
+  return Number(data?.organisation_id ?? 1);
+};
+
+const fetchLead = async (leadgenId: string, pageId: string): Promise<Lead> => {
+  const token = (await getPageTokenFor(pageId)) ?? (await getPageToken());
   if (!token) throw new Error("No Page access token is set");
   await assertMetaOpen();
   const response = await fetch(
@@ -50,25 +60,28 @@ const fetchLead = async (leadgenId: string): Promise<Lead> => {
 // from Meta is ignored. If processing fails, the claim is released and the request
 // returns an error, which makes Meta deliver the lead again.
 const handleLead = async (event: LeadgenEvent) => {
+  const organisationId = await organisationFor(event.pageId);
   const { error: claimError } = await supabaseAdmin
     .from("meta_leadgen_leads")
     .insert({
       leadgen_id: event.leadgenId,
       page_id: event.pageId,
       form_id: event.formId,
+      organisation_id: organisationId,
     });
   if (claimError?.code === "23505") return; // already processed
   if (claimError) throw new Error(claimError.message);
 
   try {
-    const lead = await fetchLead(event.leadgenId);
+    const lead = await fetchLead(event.leadgenId, event.pageId);
     const fields = mapLeadFields(
       lead.field_data ?? [],
       lead.campaign_name ?? null,
     );
     const { data: dealId, error } = await supabaseAdmin.rpc(
-      "record_web_enquiry",
+      "record_organisation_enquiry",
       {
+        p_organisation_id: organisationId,
         p_name: fields.name,
         p_email: fields.email ?? "",
         p_phone: fields.phone,

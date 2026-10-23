@@ -96,11 +96,12 @@ const autopilotCall = async (req: Request) => {
 // list, and falls back to the connected Page if the list is empty.
 const choosePage = async (
   pageIdOnPost: string | null,
+  organisationId: number | undefined,
 ): Promise<{ pageId: string | null; token: string | null }> => {
   if (pageIdOnPost) {
     return { pageId: pageIdOnPost, token: await getPageTokenFor(pageIdOnPost) };
   }
-  const fallback = await getDefaultPage();
+  const fallback = await getDefaultPage(organisationId);
   if (fallback) return fallback;
   return { pageId: null, token: await getPageToken() };
 };
@@ -112,6 +113,7 @@ const publish = async (
     administrator?: boolean;
     role?: string;
     disabled?: boolean;
+    organisation_id?: number;
   } | null,
   autopilot: boolean,
 ) => {
@@ -135,11 +137,15 @@ const publish = async (
     return createErrorResponse(400, "A post and a known action are required");
   }
 
-  const { data: post } = await supabaseAdmin
+  // People only reach posts of their own organisation; the scheduled job reaches any.
+  let postQuery = supabaseAdmin
     .from("page_posts")
     .select("*")
-    .eq("id", input.id)
-    .maybeSingle();
+    .eq("id", input.id);
+  if (!autopilot && sale?.organisation_id !== undefined) {
+    postQuery = postQuery.eq("organisation_id", sale.organisation_id);
+  }
+  const { data: post } = await postQuery.maybeSingle();
   if (!post) return createErrorResponse(404, "Post not found");
   if (
     autopilot &&
@@ -169,7 +175,12 @@ const publish = async (
     }
   }
 
-  const chosen = await choosePage(post.page_id ? String(post.page_id) : null);
+  const chosen = await choosePage(
+    post.page_id ? String(post.page_id) : null,
+    post.organisation_id !== undefined
+      ? Number(post.organisation_id)
+      : undefined,
+  );
   const token = chosen.token;
   if (!token) {
     return createErrorResponse(503, "Facebook access is not set up yet", {

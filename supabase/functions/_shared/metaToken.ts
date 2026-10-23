@@ -15,16 +15,24 @@ export const getPageTokenFor = async (
   return (data as string | null) ?? null;
 };
 
-// The Page and token used when a post does not name one: the default on the list, if any.
-export const getDefaultPage = async (): Promise<{
+// The Page and token used when a post does not name one: the default on the list of the
+// organisation, if any. Without an organisation, the first organisation's default is used.
+export const getDefaultPage = async (
+  organisationId?: number,
+): Promise<{
   pageId: string;
   token: string;
 } | null> => {
-  const { data } = await supabaseAdmin
+  let query = supabaseAdmin
     .from("meta_pages")
     .select("page_id")
     .eq("is_default", true)
-    .maybeSingle();
+    .order("organisation_id", { ascending: true })
+    .limit(1);
+  if (organisationId !== undefined) {
+    query = query.eq("organisation_id", organisationId);
+  }
+  const { data } = await query.maybeSingle();
   if (!data?.page_id) return null;
   const token = await getPageTokenFor(String(data.page_id));
   return token ? { pageId: String(data.page_id), token } : null;

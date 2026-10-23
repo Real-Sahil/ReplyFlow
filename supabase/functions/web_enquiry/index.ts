@@ -51,7 +51,30 @@ Deno.serve((req: Request) =>
     }
     const v = parsed.value;
 
-    const { error } = await supabaseAdmin.rpc("record_web_enquiry", {
+    // A form that names its organisation (?key=...) records there. Without a key the enquiry
+    // goes to Mere & Row, as before.
+    const key = new URL(req.url).searchParams.get("key");
+    let organisationId = 1;
+    if (key) {
+      const { data: org } = await supabaseAdmin
+        .from("organisations")
+        .select("id")
+        .eq("enquiry_key", key)
+        .maybeSingle();
+      if (!org) {
+        return createErrorResponse(
+          404,
+          "This enquiry form is not recognised.",
+          {
+            code: "unknown_form",
+          },
+        );
+      }
+      organisationId = Number(org.id);
+    }
+
+    const { error } = await supabaseAdmin.rpc("record_organisation_enquiry", {
+      p_organisation_id: organisationId,
       p_name: v.name,
       p_email: v.email,
       p_phone: v.phone,
@@ -60,7 +83,7 @@ Deno.serve((req: Request) =>
       p_source_url: v.sourceUrl,
     });
     if (error) {
-      console.error("record_web_enquiry failed", error.message);
+      console.error("record_organisation_enquiry failed", error.message);
       return createErrorResponse(
         500,
         "We could not save that. Please try again or call us.",
