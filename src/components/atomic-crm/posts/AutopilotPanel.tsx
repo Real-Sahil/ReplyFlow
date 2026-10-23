@@ -114,8 +114,7 @@ export const AutopilotPanel = () => {
           </div>
           <p className="max-w-prose text-sm text-muted-foreground">
             Writes a caption for each new product with a photo and plans it in
-            the next free slot. Nothing goes out until an administrator approves
-            it.
+            the next free slot. Nothing goes out until someone approves it it.
           </p>
         </div>
         <div className="flex flex-wrap items-end gap-4">

@@ -9,7 +9,7 @@ type Stage = PostRow["status"];
 // The five stages a post moves through, left to right.
 const STAGES: { key: Stage; hint: string }[] = [
   { key: "draft", hint: "Not yet sent for review" },
-  { key: "pending_review", hint: "Waiting for an administrator" },
+  { key: "pending_review", hint: "Waiting for approval" },
   { key: "approved", hint: "Goes out on its slot" },
   { key: "scheduled", hint: "Held by Facebook until its time" },
   { key: "published", hint: "Live on the Page" },

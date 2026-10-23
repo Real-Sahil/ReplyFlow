@@ -150,7 +150,8 @@ export const PostComposer = () => {
   const editable = ["draft", "failed", "pending_review", "approved"].includes(
     status,
   );
-  const canApprove = isAdmin && status === "pending_review";
+  // Any signed-in staff member can approve; the database records who did.
+  const canApprove = status === "pending_review";
   const canPublishNow = isAdmin
     ? ["draft", "failed", "approved"].includes(status)
     : status === "approved";
@@ -254,7 +255,7 @@ export const PostComposer = () => {
           data: { status: "pending_review" },
           previousData: { ...record, id } as PostRow,
         });
-        notify("Sent to an administrator for review");
+        notify("Sent for review");
         redirect("list", "page_posts");
         return;
       }
@@ -444,11 +445,6 @@ export const PostComposer = () => {
               <Button disabled={busy} onClick={() => run("publish")}>
                 <Send /> Post now
               </Button>
-            )}
-            {editable && status === "pending_review" && !isAdmin && (
-              <span className="self-center text-sm text-muted-foreground">
-                Waiting for an administrator.
-              </span>
             )}
           </div>
         </CardContent>

@@ -42,7 +42,7 @@ const stateNote = (post: PostRow) => {
     case "draft":
       return "Not yet sent for review";
     case "pending_review":
-      return "Waiting for an administrator";
+      return "Waiting for approval";
     case "approved":
       return "Approved, goes out on its slot";
     case "scheduled":
