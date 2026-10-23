@@ -98,7 +98,7 @@ export const InboxList = () => {
   return (
     <div className="flex flex-col">
       {tabs}
-      <div className="mt-2 grid h-[calc(100vh-12rem)] min-h-96 grid-cols-1 gap-3 md:grid-cols-[340px_1fr]">
+      <div className="mt-2 grid h-[calc(100dvh-13rem)] min-h-96 grid-cols-1 gap-3 md:h-[calc(100dvh-12rem)] md:grid-cols-[340px_1fr]">
         <Card
           className={cn(
             "gap-0 overflow-hidden py-0",
