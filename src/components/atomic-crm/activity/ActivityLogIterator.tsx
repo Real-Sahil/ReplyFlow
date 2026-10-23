@@ -105,7 +105,7 @@ export function ActivityLogIterator() {
   );
 }
 
-function ActivityItem({ activity }: { activity: Activity }) {
+export function ActivityItem({ activity }: { activity: Activity }) {
   if (activity.type === COMPANY_CREATED) {
     return <ActivityLogCompanyCreated activity={activity} />;
   }
