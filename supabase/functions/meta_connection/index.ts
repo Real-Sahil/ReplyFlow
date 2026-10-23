@@ -188,6 +188,19 @@ Deno.serve((req: Request) =>
           return ok(await checkConnection());
         }
 
+        // The pasted token is the one shared fallback, so only Mere & Row may change it.
+        // Other businesses connect Pages with Connect Facebook.
+        if (
+          (input.action === "clear_token" || input.action === "save_token") &&
+          Number(sale.organisation_id) !== 1
+        ) {
+          return createErrorResponse(
+            403,
+            "Connect your Facebook Pages with Connect Facebook instead.",
+            { code: "use_connect_facebook" },
+          );
+        }
+
         if (input.action === "clear_token") {
           await supabaseAdmin
             .from("meta_connection")

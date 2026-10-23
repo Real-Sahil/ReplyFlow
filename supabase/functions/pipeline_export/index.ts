@@ -8,6 +8,7 @@ import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { sameSecret, toCsv } from "./csv.ts";
 
 const LIMIT = 5000;
+const EXPORT_ORGANISATION = 1;
 
 const EXPORTS = {
   deals: {
@@ -66,9 +67,11 @@ Deno.serve(async (req: Request) => {
   }
   const spec = EXPORTS[table];
 
+  // This key belongs to Mere & Row, so it only ever exports Mere & Row's rows.
   const query = supabaseAdmin
     .from(table)
     .select(spec.select)
+    .eq("organisation_id", EXPORT_ORGANISATION)
     .order(spec.order, { ascending: false })
     .limit(LIMIT);
   // Archived deals are left out of the pipeline.

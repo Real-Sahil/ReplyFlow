@@ -10,20 +10,36 @@ import {
   normalizeSecondaryEmails,
 } from "./secondaryEmails.ts";
 
-async function updateSaleDisabled(user_id: string, disabled: boolean) {
+// A new person joins the organisation of the administrator who invites them.
+async function updateSaleDisabled(
+  user_id: string,
+  disabled: boolean,
+  organisationId?: number,
+) {
   return await supabaseAdmin
     .from("sales")
-    .update({ disabled: disabled ?? false })
+    .update({
+      disabled: disabled ?? false,
+      ...(organisationId !== undefined
+        ? { organisation_id: organisationId }
+        : {}),
+    })
     .eq("user_id", user_id);
 }
 
 async function updateSaleAdministrator(
   user_id: string,
   administrator: boolean,
+  organisationId?: number,
 ) {
   const { data: sales, error: salesError } = await supabaseAdmin
     .from("sales")
-    .update({ administrator })
+    .update({
+      administrator,
+      ...(organisationId !== undefined
+        ? { organisation_id: organisationId }
+        : {}),
+    })
     .eq("user_id", user_id)
     .select("*");
 
@@ -44,10 +60,11 @@ async function createSale(
     disabled: boolean;
     administrator: boolean;
   },
+  organisationId: number,
 ) {
   const { data: sales, error: salesError } = await supabaseAdmin
     .from("sales")
-    .insert({ ...data, user_id })
+    .insert({ ...data, user_id, organisation_id: organisationId })
     .select("*");
 
   if (!sales?.length || salesError) {
@@ -133,6 +150,7 @@ async function inviteUser(req: Request, currentUserSale: any) {
   if (!currentUserSale.administrator) {
     return createErrorResponse(401, "Not Authorized");
   }
+  const organisationId = Number(currentUserSale.organisation_id);
 
   const takenEmail = await findEmailUsedByAnotherSale(
     email ? [email.trim().toLowerCase()] : [],
@@ -188,14 +206,18 @@ async function inviteUser(req: Request, currentUserSale: any) {
         );
       }
 
-      const sale = await createSale(user.id, {
-        email,
-        password,
-        first_name,
-        last_name,
-        disabled,
-        administrator,
-      });
+      const sale = await createSale(
+        user.id,
+        {
+          email,
+          password,
+          first_name,
+          last_name,
+          disabled,
+          administrator,
+        },
+        organisationId,
+      );
 
       return new Response(
         JSON.stringify({
@@ -235,8 +257,12 @@ async function inviteUser(req: Request, currentUserSale: any) {
   }
 
   try {
-    await updateSaleDisabled(user.id, disabled);
-    const sale = await updateSaleAdministrator(user.id, administrator);
+    await updateSaleDisabled(user.id, disabled, organisationId);
+    const sale = await updateSaleAdministrator(
+      user.id,
+      administrator,
+      organisationId,
+    );
 
     return new Response(
       JSON.stringify({
@@ -269,7 +295,9 @@ async function patchUser(req: Request, currentUserSale: any) {
     .eq("id", sales_id)
     .single();
 
-  if (!sale) {
+  // People in another organisation are not found, rather than refused, so their existence
+  // is not revealed.
+  if (!sale || sale.organisation_id !== currentUserSale.organisation_id) {
     return createErrorResponse(404, "Not Found");
   }
 

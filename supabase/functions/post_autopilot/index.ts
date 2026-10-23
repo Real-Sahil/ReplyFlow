@@ -162,20 +162,26 @@ const photoOk = async (url: string) => {
   }
 };
 
-const loadSettings = async () => {
+// The scheduled job runs for Mere & Row until it is set up per organisation.
+const JOB_ORGANISATION = 1;
+
+const loadSettings = async (organisationId: number) => {
   const { data } = await supabaseAdmin
     .from("post_autopilot_settings")
     .select("enabled, posts_per_day, slot_times, timezone, auto_approve")
-    .eq("id", 1)
+    .eq("organisation_id", organisationId)
     .maybeSingle();
   return data;
 };
 
 // Active products with a photo that no post has used yet, newest first.
-const candidateProducts = async (): Promise<CandidateProduct[]> => {
+const candidateProducts = async (
+  organisationId: number,
+): Promise<CandidateProduct[]> => {
   const { data: products } = await supabaseAdmin
     .from("products")
     .select(PRODUCT_FIELDS)
+    .eq("organisation_id", organisationId)
     .eq("active", true)
     .not("image_url", "is", null)
     .order("created_at", { ascending: false })
@@ -183,6 +189,7 @@ const candidateProducts = async (): Promise<CandidateProduct[]> => {
   const { data: used } = await supabaseAdmin
     .from("page_posts")
     .select("product_id")
+    .eq("organisation_id", organisationId)
     .not("product_id", "is", null);
   const usedIds = new Set((used ?? []).map((row) => row.product_id as number));
   return ((products ?? []) as CandidateProduct[])
@@ -191,10 +198,11 @@ const candidateProducts = async (): Promise<CandidateProduct[]> => {
 };
 
 // Times already planned from now on, so new posts do not crowd them.
-const plannedTimes = async (): Promise<Date[]> => {
+const plannedTimes = async (organisationId: number): Promise<Date[]> => {
   const { data } = await supabaseAdmin
     .from("page_posts")
     .select("scheduled_for")
+    .eq("organisation_id", organisationId)
     .in("status", ["draft", "pending_review", "approved", "scheduled"])
     .gte("scheduled_for", new Date().toISOString());
   return (data ?? [])
@@ -204,13 +212,15 @@ const plannedTimes = async (): Promise<Date[]> => {
 };
 
 const runAutopilot = async () => {
-  const settings = await loadSettings();
+  const organisationId = JOB_ORGANISATION;
+  const settings = await loadSettings(organisationId);
   if (!settings?.enabled) return { skipped: "turned off" };
 
   const since = new Date(Date.now() - 24 * 3600_000).toISOString();
   const { count: madeToday } = await supabaseAdmin
     .from("page_posts")
     .select("id", { count: "exact", head: true })
+    .eq("organisation_id", organisationId)
     .eq("source", "ai")
     .gte("created_at", since);
   const room = Math.min(
@@ -219,14 +229,14 @@ const runAutopilot = async () => {
   );
   if (room <= 0) return { skipped: "daily limit reached" };
 
-  const pool = await candidateProducts();
+  const pool = await candidateProducts(organisationId);
   if (pool.length === 0)
     return { created: 0, note: "nothing new to write about" };
 
   const slots = nextFreeSlots({
     now: new Date(),
     slotTimes: validSlotTimes(settings.slot_times),
-    taken: await plannedTimes(),
+    taken: await plannedTimes(organisationId),
     count: room,
     timeZone: settings.timezone ?? "Europe/London",
   });
@@ -253,6 +263,7 @@ const runAutopilot = async () => {
       const message = await draftFor(product);
       const now = new Date().toISOString();
       const { error } = await supabaseAdmin.from("page_posts").insert({
+        organisation_id: organisationId,
         message,
         product_id: product.id,
         image_url: product.image_url,
@@ -317,6 +328,7 @@ const suggest = async (
     .from("products")
     .select(PRODUCT_FIELDS)
     .eq("id", input.product_id)
+    .eq("organisation_id", sale.organisation_id)
     .maybeSingle();
   if (!product) return createErrorResponse(404, "Product not found");
 
@@ -365,6 +377,7 @@ const draftSelected = async (
   const { data: rows } = await supabaseAdmin
     .from("products")
     .select(PRODUCT_FIELDS)
+    .eq("organisation_id", sale.organisation_id)
     .in("id", ids);
   const byId = new Map(
     ((rows ?? []) as CandidateProduct[]).map((p) => [p.id, p]),
@@ -378,11 +391,11 @@ const draftSelected = async (
     else products.push(product);
   }
 
-  const settings = await loadSettings();
+  const settings = await loadSettings(Number(sale.organisation_id));
   const slots = nextFreeSlots({
     now: new Date(),
     slotTimes: validSlotTimes(settings?.slot_times ?? ["12:00", "18:00"]),
-    taken: await plannedTimes(),
+    taken: await plannedTimes(Number(sale.organisation_id)),
     count: products.length,
     timeZone: settings?.timezone ?? "Europe/London",
   });
@@ -402,6 +415,7 @@ const draftSelected = async (
       const message = await draftFor(product);
       const now = new Date().toISOString();
       const { error } = await supabaseAdmin.from("page_posts").insert({
+        organisation_id: sale.organisation_id,
         message,
         product_id: product.id,
         image_url: product.image_url,

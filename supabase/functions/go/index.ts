@@ -19,7 +19,7 @@ Deno.serve(async (req: Request) => {
 
   const { data, error } = await supabaseAdmin
     .from("tracked_links")
-    .select("target_url, utm_campaign")
+    .select("target_url, utm_campaign, organisation_id")
     .eq("code", code)
     .maybeSingle();
   if (error) {
@@ -37,7 +37,7 @@ Deno.serve(async (req: Request) => {
   // A failed count must not stop the customer reaching the page.
   const { error: clickError } = await supabaseAdmin
     .from("link_clicks")
-    .insert({ code });
+    .insert({ code, organisation_id: data.organisation_id });
   if (clickError) console.error("Click not recorded", clickError.message);
 
   return new Response(null, {
