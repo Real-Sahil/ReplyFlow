@@ -22,132 +22,64 @@ import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { useConfigurationContext } from "../root/ConfigurationContext";
 import { ImportPage } from "../misc/ImportPage";
 import { GlobalSearchButton } from "../search/GlobalSearchButton";
+import { cn } from "@/lib/utils";
 
-const Header = () => {
-  const { darkModeLogo, lightModeLogo, title } = useConfigurationContext();
-  const location = useLocation();
-  const translate = useTranslate();
+const SECTIONS = [
+  { path: "/", label: "Today", Icon: House },
+  { path: "/messenger_inbox", label: "Inbox", Icon: MessageCircle },
+  { path: "/contacts", label: "Contacts", Icon: Users },
+  { path: "/deals", label: "Deals", Icon: Kanban },
+  { path: "/orders", label: "Orders", Icon: Package },
+  { path: "/page_posts", label: "Posts", Icon: Megaphone },
+  { path: "/products", label: "Products", Icon: Sofa },
+] as const;
 
-  let currentPath: string | boolean = "/";
-  if (matchPath("/", location.pathname)) {
-    currentPath = "/";
-  } else if (matchPath("/contacts/*", location.pathname)) {
-    currentPath = "/contacts";
-  } else if (matchPath("/companies/*", location.pathname)) {
-    currentPath = "/companies";
-  } else if (matchPath("/messenger_inbox/*", location.pathname)) {
-    currentPath = "/messenger_inbox";
-  } else if (matchPath("/page_posts/*", location.pathname)) {
-    currentPath = "/page_posts";
-  } else if (matchPath("/orders/*", location.pathname)) {
-    currentPath = "/orders";
-  } else if (matchPath("/products/*", location.pathname)) {
-    currentPath = "/products";
-  } else if (matchPath("/deals/*", location.pathname)) {
-    currentPath = "/deals";
-  } else {
-    currentPath = false;
-  }
-
+// The section of the app the current address belongs to.
+const sectionFor = (pathname: string) => {
+  if (matchPath("/", pathname)) return "/";
   return (
-    <>
-      <nav className="grow">
-        <header className="bg-secondary">
-          <div className="px-4 py-1.5">
-            <div className="flex justify-between items-center flex-1 gap-3 min-w-0">
-              <Link
-                to="/"
-                className="flex shrink-0 items-center gap-2 text-secondary-foreground no-underline"
-              >
-                <img
-                  className="[.light_&]:hidden h-6"
-                  src={darkModeLogo}
-                  alt={title}
-                />
-                <img
-                  className="[.dark_&]:hidden h-6"
-                  src={lightModeLogo}
-                  alt={title}
-                />
-              </Link>
-              <div className="min-w-0 flex-1">
-                <nav className="flex items-center gap-1 overflow-x-auto">
-                  <NavigationTab
-                    label="Today"
-                    Icon={House}
-                    to="/"
-                    isActive={currentPath === "/"}
-                  />
-                  <InboxTab active={currentPath === "/messenger_inbox"} />
-                  <NavigationTab
-                    label={translate("resources.contacts.name", {
-                      smart_count: 2,
-                    })}
-                    Icon={Users}
-                    to="/contacts"
-                    isActive={currentPath === "/contacts"}
-                  />
-                  <NavigationTab
-                    label={translate("resources.deals.name", {
-                      smart_count: 2,
-                    })}
-                    Icon={Kanban}
-                    to="/deals"
-                    isActive={currentPath === "/deals"}
-                  />
-                  <NavigationTab
-                    label={translate("resources.orders.name", {
-                      smart_count: 2,
-                      _: "Orders",
-                    })}
-                    Icon={Package}
-                    to="/orders"
-                    isActive={currentPath === "/orders"}
-                  />
-                  <NavigationTab
-                    label="Posts"
-                    Icon={Megaphone}
-                    to="/page_posts"
-                    isActive={currentPath === "/page_posts"}
-                  />
-                  <NavigationTab
-                    label={translate("resources.products.name", {
-                      smart_count: 2,
-                      _: "Products",
-                    })}
-                    Icon={Sofa}
-                    to="/products"
-                    isActive={currentPath === "/products"}
-                  />
-                </nav>
-              </div>
-              <div className="flex shrink-0 items-center">
-                <GlobalSearchButton />
-                <ThemeModeToggle />
-                <RefreshButton />
-                <UserMenu>
-                  <ProfileMenu />
-                  <CanAccess resource="sales" action="list">
-                    <UsersMenu />
-                  </CanAccess>
-                  <CanAccess resource="configuration" action="edit">
-                    <SettingsMenu />
-                    <MessengerSettingsMenu />
-                    <FacebookMenu />
-                  </CanAccess>
-                  <CompaniesMenu />
-                  <ImportFromJsonMenuItem />
-                </UserMenu>
-              </div>
-            </div>
-          </div>
-        </header>
-      </nav>
-    </>
+    SECTIONS.find((s) => s.path !== "/" && matchPath(`${s.path}/*`, pathname))
+      ?.path ?? null
   );
 };
 
-const InboxTab = ({ active }: { active: boolean }) => {
+// Left navigation rail: icons, with the name on hover, in the violet panel.
+export const SideRail = () => {
+  const { darkModeLogo, title } = useConfigurationContext();
+  const location = useLocation();
+  const active = sectionFor(location.pathname);
+  return (
+    <aside className="sticky top-4 hidden h-[calc(100vh-2rem)] w-20 shrink-0 flex-col items-center gap-3 rounded-3xl bg-sidebar py-5 text-sidebar-foreground shadow-lg md:flex">
+      <Link
+        to="/"
+        aria-label={title}
+        className="mb-2 flex size-11 items-center justify-center rounded-2xl bg-white/15"
+      >
+        <img src={darkModeLogo} alt="" className="h-5 brightness-0 invert" />
+      </Link>
+      <nav
+        aria-label="Main"
+        className="flex flex-1 flex-col items-center gap-2"
+      >
+        {SECTIONS.map(({ path, label, Icon }) =>
+          path === "/messenger_inbox" ? (
+            <InboxRailLink key={path} active={active === path} />
+          ) : (
+            <RailLink
+              key={path}
+              to={path}
+              label={label}
+              Icon={Icon}
+              active={active === path}
+            />
+          ),
+        )}
+      </nav>
+    </aside>
+  );
+};
+
+const InboxRailLink = ({ active }: { active: boolean }) => {
   const { total: unread } = useGetList("messenger_inbox", {
     filter: { unread: true },
     pagination: { page: 1, perPage: 1 },
@@ -158,47 +90,84 @@ const InboxTab = ({ active }: { active: boolean }) => {
   });
   const total = (unread ?? 0) + (newComments ?? 0);
   return (
-    <NavigationTab
+    <RailLink
+      to="/messenger_inbox"
       label="Inbox"
       Icon={MessageCircle}
-      to="/messenger_inbox"
-      isActive={active}
+      active={active}
       badge={total || undefined}
     />
   );
 };
 
-const NavigationTab = ({
-  label,
+const RailLink = ({
   to,
-  isActive,
+  label,
   Icon,
+  active,
   badge,
 }: {
-  label: string;
   to: string;
-  isActive: boolean;
+  label: string;
   Icon: React.ComponentType<{ className?: string }>;
+  active: boolean;
   badge?: number;
 }) => (
   <Link
     to={to}
-    aria-current={isActive ? "page" : undefined}
-    className={`flex items-center gap-2 whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
-      isActive
-        ? "bg-primary/10 text-primary"
-        : "text-muted-foreground hover:bg-muted hover:text-foreground"
-    }`}
+    title={label}
+    aria-label={label}
+    aria-current={active ? "page" : undefined}
+    className={cn(
+      "relative flex size-11 items-center justify-center rounded-2xl transition-colors",
+      active
+        ? "bg-white text-sidebar shadow-sm"
+        : "text-sidebar-foreground/75 hover:bg-white/15 hover:text-sidebar-foreground",
+    )}
   >
-    <Icon className="size-4" />
-    {label}
+    <Icon className="size-5" />
     {badge ? (
-      <span className="rounded-full bg-primary px-1.5 text-[0.7rem] leading-5 text-primary-foreground tabular-nums">
+      <span className="absolute -right-1 -top-1 rounded-full bg-rose-500 px-1.5 text-[0.65rem] leading-4 font-semibold text-white tabular-nums">
         {badge}
       </span>
     ) : null}
   </Link>
 );
+
+// Top bar: the section name, search, theme, refresh and the user menu.
+export const TopBar = () => {
+  const location = useLocation();
+  const active = sectionFor(location.pathname);
+  const label = SECTIONS.find((s) => s.path === active)?.label ?? "ReplyFlow";
+  return (
+    <header className="flex items-center justify-between gap-3 rounded-3xl bg-card px-4 py-3 shadow-sm md:px-6">
+      <div className="min-w-0">
+        <p className="text-xs text-muted-foreground">Workspace</p>
+        <h1 className="truncate text-lg font-semibold tracking-tight">
+          {label}
+        </h1>
+      </div>
+      <div className="flex shrink-0 items-center gap-1">
+        <GlobalSearchButton />
+        <ThemeModeToggle />
+        <RefreshButton />
+        <UserMenu>
+          <ProfileMenu />
+          <CanAccess resource="sales" action="list">
+            <UsersMenu />
+          </CanAccess>
+          <CanAccess resource="configuration" action="edit">
+            <SettingsMenu />
+            <MessengerSettingsMenu />
+            <FacebookMenu />
+          </CanAccess>
+          <CompaniesMenu />
+          <ImportFromJsonMenuItem />
+        </UserMenu>
+      </div>
+    </header>
+  );
+};
 
 const UsersMenu = () => {
   const translate = useTranslate();
@@ -308,5 +277,3 @@ const ImportFromJsonMenuItem = () => {
     </DropdownMenuItem>
   );
 };
-
-export default Header;

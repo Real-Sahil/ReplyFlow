@@ -6,20 +6,30 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 import { DataImportProvider } from "../dataImport/DataImportProvider";
 import { useConfigurationLoader } from "../root/useConfigurationLoader";
-import Header from "./Header";
+import { SideRail, TopBar } from "./Header";
 
 export const Layout = ({ children }: { children: ReactNode }) => {
   useConfigurationLoader();
   return (
     <DataImportProvider>
-      <Header />
-      <main className="max-w-screen-xl mx-auto p-4" id="main-content">
-        <ErrorBoundary FallbackComponent={Error}>
-          <Suspense fallback={<Skeleton className="h-12 w-12 rounded-full" />}>
-            {children}
-          </Suspense>
-        </ErrorBoundary>
-      </main>
+      <div className="flex min-h-screen gap-4 bg-background p-3 md:p-4">
+        <SideRail />
+        <div className="flex min-w-0 flex-1 flex-col gap-4">
+          <TopBar />
+          <main
+            className="min-w-0 flex-1 rounded-3xl bg-card p-4 shadow-sm md:p-6"
+            id="main-content"
+          >
+            <ErrorBoundary FallbackComponent={Error}>
+              <Suspense
+                fallback={<Skeleton className="h-12 w-12 rounded-full" />}
+              >
+                {children}
+              </Suspense>
+            </ErrorBoundary>
+          </main>
+        </div>
+      </div>
       <Notification />
     </DataImportProvider>
   );
