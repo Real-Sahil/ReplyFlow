@@ -44,6 +44,7 @@ import sales from "../sales";
 import { SettingsPageMobile } from "../settings/SettingsPageMobile";
 import { ProfilePage } from "../settings/ProfilePage";
 import { SettingsPage } from "../settings/SettingsPage";
+import { ErrorLogPage } from "../errors/ErrorLogPage";
 import { FacebookConnectionPage } from "../facebook/FacebookConnectionPage";
 import {
   CONFIGURATION_STORE_KEY,
@@ -271,6 +272,7 @@ const DesktopAdmin = (
         <Route path={ProfilePage.path} element={<ProfilePage />} />
         <Route path={SettingsPage.path} element={<SettingsPage />} />
         <Route path="/facebook" element={<FacebookConnectionPage />} />
+        <Route path="/errors" element={<ErrorLogPage />} />
         <Route path={ImportPage.path} element={<ImportPage />} />
         <Route path="/transactions" element={<TransactionsPage />} />
         <Route path="/links" element={<TrackedLinksPage />} />
@@ -362,6 +364,7 @@ const MobileAdmin = (
             element={<SettingsPageMobile />}
           />
           <Route path="/facebook" element={<FacebookConnectionPage />} />
+          <Route path="/errors" element={<ErrorLogPage />} />
           <Route path={ChangelogPage.path} element={<ChangelogPage />} />
           <Route path="/transactions" element={<TransactionsPage />} />
           <Route path="/links" element={<TrackedLinksPage />} />

@@ -1,6 +1,9 @@
 // Based on https://github.com/supabase/supabase/blob/master/examples/edge-functions/supabase/functions/_shared/jwt/default.ts
 import * as jose from "jsr:@panva/jose@6";
 import { createClient, type User } from "jsr:@supabase/supabase-js@2";
+import { logError, organisationOfUser } from "./errorLog.ts";
+import { checkRateLimit, tooManyRequests } from "./rateLimit.ts";
+import { clip, functionName, limitFor } from "./rateLimitRules.ts";
 import { createErrorResponse } from "./utils.ts";
 
 const SUPABASE_JWT_ISSUER =
@@ -60,6 +63,7 @@ export const UserMiddleware = async (
 ) => {
   if (req.method === "OPTIONS") return await next(req);
 
+  let user: User | undefined;
   try {
     const authHeader = req.headers.get("Authorization")!;
     const localClient = createClient(
@@ -76,9 +80,39 @@ export const UserMiddleware = async (
     if (!data?.user || authError) {
       return createErrorResponse(401, "Unauthorized");
     }
-
-    return next(req, data.user);
+    user = data.user;
   } catch (err) {
     return createErrorResponse(401, err?.toString() || "Unauthorized");
+  }
+  if (!user) return createErrorResponse(401, "Unauthorized");
+
+  // Every signed-in function gets the same limit per user, then reports its own failures.
+  const name = functionName(new URL(req.url).pathname);
+  const rate = await checkRateLimit(`user:${user.id}:${name}`, limitFor(name));
+  if (!rate.allowed) return tooManyRequests(rate.retryAfter);
+
+  try {
+    const response = await next(req, user);
+    if (response.status >= 500) {
+      const body = await response
+        .clone()
+        .text()
+        .catch(() => "");
+      await logError(
+        `function:${name}`,
+        `Responded ${response.status}: ${clip(body, 300)}`,
+        { method: req.method, status: response.status },
+        await organisationOfUser(user.id),
+      );
+    }
+    return response;
+  } catch (err) {
+    await logError(
+      `function:${name}`,
+      err,
+      { method: req.method },
+      await organisationOfUser(user.id),
+    );
+    return createErrorResponse(500, "Something went wrong. Try again.");
   }
 };

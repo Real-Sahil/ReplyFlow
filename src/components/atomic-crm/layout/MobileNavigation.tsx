@@ -1,5 +1,6 @@
 import { useState } from "react";
 import {
+  Bug,
   Building2,
   Home,
   Import,
@@ -243,6 +244,12 @@ const MoreSheet = ({
             to="/messenger_settings/1"
             label="Auto-replies"
             Icon={MessageCircle}
+            onPick={onOpenChange}
+          />
+          <MoreTile
+            to="/errors"
+            label="Error log"
+            Icon={Bug}
             onPick={onOpenChange}
           />
         </MoreGroup>

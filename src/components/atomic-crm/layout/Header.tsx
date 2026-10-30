@@ -1,4 +1,5 @@
 import {
+  Bug,
   Building2,
   ChevronLeft,
   MoreHorizontal,
@@ -204,6 +205,7 @@ const MoreMenu = () => (
             label="Messenger auto-replies"
             Icon={MessageCircle}
           />
+          <MoreLink to="/errors" label="Error log" Icon={Bug} />
         </MoreGroup>
       </CanAccess>
       <MoreGroup title="Account">

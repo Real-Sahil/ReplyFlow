@@ -7,6 +7,8 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { corsHeaders, OptionsMiddleware } from "../_shared/cors.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
+import { checkRateLimit, tooManyRequests } from "../_shared/rateLimit.ts";
+import { clientAddress, ENQUIRY_LIMIT } from "../_shared/rateLimitRules.ts";
 import { createErrorResponse } from "../_shared/utils.ts";
 import { parseEnquiry } from "./enquiryRules.ts";
 
@@ -22,6 +24,12 @@ Deno.serve((req: Request) =>
     if (req.method !== "POST") {
       return createErrorResponse(405, "Method Not Allowed");
     }
+
+    const rate = await checkRateLimit(
+      `ip:${clientAddress(req.headers)}:web_enquiry`,
+      ENQUIRY_LIMIT,
+    );
+    if (!rate.allowed) return tooManyRequests(rate.retryAfter);
 
     const raw = await req.text();
     if (raw.length > MAX_BYTES) {

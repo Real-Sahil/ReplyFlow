@@ -6,6 +6,9 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { corsHeaders, OptionsMiddleware } from "../_shared/cors.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
+import { logError } from "../_shared/errorLog.ts";
+import { checkRateLimit, tooManyRequests } from "../_shared/rateLimit.ts";
+import { clientAddress, SIGNUP_LIMIT } from "../_shared/rateLimitRules.ts";
 import { createErrorResponse } from "../_shared/utils.ts";
 import { parseOnboarding } from "./onboardRules.ts";
 
@@ -38,6 +41,13 @@ Deno.serve((req: Request) =>
         { code: "signup_closed" },
       );
     }
+
+    // Sign-up creates accounts, so it is limited per address.
+    const rate = await checkRateLimit(
+      `ip:${clientAddress(req.headers)}:onboard`,
+      SIGNUP_LIMIT,
+    );
+    if (!rate.allowed) return tooManyRequests(rate.retryAfter);
 
     let input: unknown;
     try {
@@ -111,7 +121,7 @@ Deno.serve((req: Request) =>
 
       await supabaseAdmin.from("signup_grants").delete().eq("email", email);
     } catch (error) {
-      console.error("Onboarding failed, rolling back", error);
+      await logError("function:onboard", error, { step: "onboarding" });
       await rollback(organisationId, email, userId);
       return createErrorResponse(
         500,

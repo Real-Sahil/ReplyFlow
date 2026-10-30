@@ -188,6 +188,9 @@ verify_jwt = false
 [functions.onboard]
 verify_jwt = false
 
+[functions.log_client_error]
+verify_jwt = false
+
 [functions.web_enquiry]
 verify_jwt = false
 
