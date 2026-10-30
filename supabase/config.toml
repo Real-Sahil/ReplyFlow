@@ -191,6 +191,12 @@ verify_jwt = false
 [functions.log_client_error]
 verify_jwt = false
 
+[functions.pipeline_export]
+verify_jwt = false
+
+[functions.post_autopilot]
+verify_jwt = false
+
 [functions.web_enquiry]
 verify_jwt = false
 
