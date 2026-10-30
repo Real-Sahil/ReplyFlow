@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
+import { windowLeft } from "./replyWindow";
 import { MessengerConversation } from "../contacts/MessengerConversation";
 import { CommentsPanel } from "./CommentsPanel";
 
@@ -157,7 +158,17 @@ export const InboxList = () => {
                     {row.last_direction === "outbound" ? "You: " : ""}
                     {row.last_body}
                   </span>
-                  {!row.window_open && (
+                  {row.window_open ? (
+                    <span className="flex shrink-0 items-center gap-1.5 font-mono text-xs text-muted-foreground tabular-nums">
+                      <span
+                        aria-hidden
+                        className="size-1.5 rounded-full bg-success"
+                      />
+                      {row.last_direction === "inbound"
+                        ? windowLeft(row.last_sent_at).label
+                        : "Can reply"}
+                    </span>
+                  ) : (
                     <Badge variant="outline">Window closed</Badge>
                   )}
                 </div>

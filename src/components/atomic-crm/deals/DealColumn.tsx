@@ -38,8 +38,8 @@ export const DealColumn = ({
           <div
             ref={droppableProvided.innerRef}
             {...droppableProvided.droppableProps}
-            className={`flex flex-col rounded-xl mt-2 gap-2 p-1 transition-colors ${
-              snapshot.isDraggingOver ? "bg-accent" : ""
+            className={`flex flex-col rounded-2xl mt-2 gap-2 p-2 transition-colors ${
+              snapshot.isDraggingOver ? "bg-accent" : "bg-cool/70"
             }`}
           >
             {deals.map((deal, index) => (

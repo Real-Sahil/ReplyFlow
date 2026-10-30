@@ -1,8 +1,9 @@
 import { useGetIdentity, useGetList } from "ra-core";
 import { Link } from "react-router";
-import { ChevronRight } from "lucide-react";
+import { ArrowRight, ChevronRight } from "lucide-react";
 import { FacebookPagesPrompt } from "../facebook/FacebookPagesPrompt";
 import { cn } from "@/lib/utils";
+import { windowLeft } from "../inbox/replyWindow";
 
 import { formatPrice } from "../products/formatPrice";
 import { orderStatusLabel } from "../orders/statuses";
@@ -33,7 +34,6 @@ type OrderRow = {
 };
 
 const DAY = 24 * 60 * 60 * 1000;
-const WINDOW = DAY; // Messenger lets a business reply for 24 hours after a customer writes.
 
 const greeting = () => {
   const hour = new Date().getHours();
@@ -47,18 +47,6 @@ const greeting = () => {
 const initials = (first: string, last: string | null) =>
   `${first?.[0] ?? ""}${last?.[0] ?? ""}`.toUpperCase() || "?";
 
-// "2h left", "34m left", "Closed": the reply window for a conversation.
-const windowLeft = (lastSentAt: string, now: number) => {
-  const ms = new Date(lastSentAt).getTime() + WINDOW - now;
-  if (ms <= 0) return { label: "Closed", urgent: true };
-  const hours = Math.floor(ms / (60 * 60 * 1000));
-  if (hours >= 1) return { label: `${hours}h left`, urgent: hours < 3 };
-  return {
-    label: `${Math.max(1, Math.round(ms / 60000))}m left`,
-    urgent: true,
-  };
-};
-
 const plural = (n: number, one: string, many = `${one}s`) =>
   `${n} ${n === 1 ? one : many}`;
 
@@ -67,11 +55,15 @@ const Group = ({
   title,
   to,
   action,
+  tone = "card",
+  lead,
   children,
 }: {
   title: string;
   to?: string;
   action?: string;
+  tone?: "card" | "peach" | "cool";
+  lead?: React.ReactNode;
   children: React.ReactNode;
 }) => (
   <section aria-label={title} className="flex flex-col gap-2">
@@ -86,7 +78,16 @@ const Group = ({
         </Link>
       ) : null}
     </div>
-    <div className="overflow-hidden rounded-xl bg-card shadow-[var(--shadow-card)] [&>*+*]:relative [&>*+*]:before:absolute [&>*+*]:before:inset-x-4 [&>*+*]:before:top-0 [&>*+*]:before:h-px [&>*+*]:before:bg-border">
+    <div
+      className={cn(
+        "overflow-hidden rounded-2xl [&>a+a]:relative [&>a+a]:before:absolute [&>a+a]:before:inset-x-5 [&>a+a]:before:top-0 [&>a+a]:before:h-px",
+        tone === "card" &&
+          "bg-card shadow-[var(--shadow-card)] [&>a+a]:before:bg-border",
+        tone === "peach" && "bg-peach [&>a+a]:before:bg-white/70",
+        tone === "cool" && "bg-cool [&>a+a]:before:bg-white/70",
+      )}
+    >
+      {lead}
       {children}
     </div>
   </section>
@@ -109,7 +110,7 @@ const Row = ({
 }) => (
   <Link
     to={to}
-    className="press group flex min-h-14 items-center gap-3 px-4 py-2.5 hover:bg-muted/70 active:bg-muted"
+    className="press group flex min-h-14 items-center gap-3 px-5 py-3 hover:bg-foreground/[0.04] active:bg-foreground/[0.07]"
   >
     {lead}
     <div className="min-w-0 flex-1">
@@ -136,7 +137,7 @@ const Row = ({
 );
 
 const Avatar = ({ first, last }: { first: string; last: string | null }) => (
-  <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-semibold text-accent-foreground">
+  <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-card text-xs font-semibold text-accent-foreground shadow-[var(--shadow-card)]">
     {initials(first, last)}
   </span>
 );
@@ -263,6 +264,32 @@ export const TodayDashboard = () => {
             title="Needs attention"
             to="/messenger_inbox"
             action="Open inbox"
+            tone="peach"
+            lead={
+              needsReply[0] ? (
+                <div className="p-3 pb-1">
+                  <Link
+                    to="/messenger_inbox"
+                    className="press group flex items-center gap-3 rounded-xl bg-card p-3 pl-4 shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-lift)]"
+                  >
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-xs text-muted-foreground">
+                        Reply first
+                      </span>
+                      <span className="block truncate text-[15px] font-medium">
+                        {`${needsReply[0].first_name} ${needsReply[0].last_name ?? ""}`.trim()}
+                        <span className="ml-2 font-mono text-xs text-warning tabular-nums">
+                          {windowLeft(needsReply[0].last_sent_at, now).label}
+                        </span>
+                      </span>
+                    </span>
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-transform group-hover:translate-x-0.5">
+                      <ArrowRight aria-hidden className="size-4" />
+                    </span>
+                  </Link>
+                </div>
+              ) : null
+            }
           >
             {attentionCount === 0 ? (
               <Empty>You are all caught up. Nothing is waiting on you.</Empty>
@@ -342,10 +369,10 @@ export const TodayDashboard = () => {
                 <span className="w-32 shrink-0 font-medium">{stage.label}</span>
                 <span
                   aria-hidden
-                  className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted"
+                  className="h-2 flex-1 overflow-hidden rounded-full bg-muted"
                 >
                   <span
-                    className="block h-full origin-left rounded-full bg-primary transition-transform duration-700"
+                    className="block h-full origin-left rounded-full bg-primary transition-transform duration-700 ease-[var(--spring)]"
                     style={{ transform: `scaleX(${stage.count / maxCount})` }}
                   />
                 </span>
@@ -358,7 +385,12 @@ export const TodayDashboard = () => {
         </div>
 
         <div className="flex min-w-0 flex-col gap-8">
-          <Group title="Quotes waiting longest" to="/deals" action="See all">
+          <Group
+            title="Quotes waiting longest"
+            to="/deals"
+            action="See all"
+            tone="cool"
+          >
             {quotesLongest.length === 0 ? (
               <Empty>No quotes are out.</Empty>
             ) : null}

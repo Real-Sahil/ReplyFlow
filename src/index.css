@@ -28,6 +28,8 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
+  --color-peach: var(--peach);
+  --color-cool: var(--cool);
   --color-warning: var(--warning);
   --color-warning-soft: var(--warning-soft);
   --color-success: var(--success);
@@ -55,7 +57,7 @@
      coral tint for the single action, and colour that only ever carries
      meaning (time running out, success, danger). Type is the system font. */
   color-scheme: light;
-  --radius: 0.75rem;
+  --radius: 0.875rem;
   --background: oklch(96.5% 0.006 60);
   --foreground: oklch(21% 0.012 38);
   --card: oklch(99% 0.004 80);
@@ -75,6 +77,9 @@
   --border: oklch(88% 0.008 55);
   --input: oklch(84% 0.01 55);
   --ring: oklch(54% 0.165 29 / 55%);
+  /* Soft colour planes: a warm peach for what needs you, a cool grey for the rest. */
+  --peach: oklch(94.5% 0.035 45);
+  --cool: oklch(94.5% 0.012 225);
   --warning: oklch(50% 0.12 65);
   --warning-soft: oklch(95% 0.045 80);
   --success: oklch(46% 0.11 155);
