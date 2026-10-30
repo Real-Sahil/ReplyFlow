@@ -166,6 +166,8 @@ const callback = async (url: URL) => {
       .maybeSingle();
     if (!sale?.organisation_id) return back("connect=failed");
 
+    let saved = 0;
+    let taken = 0;
     let subscribeFailed = 0;
     for (const page of pages) {
       const { error } = await supabaseAdmin.rpc("meta_page_store", {
@@ -175,12 +177,18 @@ const callback = async (url: URL) => {
         p_organisation_id: Number(sale.organisation_id),
       });
       if (error) {
-        // A Page already connected to another business cannot be taken over.
-        if (error.code === "42501") return back("connect=page_taken");
+        // A Page already connected to another business cannot be taken over. Skip it and
+        // keep saving the others, so one Page does not block the rest.
+        if (error.code === "42501") {
+          taken++;
+          continue;
+        }
         throw new Error(error.message);
       }
+      saved++;
       if (!(await subscribePage(page.id, page.access_token))) subscribeFailed++;
     }
+    if (saved === 0) return back("connect=page_taken");
 
     // A token pasted by hand would otherwise keep winning over the connected Pages.
     await supabaseAdmin
@@ -194,12 +202,10 @@ const callback = async (url: URL) => {
       })
       .eq("id", 1);
 
-    const outcome = `connected=${pages.length}`;
-    return back(
-      subscribeFailed
-        ? `${outcome}&subscribe_failed=${subscribeFailed}`
-        : outcome,
-    );
+    const params = [`connected=${saved}`];
+    if (taken) params.push(`taken=${taken}`);
+    if (subscribeFailed) params.push(`subscribe_failed=${subscribeFailed}`);
+    return back(params.join("&"));
   } catch (error) {
     console.error("Connect failed", (error as Error).message);
     return back("connect=failed");

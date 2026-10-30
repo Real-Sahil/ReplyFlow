@@ -56,6 +56,15 @@ export const ConnectFacebookCard = () => {
           ? "Facebook Page connected"
           : `${connected} Facebook Pages connected`,
       );
+      const taken = Number(params.get("taken") ?? 0);
+      if (taken > 0) {
+        notify(
+          taken === 1
+            ? "One Page is already connected to another business, so it was not added. Ask that business to remove it first."
+            : `${taken} Pages are already connected to another business, so they were not added. Ask those businesses to remove them first.`,
+          { type: "warning" },
+        );
+      }
       if (params.get("subscribe_failed")) {
         notify(
           "Some Pages could not be switched on for messages. Check them below.",
