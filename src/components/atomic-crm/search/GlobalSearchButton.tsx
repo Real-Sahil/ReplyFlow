@@ -106,13 +106,13 @@ export const GlobalSearchButton = ({
           onClick={() => setOpen(true)}
           aria-label={translate("crm.search.title")}
           aria-keyshortcuts="Control+K Meta+K"
-          className="mr-2 w-40 justify-start bg-background px-3 font-normal text-muted-foreground lg:w-64"
+          className="w-9 justify-center border-transparent bg-muted px-0 font-normal text-muted-foreground shadow-none hover:bg-secondary md:w-40 md:justify-start md:px-3 lg:w-56"
         >
           <Search />
-          <span className="flex-1 text-left">
+          <span className="hidden flex-1 text-left md:inline">
             {translate("crm.search.title")}
           </span>
-          <kbd className="pointer-events-none hidden rounded border bg-muted px-1.5 font-sans text-[10px] font-medium lg:inline">
+          <kbd className="pointer-events-none hidden rounded border bg-card px-1.5 font-mono text-[10px] font-medium lg:inline">
             {SHORTCUT_LABEL}
           </kbd>
         </Button>
@@ -166,10 +166,7 @@ const TITLE_SNIPPET_RADIUS = 25;
 const Highlighted = ({ text, terms }: { text: string; terms: string[] }) =>
   highlight(text, terms).map((part, index) =>
     part.isMatch ? (
-      <mark
-        key={index}
-        className="rounded-sm bg-yellow-200 text-inherit dark:bg-yellow-400/30"
-      >
+      <mark key={index} className="rounded-sm bg-accent text-accent-foreground">
         {part.text}
       </mark>
     ) : (

@@ -40,7 +40,7 @@ export const DealShow = ({ open, id }: { open: boolean; id?: string }) => {
 
   return (
     <Dialog open={open} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="lg:max-w-4xl p-4 overflow-y-auto max-h-9/10 top-1/20 translate-y-0">
+      <DialogContent className="fixed top-0 right-0 left-auto h-dvh max-h-none w-full translate-x-0 translate-y-0 overflow-y-auto rounded-none rounded-l-2xl p-5 data-[state=open]:slide-in-from-right data-[state=open]:zoom-in-100 data-[state=closed]:slide-out-to-right data-[state=closed]:zoom-out-100 sm:max-w-2xl">
         {id ? (
           <ShowBase id={id}>
             <DealShowContent />

@@ -3,6 +3,7 @@ import { useGetIdentity, useGetList } from "ra-core";
 import { Link } from "react-router";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Segmented } from "@/components/ui/segmented";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -68,22 +69,16 @@ export const InboxList = () => {
   const active = rows.find((row) => row.contact_id === selected) ?? rows[0];
 
   const tabs = (
-    <div className="mt-2 flex gap-1">
-      <Button
-        size="sm"
-        variant={tab === "messages" ? "default" : "outline"}
-        onClick={() => setTab("messages")}
-      >
-        Messages
-      </Button>
-      <Button
-        size="sm"
-        variant={tab === "comments" ? "default" : "outline"}
-        onClick={() => setTab("comments")}
-      >
-        Comments{newComments ? ` (${newComments})` : ""}
-      </Button>
-    </div>
+    <Segmented
+      label="Inbox"
+      value={tab}
+      onChange={setTab}
+      className="w-full max-w-xs"
+      options={[
+        ["messages", "Messages"],
+        ["comments", `Comments${newComments ? ` (${newComments})` : ""}`],
+      ]}
+    />
   );
 
   if (tab === "comments") {
@@ -98,7 +93,7 @@ export const InboxList = () => {
   return (
     <div className="flex flex-col">
       {tabs}
-      <div className="mt-2 grid h-[calc(100dvh-13rem)] min-h-96 grid-cols-1 gap-3 md:h-[calc(100dvh-12rem)] md:grid-cols-[340px_1fr]">
+      <div className="mt-4 grid h-[calc(100dvh-13rem)] min-h-96 grid-cols-1 gap-3 md:h-[calc(100dvh-12rem)] md:grid-cols-[340px_1fr]">
         <Card
           className={cn(
             "gap-0 overflow-hidden py-0",
@@ -111,24 +106,16 @@ export const InboxList = () => {
               value={search}
               onChange={(event) => setSearch(event.target.value)}
             />
-            <div className="flex gap-1">
-              {(
-                [
-                  ["all", "All"],
-                  ["unread", "Unread"],
-                  ["open", "Can reply"],
-                ] as const
-              ).map(([value, label]) => (
-                <Button
-                  key={value}
-                  size="sm"
-                  variant={filter === value ? "default" : "outline"}
-                  onClick={() => setFilter(value)}
-                >
-                  {label}
-                </Button>
-              ))}
-            </div>
+            <Segmented
+              label="Show"
+              value={filter}
+              onChange={setFilter}
+              options={[
+                ["all", "All"],
+                ["unread", "Unread"],
+                ["open", "Can reply"],
+              ]}
+            />
           </div>
           <div className="flex-1 overflow-y-auto">
             {rows.length === 0 && (
@@ -144,8 +131,9 @@ export const InboxList = () => {
                 type="button"
                 onClick={() => setSelected(row.contact_id)}
                 className={cn(
-                  "flex w-full flex-col gap-0.5 border-b px-3 py-2.5 text-left hover:bg-accent",
-                  active?.contact_id === row.contact_id && "bg-accent",
+                  "relative flex w-full flex-col gap-0.5 border-b px-4 py-3 text-left hover:bg-muted/70",
+                  active?.contact_id === row.contact_id &&
+                    "bg-accent before:absolute before:inset-y-2 before:left-0 before:w-0.5 before:rounded-full before:bg-primary",
                 )}
               >
                 <div className="flex items-center gap-2">
@@ -160,7 +148,7 @@ export const InboxList = () => {
                   {row.unread && (
                     <span className="size-2 shrink-0 rounded-full bg-primary" />
                   )}
-                  <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+                  <span className="ml-auto shrink-0 font-mono text-xs text-muted-foreground tabular-nums">
                     {timeLabel(row.last_sent_at)}
                   </span>
                 </div>
@@ -170,7 +158,7 @@ export const InboxList = () => {
                     {row.last_body}
                   </span>
                   {!row.window_open && (
-                    <Badge variant="outline">24h passed</Badge>
+                    <Badge variant="outline">Window closed</Badge>
                   )}
                 </div>
               </button>

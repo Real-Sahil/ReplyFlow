@@ -10,6 +10,14 @@ import { LeadBandBadge } from "./LeadBandBadge";
 import { useConfigurationContext } from "../root/ConfigurationContext";
 import type { Deal } from "../types";
 
+// How long a deal has sat without a change, as text so colour is never the only cue.
+const waiting = (updatedAt: string) => {
+  const days = Math.floor(
+    (Date.now() - new Date(updatedAt).getTime()) / (24 * 60 * 60 * 1000),
+  );
+  return days < 1 ? "Updated today" : `${days}d waiting`;
+};
+
 export const DealCard = ({ deal, index }: { deal: Deal; index: number }) => {
   if (!deal) return null;
 
@@ -51,8 +59,8 @@ export const DealCardContent = ({
         <Card
           className={`py-3 transition-all duration-200 ${
             snapshot?.isDragging
-              ? "opacity-90 transform rotate-1 shadow-lg"
-              : "shadow-sm hover:shadow-md"
+              ? "rotate-1 shadow-[var(--shadow-lift)]"
+              : "hover:-translate-y-0.5 hover:shadow-[var(--shadow-lift)]"
           }`}
         >
           <CardContent className="px-3 flex flex-col">
@@ -92,6 +100,9 @@ export const DealCardContent = ({
                 optionText="label"
                 optionValue="value"
               />
+            </p>
+            <p className="mt-1 font-mono text-xs text-muted-foreground tabular-nums">
+              {waiting(deal.updated_at)}
             </p>
             {deal.lead_band && (
               <span className="mt-2 flex">
