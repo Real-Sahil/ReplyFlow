@@ -1,16 +1,21 @@
 import { DragDropContext, type OnDragEndResponder } from "@hello-pangea/dnd";
 import isEqual from "lodash/isEqual";
 import { useDataProvider, useListContext, type DataProvider } from "ra-core";
+import { ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
+
+import { cn } from "@/lib/utils";
 
 import { useConfigurationContext } from "../root/ConfigurationContext";
 import type { Deal } from "../types";
 import { DealColumn } from "./DealColumn";
+import { formatPrice } from "../products/formatPrice";
 import type { DealsByStage } from "./stages";
 import { getDealsByStage } from "./stages";
 
 export const DealListContent = () => {
-  const { dealStages } = useConfigurationContext();
+  const { dealStages, currency } = useConfigurationContext();
+  const [focus, setFocus] = useState<string | null>(null);
   const { data: unorderedDeals, isPending, refetch } = useListContext<Deal>();
   const dataProvider = useDataProvider();
 
@@ -71,17 +76,70 @@ export const DealListContent = () => {
   };
 
   return (
-    <DragDropContext onDragEnd={onDragEnd}>
-      <div className="flex gap-4">
-        {dealStages.map((stage) => (
-          <DealColumn
-            stage={stage.value}
-            deals={dealsByStage[stage.value]}
-            key={stage.value}
-          />
-        ))}
-      </div>
-    </DragDropContext>
+    <>
+      <nav
+        aria-label="Pipeline stages"
+        className="mb-4 flex items-stretch gap-1 overflow-x-auto rounded-2xl bg-card p-2 shadow-[var(--shadow-card)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {dealStages.map((stage, i) => {
+          const deals = dealsByStage[stage.value] ?? [];
+          const value = deals.reduce((sum, d) => sum + (d.amount ?? 0), 0);
+          const selected = focus === stage.value;
+          return (
+            <div key={stage.value} className="flex min-w-0 flex-1 items-center">
+              <button
+                type="button"
+                aria-pressed={selected}
+                onClick={() => {
+                  setFocus(selected ? null : stage.value);
+                  document
+                    .getElementById(`stage-${stage.value}`)
+                    ?.scrollIntoView({
+                      behavior: "smooth",
+                      inline: "center",
+                      block: "nearest",
+                    });
+                }}
+                className={cn(
+                  "press flex min-w-28 flex-1 flex-col gap-0.5 rounded-xl px-3 py-2 text-left",
+                  selected
+                    ? "bg-accent ring-1 ring-primary"
+                    : "bg-muted/60 hover:bg-muted",
+                )}
+              >
+                <span className="truncate text-xs font-medium text-muted-foreground">
+                  {stage.label}
+                </span>
+                <span className="font-mono text-2xl leading-none tabular-nums">
+                  {deals.length}
+                </span>
+                <span className="truncate font-mono text-xs text-muted-foreground tabular-nums">
+                  {value ? formatPrice(value * 100, currency) : "No value"}
+                </span>
+              </button>
+              {i < dealStages.length - 1 ? (
+                <ChevronRight
+                  aria-hidden
+                  className="mx-0.5 size-4 shrink-0 text-muted-foreground/50"
+                />
+              ) : null}
+            </div>
+          );
+        })}
+      </nav>
+      <DragDropContext onDragEnd={onDragEnd}>
+        <div className="flex gap-4">
+          {dealStages.map((stage) => (
+            <DealColumn
+              stage={stage.value}
+              deals={dealsByStage[stage.value]}
+              dimmed={!!focus && focus !== stage.value}
+              key={stage.value}
+            />
+          ))}
+        </div>
+      </DragDropContext>
+    </>
   );
 };
 

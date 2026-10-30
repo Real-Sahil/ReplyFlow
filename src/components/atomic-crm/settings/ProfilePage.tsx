@@ -39,6 +39,8 @@ import type { CrmDataProvider } from "../providers/types";
 import { getSalesErrorNotification } from "../sales/salesErrorNotification";
 import type { Sale, SalesFormData } from "../types";
 
+import { NotificationsToggle } from "./NotificationsToggle";
+
 export const ProfilePage = () => {
   const [isEditMode, setEditMode] = useState(false);
   const { identity, refetch: refetchIdentity } = useGetIdentity();
@@ -93,6 +95,9 @@ export const ProfilePage = () => {
       <Form onSubmit={handleOnSubmit} record={data}>
         <ProfileForm isEditMode={isEditMode} setEditMode={setEditMode} />
       </Form>
+      <div className="mt-4 overflow-hidden rounded-2xl bg-card shadow-[var(--shadow-card)]">
+        <NotificationsToggle />
+      </div>
     </div>
   );
 };

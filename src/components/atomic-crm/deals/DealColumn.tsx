@@ -8,14 +8,19 @@ import { DealCard } from "./DealCard";
 export const DealColumn = ({
   stage,
   deals,
+  dimmed = false,
 }: {
   stage: string;
   deals: Deal[];
+  dimmed?: boolean;
 }) => {
   const totalAmount = deals.reduce((sum, deal) => sum + deal.amount, 0);
   const { dealStages, currency } = useConfigurationContext();
   return (
-    <div className="flex-1 pb-8">
+    <div
+      id={`stage-${stage}`}
+      className={`flex-1 pb-8 transition-opacity duration-300 ${dimmed ? "opacity-50" : ""}`}
+    >
       <div className="flex items-baseline justify-between gap-2 px-1">
         <h3 className="text-sm font-semibold">
           {findDealLabel(dealStages, stage)}

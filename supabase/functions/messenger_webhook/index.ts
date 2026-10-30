@@ -9,6 +9,7 @@
 import { getPageTokenFor } from "../_shared/metaToken.ts";
 import { assertMetaOpen, recordIfActionBlock } from "../_shared/metaCircuit.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
+import { sendPushToOrganisation } from "../_shared/webPush.ts";
 import {
   type AutoReplySettings,
   type ConversationState,
@@ -187,6 +188,38 @@ const runAutoReply = async (message: InboundMessage, messageRowId: number) => {
   }
 };
 
+// Tells the business's phones and computers that a customer wrote. Never throws and never
+// holds the answer to Meta for long: the message is already saved.
+const notifyStaff = async (message: InboundMessage, messageRowId: number) => {
+  try {
+    const { data: row } = await supabaseAdmin
+      .from("messenger_messages")
+      .select("contact_id, organisation_id")
+      .eq("id", messageRowId)
+      .single();
+    if (!row?.organisation_id) return;
+    const { data: contact } = await supabaseAdmin
+      .from("contacts")
+      .select("first_name, last_name")
+      .eq("id", row.contact_id)
+      .maybeSingle();
+    const name =
+      `${contact?.first_name ?? ""} ${contact?.last_name ?? ""}`.trim() ||
+      "New message";
+    await Promise.race([
+      sendPushToOrganisation(Number(row.organisation_id), {
+        title: name,
+        body: message.body || "Sent an attachment",
+        url: "./#/messenger_inbox",
+        tag: `message-${row.contact_id}`,
+      }),
+      new Promise((resolve) => setTimeout(resolve, 4000)),
+    ]);
+  } catch (error) {
+    console.error("Notify failed", (error as Error).message);
+  }
+};
+
 Deno.serve(async (req) => {
   const url = new URL(req.url);
 
@@ -276,7 +309,10 @@ Deno.serve(async (req) => {
       return text("Error", 500);
     }
     // null means Meta redelivered a message we already stored: do not answer twice.
-    if (rowId) await runAutoReply(message, rowId as number);
+    if (rowId) {
+      await notifyStaff(message, rowId as number);
+      await runAutoReply(message, rowId as number);
+    }
   }
 
   return text("EVENT_RECEIVED");

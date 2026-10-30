@@ -11,10 +11,13 @@ import { useConfigurationContext } from "../root/ConfigurationContext";
 import type { Deal } from "../types";
 
 // How long a deal has sat without a change, as text so colour is never the only cue.
-const waiting = (updatedAt: string) => {
-  const days = Math.floor(
+const waitDays = (updatedAt: string) =>
+  Math.floor(
     (Date.now() - new Date(updatedAt).getTime()) / (24 * 60 * 60 * 1000),
   );
+
+const waiting = (updatedAt: string) => {
+  const days = waitDays(updatedAt);
   return days < 1 ? "Updated today" : `${days}d waiting`;
 };
 
@@ -101,9 +104,20 @@ export const DealCardContent = ({
                 optionValue="value"
               />
             </p>
-            <p className="mt-1 font-mono text-xs text-muted-foreground tabular-nums">
+            <p className="mt-2 font-mono text-xs text-muted-foreground tabular-nums">
               {waiting(deal.updated_at)}
             </p>
+            <span
+              aria-hidden
+              className="mt-1 block h-1 overflow-hidden rounded-full bg-muted"
+            >
+              <span
+                className={`block h-full origin-left rounded-full ${waitDays(deal.updated_at) >= 7 ? "bg-primary" : "bg-muted-foreground/40"}`}
+                style={{
+                  transform: `scaleX(${Math.min(1, Math.max(0.04, waitDays(deal.updated_at) / 14))})`,
+                }}
+              />
+            </span>
             {deal.lead_band && (
               <span className="mt-2 flex">
                 <LeadBandBadge band={deal.lead_band} score={deal.lead_score} />
