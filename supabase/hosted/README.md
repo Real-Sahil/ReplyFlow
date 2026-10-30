@@ -7,7 +7,8 @@ The project previously held an unrelated device app. Its `public` schema was
 **renamed** to `legacy_device_app` (data kept, API access revoked, its sign-up
 trigger function replaced by a no-op) rather than dropped, because the Supabase
 MCP tool holds `DROP` and `DELETE FROM` statements for interactive approval.
-Delete that schema yourself when you no longer need the data.
+It held no data and nothing referenced it, so it was dropped on 30 October 2026
+(`migrations/20261207100000_replyflow_drop_legacy_schema.sql`).
 
 ## Applied, in order
 
