@@ -43,6 +43,7 @@ import {
 import sales from "../sales";
 import { SettingsPageMobile } from "../settings/SettingsPageMobile";
 import { ProfilePage } from "../settings/ProfilePage";
+import { asMobileScreen } from "../layout/MobileScreen";
 import { SettingsPage } from "../settings/SettingsPage";
 import { ErrorLogPage } from "../errors/ErrorLogPage";
 import { FacebookConnectionPage } from "../facebook/FacebookConnectionPage";
@@ -302,6 +303,18 @@ const DesktopAdmin = (
   );
 };
 
+// Screens that exist only as desktop pages, shown on the phone inside a mobile frame so that
+// every link in the bottom bar and the More sheet leads somewhere.
+const MobileDeals = asMobileScreen("Deals", deals.list);
+const MobileCompanies = asMobileScreen("Companies", companies.list);
+const MobileCompanyCreate = asMobileScreen("New company", companies.create);
+const MobileCompanyEdit = asMobileScreen("Edit company", companies.edit);
+const MobileSales = asMobileScreen("Team", sales.list);
+const MobileSalesCreate = asMobileScreen("New team member", sales.create);
+const MobileSalesEdit = asMobileScreen("Edit team member", sales.edit);
+const MobileProfile = asMobileScreen("My profile", ProfilePage);
+const MobileImport = asMobileScreen("Import data", ImportPage);
+
 const MobileAdmin = (
   props: CoreAdminProps & {
     dashboard?: DashboardComponent;
@@ -363,6 +376,8 @@ const MobileAdmin = (
             path={SettingsPageMobile.path}
             element={<SettingsPageMobile />}
           />
+          <Route path={ProfilePage.path} element={<MobileProfile />} />
+          <Route path={ImportPage.path} element={<MobileImport />} />
           <Route path="/facebook" element={<FacebookConnectionPage />} />
           <Route path="/errors" element={<ErrorLogPage />} />
           <Route path={ChangelogPage.path} element={<ChangelogPage />} />
@@ -379,7 +394,21 @@ const MobileAdmin = (
         >
           <Route path=":id/notes/:noteId" element={<NoteShowPage />} />
         </Resource>
-        <Resource name="companies" show={CompanyShow} />
+        <Resource
+          name="companies"
+          list={MobileCompanies}
+          create={MobileCompanyCreate}
+          edit={MobileCompanyEdit}
+          show={CompanyShow}
+        />
+        <Resource name="deals" list={MobileDeals} />
+        <Resource
+          name="sales"
+          list={MobileSales}
+          create={MobileSalesCreate}
+          edit={MobileSalesEdit}
+          recordRepresentation={sales.recordRepresentation}
+        />
         <Resource name="tasks" list={MobileTasksList} />
         <Resource name="messenger_messages" />
         <Resource name="messenger_inbox" {...inbox} />
