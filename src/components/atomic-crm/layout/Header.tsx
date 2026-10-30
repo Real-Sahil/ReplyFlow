@@ -26,6 +26,7 @@ import { useConfigurationContext } from "../root/ConfigurationContext";
 import { ImportPage } from "../misc/ImportPage";
 import { GlobalSearchButton } from "../search/GlobalSearchButton";
 import { cn } from "@/lib/utils";
+import { useAppBadge } from "@/hooks/use-app-badge";
 
 const SECTIONS = [
   { path: "/", label: "Today" },
@@ -61,10 +62,12 @@ export const Toolbar = () => {
     pagination: { page: 1, perPage: 1 },
   });
   const inboxCount = (unread ?? 0) + (newComments ?? 0);
+  useAppBadge(inboxCount);
 
   return (
     <header
       data-slot="toolbar"
+      data-titlebar
       className="sticky top-0 z-30 border-b border-border"
     >
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4 md:px-6">

@@ -372,3 +372,59 @@ a[href] > [data-slot="card"]:hover {
     animation: none;
   }
 }
+
+/* Native-app behaviour: the interface is not text to select, taps do not flash
+   or zoom, and the page does not bounce or pull. Messages, forms and anything
+   meant to be copied stay selectable. */
+body {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  overscroll-behavior: none;
+}
+
+a,
+button,
+[role="button"],
+[role="tab"],
+nav,
+header,
+label {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+a,
+button,
+input,
+select,
+textarea,
+[role="button"] {
+  touch-action: manipulation;
+}
+
+input,
+textarea,
+[contenteditable],
+[data-selectable],
+.selectable {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Installed on a Mac or Windows PC, the toolbar becomes the title bar: drag it
+   to move the window, and leave room for the window buttons. */
+@media (display-mode: window-controls-overlay) {
+  [data-titlebar] {
+    app-region: drag;
+    height: env(titlebar-area-height, 3.5rem);
+    padding-left: env(titlebar-area-x, 0px);
+    padding-right: calc(
+      100% - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100%)
+    );
+  }
+  [data-titlebar] a,
+  [data-titlebar] button,
+  [data-titlebar] input {
+    app-region: no-drag;
+  }
+}

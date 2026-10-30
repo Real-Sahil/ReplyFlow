@@ -41,6 +41,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { useAppBadge } from "@/hooks/use-app-badge";
 import { ContactCreateSheet } from "../contacts/ContactCreateSheet";
 import { NoteCreateSheet } from "../notes/NoteCreateSheet";
 import { TaskCreateSheet } from "../tasks/TaskCreateSheet";
@@ -143,6 +144,7 @@ const InboxButton = ({ isActive }: { isActive: boolean }) => {
     pagination: { page: 1, perPage: 1 },
   });
   const total = (unread ?? 0) + (newComments ?? 0);
+  useAppBadge(total);
   return (
     <Link
       to="/messenger_inbox"

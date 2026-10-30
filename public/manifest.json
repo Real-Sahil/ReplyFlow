@@ -68,7 +68,50 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "orientation": "portrait",
-  "theme_color": "#2f6bed",
-  "background_color": "#ffffff"
+  "orientation": "any",
+  "theme_color": "#f6f3f1",
+  "background_color": "#f6f3f1",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone"
+  ],
+  "description": "Messenger inbox, deals and posts for your shop.",
+  "shortcuts": [
+    {
+      "name": "Inbox",
+      "short_name": "Inbox",
+      "url": "./#/messenger_inbox",
+      "icons": [
+        {
+          "src": "appIcon/192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Pipeline",
+      "short_name": "Pipeline",
+      "url": "./#/deals",
+      "icons": [
+        {
+          "src": "appIcon/192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Today",
+      "short_name": "Today",
+      "url": "./#/",
+      "icons": [
+        {
+          "src": "appIcon/192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ]
 }

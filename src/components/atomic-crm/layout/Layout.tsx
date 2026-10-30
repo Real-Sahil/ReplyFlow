@@ -6,10 +6,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 import { DataImportProvider } from "../dataImport/DataImportProvider";
 import { useConfigurationLoader } from "../root/useConfigurationLoader";
+import { useGlobalShortcuts } from "@/hooks/use-global-shortcuts";
 import { RecordBackLink, Toolbar } from "./Header";
 
 export const Layout = ({ children }: { children: ReactNode }) => {
   useConfigurationLoader();
+  useGlobalShortcuts();
   return (
     <DataImportProvider>
       <div className="min-h-screen bg-background">
