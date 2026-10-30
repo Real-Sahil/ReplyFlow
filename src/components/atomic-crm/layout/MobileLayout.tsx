@@ -20,7 +20,7 @@ export const MobileLayout = ({ children }: { children: ReactNode }) => {
         </Suspense>
       </ErrorBoundary>
       <MobileNavigation />
-      <Notification mobileOffset={{ bottom: "72px" }} />
+      <Notification mobileOffset={{ bottom: "96px" }} />
     </DataImportProvider>
   );
 };

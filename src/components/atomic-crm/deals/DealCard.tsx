@@ -49,7 +49,7 @@ export const DealCardContent = ({
 
   return (
     <div
-      className="cursor-pointer"
+      className="press cursor-pointer"
       {...provided?.draggableProps}
       {...provided?.dragHandleProps}
       ref={provided?.innerRef}

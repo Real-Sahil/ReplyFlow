@@ -131,7 +131,7 @@ export const InboxList = () => {
                 type="button"
                 onClick={() => setSelected(row.contact_id)}
                 className={cn(
-                  "relative flex w-full flex-col gap-0.5 border-b px-4 py-3 text-left hover:bg-muted/70",
+                  "press relative flex w-full flex-col gap-0.5 border-b px-4 py-3 text-left hover:bg-muted/70",
                   active?.contact_id === row.contact_id &&
                     "bg-accent before:absolute before:inset-y-2 before:left-0 before:w-0.5 before:rounded-full before:bg-primary",
                 )}

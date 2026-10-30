@@ -24,6 +24,26 @@ import type { Contact, Task as TData } from "../types";
 import { TaskEdit } from "./TaskEdit";
 import { TaskEditSheet } from "./TaskEditSheet";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { SwipeRow } from "@/components/ui/swipe-row";
+
+// Swipe actions only on touch screens; elsewhere the row is left alone.
+const SwipeRowIf = ({
+  enabled,
+  children,
+  ...props
+}: {
+  enabled: boolean;
+  children: React.ReactNode;
+  onSwipeRight?: () => void;
+  onSwipeLeft?: () => void;
+}) =>
+  enabled ? (
+    <SwipeRow rightLabel="Done" leftLabel="Delete" {...props}>
+      {children}
+    </SwipeRow>
+  ) : (
+    <>{children}</>
+  );
 
 export const Task = ({
   task,
@@ -90,124 +110,132 @@ export const Task = ({
 
   return (
     <>
-      <div className="flex items-start justify-between">
-        <div
-          className="flex items-start gap-2 flex-1"
-          onClick={isMobile ? handleCheck() : undefined}
-        >
-          <Checkbox
-            id={labelId}
-            checked={!!task.done_date}
-            onCheckedChange={handleCheck()}
-            disabled={isUpdatePending}
-            className="mt-1"
-          />
-          <div className={`flex-grow ${task.done_date ? "line-through" : ""}`}>
-            <div className="text-sm">
-              {task.type && task.type !== "none" && (
-                <>
-                  <span className="font-semibold text-sm">
-                    {(() => {
-                      const matchedTaskType = taskTypes.find(
-                        (taskType) => taskType.value === task.type,
+      <SwipeRowIf
+        enabled={isMobile}
+        onSwipeRight={task.done_date ? undefined : handleCheck()}
+        onSwipeLeft={() => handleDelete({ stopPropagation() {} } as never)}
+      >
+        <div className="flex items-start justify-between">
+          <div
+            className="flex items-start gap-2 flex-1"
+            onClick={isMobile ? handleCheck() : undefined}
+          >
+            <Checkbox
+              id={labelId}
+              checked={!!task.done_date}
+              onCheckedChange={handleCheck()}
+              disabled={isUpdatePending}
+              className="mt-1"
+            />
+            <div
+              className={`flex-grow ${task.done_date ? "line-through" : ""}`}
+            >
+              <div className="text-sm">
+                {task.type && task.type !== "none" && (
+                  <>
+                    <span className="font-semibold text-sm">
+                      {(() => {
+                        const matchedTaskType = taskTypes.find(
+                          (taskType) => taskType.value === task.type,
+                        );
+                        return matchedTaskType
+                          ? matchedTaskType.label
+                          : task.type;
+                      })()}
+                    </span>
+                    &nbsp;
+                  </>
+                )}
+                {task.text}
+              </div>
+              <div className="text-sm text-muted-foreground">
+                {translate("resources.tasks.fields.due_short")}
+                &nbsp;
+                <DateField source="due_date" record={task} showDate showTime />
+                {showContact && (
+                  <ReferenceField<TData, Contact>
+                    source="contact_id"
+                    reference="contacts"
+                    record={task}
+                    link="show"
+                    className="inline text-sm text-muted-foreground"
+                    render={({ referenceRecord }) => {
+                      if (!referenceRecord) return null;
+                      return (
+                        <>
+                          {" "}
+                          {translate("resources.tasks.regarding_contact", {
+                            name: getContactRepresentation(referenceRecord),
+                          })}
+                        </>
                       );
-                      return matchedTaskType
-                        ? matchedTaskType.label
-                        : task.type;
-                    })()}
-                  </span>
-                  &nbsp;
-                </>
-              )}
-              {task.text}
-            </div>
-            <div className="text-sm text-muted-foreground">
-              {translate("resources.tasks.fields.due_short")}
-              &nbsp;
-              <DateField source="due_date" record={task} showDate showTime />
-              {showContact && (
-                <ReferenceField<TData, Contact>
-                  source="contact_id"
-                  reference="contacts"
-                  record={task}
-                  link="show"
-                  className="inline text-sm text-muted-foreground"
-                  render={({ referenceRecord }) => {
-                    if (!referenceRecord) return null;
-                    return (
-                      <>
-                        {" "}
-                        {translate("resources.tasks.regarding_contact", {
-                          name: getContactRepresentation(referenceRecord),
-                        })}
-                      </>
-                    );
-                  }}
-                />
-              )}
+                    }}
+                  />
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-5 pr-0! size-8 cursor-pointer"
-              aria-label={translate("resources.tasks.actions.title")}
-            >
-              <MoreVertical className="size-5 md:size-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem
-              className="cursor-pointer h-12 md:h-8 px-4 md:px-2 text-base md:text-sm"
-              onClick={() => {
-                update("tasks", {
-                  id: task.id,
-                  data: {
-                    due_date: new Date(Date.now() + 24 * 60 * 60 * 1000)
-                      .toISOString()
-                      .slice(0, 10),
-                  },
-                  previousData: task,
-                });
-              }}
-            >
-              {translate("resources.tasks.actions.postpone_tomorrow")}
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              className="cursor-pointer h-12 md:h-8 px-4 md:px-2 text-base md:text-sm"
-              onClick={() => {
-                update("tasks", {
-                  id: task.id,
-                  data: {
-                    due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-                      .toISOString()
-                      .slice(0, 10),
-                  },
-                  previousData: task,
-                });
-              }}
-            >
-              {translate("resources.tasks.actions.postpone_next_week")}
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              className="cursor-pointer h-12 md:h-8 px-4 md:px-2 text-base md:text-sm"
-              onClick={handleEdit}
-            >
-              {translate("ra.action.edit")}
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              className="cursor-pointer h-12 md:h-8 px-4 md:px-2 text-base md:text-sm"
-              onClick={handleDelete}
-            >
-              {translate("ra.action.delete")}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-5 pr-0! size-8 cursor-pointer"
+                aria-label={translate("resources.tasks.actions.title")}
+              >
+                <MoreVertical className="size-5 md:size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                className="cursor-pointer h-12 md:h-8 px-4 md:px-2 text-base md:text-sm"
+                onClick={() => {
+                  update("tasks", {
+                    id: task.id,
+                    data: {
+                      due_date: new Date(Date.now() + 24 * 60 * 60 * 1000)
+                        .toISOString()
+                        .slice(0, 10),
+                    },
+                    previousData: task,
+                  });
+                }}
+              >
+                {translate("resources.tasks.actions.postpone_tomorrow")}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="cursor-pointer h-12 md:h-8 px-4 md:px-2 text-base md:text-sm"
+                onClick={() => {
+                  update("tasks", {
+                    id: task.id,
+                    data: {
+                      due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+                        .toISOString()
+                        .slice(0, 10),
+                    },
+                    previousData: task,
+                  });
+                }}
+              >
+                {translate("resources.tasks.actions.postpone_next_week")}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="cursor-pointer h-12 md:h-8 px-4 md:px-2 text-base md:text-sm"
+                onClick={handleEdit}
+              >
+                {translate("ra.action.edit")}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="cursor-pointer h-12 md:h-8 px-4 md:px-2 text-base md:text-sm"
+                onClick={handleDelete}
+              >
+                {translate("ra.action.delete")}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </SwipeRowIf>
 
       {isMobile ? (
         <TaskEditSheet

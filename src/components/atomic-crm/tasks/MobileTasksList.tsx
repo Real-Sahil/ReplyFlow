@@ -12,7 +12,9 @@ export const MobileTasksList = () => {
           {translate("resources.tasks.name", { smart_count: 2 })}
         </h1>
       </MobileHeader>
-      <MobileContent>
+      <MobileContent
+        title={translate("resources.tasks.name", { smart_count: 2 })}
+      >
         <TasksListContent />
       </MobileContent>
     </>

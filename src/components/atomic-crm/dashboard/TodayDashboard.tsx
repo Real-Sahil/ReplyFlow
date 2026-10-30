@@ -109,7 +109,7 @@ const Row = ({
 }) => (
   <Link
     to={to}
-    className="group flex min-h-14 items-center gap-3 px-4 py-2.5 hover:bg-muted/70 active:bg-muted"
+    className="press group flex min-h-14 items-center gap-3 px-4 py-2.5 hover:bg-muted/70 active:bg-muted"
   >
     {lead}
     <div className="min-w-0 flex-1">

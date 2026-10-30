@@ -31,7 +31,7 @@ export function Segmented<T extends string>({
     >
       <span
         aria-hidden
-        className="pointer-events-none absolute inset-y-0.5 left-0.5 rounded-md bg-card shadow-[var(--shadow-card)] transition-transform duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
+        className="pointer-events-none absolute inset-y-0.5 left-0.5 rounded-md bg-card shadow-[var(--shadow-card)] transition-transform duration-300 ease-[var(--spring)]"
         style={{
           width: `calc((100% - 0.25rem) / ${options.length})`,
           transform: `translateX(${index * 100}%)`,

@@ -153,7 +153,7 @@ const Tabs = ({
       {marker ? (
         <span
           aria-hidden
-          className="pointer-events-none absolute bottom-0 left-0 h-0.5 w-[100px] origin-left rounded-full bg-primary transition-transform duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
+          className="pointer-events-none absolute bottom-0 left-0 h-0.5 w-[100px] origin-left rounded-full bg-primary transition-transform duration-300 ease-[var(--spring)]"
           style={{
             transform: `translateX(${marker.x}px) scaleX(${marker.w / 100})`,
           }}

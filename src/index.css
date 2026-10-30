@@ -99,6 +99,27 @@
     0 0 0 0.5px oklch(32% 0.03 50 / 12%),
     0 10px 28px -12px oklch(32% 0.03 50 / 28%);
   --ease-spring: cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* A real spring: it overshoots a little and settles. Transforms only; colours
+     use the plain curve above because they cannot overshoot. */
+  --spring: linear(
+    0,
+    0.009 0.7%,
+    0.037 1.5%,
+    0.148 3.4%,
+    0.31 5.6%,
+    0.52 8.4%,
+    0.72 11.4%,
+    0.88 14.6%,
+    0.98 18%,
+    1.04 21.5%,
+    1.065 25%,
+    1.065 29%,
+    1.045 34%,
+    1.02 40%,
+    1.004 47%,
+    0.998 55%,
+    1
+  );
   --avatar-0: oklch(88% 0.05 240);
   --avatar-1: oklch(90% 0.05 340);
   --avatar-2: oklch(88% 0.05 180);
@@ -222,7 +243,7 @@ select {
     background-color 180ms var(--ease-spring),
     color 180ms var(--ease-spring),
     box-shadow 260ms var(--ease-spring),
-    transform 260ms var(--ease-spring),
+    transform 420ms var(--spring),
     border-color 180ms var(--ease-spring);
 }
 
@@ -296,5 +317,53 @@ a[href] > [data-slot="card"]:hover {
     animation: none;
     background: none;
     color: inherit;
+  }
+}
+
+/* Anything pressable that is a row dips under the finger and springs back. */
+.press:active:not(:disabled) {
+  transform: scale(0.985);
+  transition-duration: 80ms;
+}
+
+/* Sheets and dialogs arrive on a spring, not a straight ease. */
+[data-slot="dialog-content"][data-state="open"],
+[data-slot="sheet-content"][data-state="open"] {
+  animation-timing-function: var(--spring);
+  animation-duration: 450ms;
+}
+
+/* Loading placeholders: a soft light moving across, in the shape of the content. */
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+      100deg,
+      var(--muted) 30%,
+      var(--card) 50%,
+      var(--muted) 70%
+    )
+    100% 0 / 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+
+/* The undo message is a small frosted pill, not a flat box. */
+[data-sonner-toast] {
+  border-radius: 9999px !important;
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  box-shadow: var(--shadow-lift) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .press:active:not(:disabled) {
+    transform: none;
+  }
+  .skeleton-shimmer {
+    animation: none;
   }
 }

@@ -144,7 +144,9 @@ const ContactListLayoutMobile = () => {
           <ContactListFilter />
         </div>
       </MobileHeader>
-      <MobileContent>
+      <MobileContent
+        title={translate("resources.contacts.name", { smart_count: 2 })}
+      >
         <ContactListFilterSummary />
         <ContactListContentMobile />
         {!error && (

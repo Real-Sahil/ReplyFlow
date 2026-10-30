@@ -61,8 +61,8 @@ export const MobileNavigation = () => {
     <nav
       aria-label={translate("crm.navigation.label")}
       data-slot="toolbar"
-      className="fixed inset-x-0 bottom-0 z-50 border-t"
-      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      className="fixed inset-x-3 z-50 rounded-[28px] border shadow-[var(--shadow-lift)]"
+      style={{ bottom: "calc(env(safe-area-inset-bottom) + 0.5rem)" }}
     >
       <div className="mx-auto grid h-16 max-w-md grid-cols-6 items-center px-1">
         <NavigationButton
@@ -184,11 +184,7 @@ const MoreSheet = ({
       side="bottom"
       className="max-h-[88vh] gap-0 overflow-y-auto rounded-t-2xl bg-background px-4 pb-8"
     >
-      <span
-        aria-hidden
-        className="mx-auto mt-2 h-1 w-9 shrink-0 rounded-full bg-border"
-      />
-      <SheetHeader className="px-1 pt-3 pb-4">
+      <SheetHeader className="px-1 pt-7 pb-4">
         <SheetTitle className="text-2xl font-semibold tracking-tight">
           More
         </SheetTitle>
@@ -331,7 +327,7 @@ const MoreRow = ({
   <Link
     to={to}
     onClick={() => onPick(false)}
-    className="group relative flex min-h-14 items-center gap-3 px-3 py-2 active:bg-muted"
+    className="press group relative flex min-h-14 items-center gap-3 px-3 py-2 active:bg-muted"
   >
     <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground">
       <Icon className="size-[18px]" />
@@ -378,10 +374,10 @@ const CreateButton = () => {
           <Button
             variant="default"
             size="icon"
-            className="-mt-6 size-14 rounded-full shadow-[var(--shadow-lift)]"
+            className="mx-auto size-12 rounded-full"
             aria-label={translate("ra.action.create")}
           >
-            <Plus className="size-7" />
+            <Plus className="size-6" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent>
