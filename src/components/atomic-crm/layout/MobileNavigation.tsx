@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   Bug,
   Building2,
+  ChevronRight,
   Home,
   Import,
   Kanban,
@@ -169,7 +170,8 @@ const InboxButton = ({ isActive }: { isActive: boolean }) => {
   );
 };
 
-// Everything that is not a daily destination, in large touch targets.
+// Everything that is not a daily destination: grouped lists, one row each,
+// with a short line saying what is behind it.
 const MoreSheet = ({
   open,
   onOpenChange,
@@ -180,101 +182,122 @@ const MoreSheet = ({
   <Sheet open={open} onOpenChange={onOpenChange}>
     <SheetContent
       side="bottom"
-      className="max-h-[85vh] gap-5 overflow-y-auto rounded-t-3xl px-4 pb-8"
+      className="max-h-[88vh] gap-0 overflow-y-auto rounded-t-2xl bg-background px-4 pb-8"
     >
-      <SheetHeader className="px-0 pt-2">
-        <SheetTitle className="text-lg">More</SheetTitle>
+      <span
+        aria-hidden
+        className="mx-auto mt-2 h-1 w-9 shrink-0 rounded-full bg-border"
+      />
+      <SheetHeader className="px-1 pt-3 pb-4">
+        <SheetTitle className="text-2xl font-semibold tracking-tight">
+          More
+        </SheetTitle>
       </SheetHeader>
-      <MoreGroup title="Sell and publish">
-        <MoreTile
-          to="/tasks"
-          label="Tasks"
-          Icon={ListTodo}
-          onPick={onOpenChange}
-        />
-        <MoreTile
-          to="/deals"
-          label="Deals"
-          Icon={Kanban}
-          onPick={onOpenChange}
-        />
-        <MoreTile
-          to="/products"
-          label="Products"
-          Icon={Sofa}
-          onPick={onOpenChange}
-        />
-        <MoreTile
-          to="/page_posts"
-          label="Posts"
-          Icon={Megaphone}
-          onPick={onOpenChange}
-        />
-      </MoreGroup>
-      <MoreGroup title="Workspace">
-        <CanAccess resource="sales" action="list">
-          <MoreTile
-            to="/sales"
-            label="Team"
-            Icon={Users}
+      <div className="flex flex-col gap-6">
+        <MoreGroup title="Sell and publish">
+          <MoreRow
+            to="/tasks"
+            label="Tasks"
+            detail="Follow-ups and to-dos"
+            Icon={ListTodo}
             onPick={onOpenChange}
           />
-        </CanAccess>
-        <MoreTile
-          to="/companies"
-          label="Companies"
-          Icon={Building2}
-          onPick={onOpenChange}
-        />
-        <MoreTile
-          to={ImportPage.path}
-          label="Import data"
-          Icon={Import}
-          onPick={onOpenChange}
-        />
-      </MoreGroup>
-      <CanAccess resource="configuration" action="edit">
-        <MoreGroup title="Channels">
-          <MoreTile
-            to="/facebook"
-            label="Facebook"
-            Icon={Plug}
+          <MoreRow
+            to="/deals"
+            label="Deals"
+            detail="The pipeline, stage by stage"
+            Icon={Kanban}
             onPick={onOpenChange}
           />
-          <MoreTile
-            to="/messenger_settings/1"
-            label="Auto-replies"
-            Icon={MessageCircle}
+          <MoreRow
+            to="/products"
+            label="Products"
+            detail="What you sell"
+            Icon={Sofa}
             onPick={onOpenChange}
           />
-          <MoreTile
-            to="/errors"
-            label="Error log"
-            Icon={Bug}
+          <MoreRow
+            to="/page_posts"
+            label="Posts"
+            detail="Write, schedule and publish"
+            Icon={Megaphone}
             onPick={onOpenChange}
           />
         </MoreGroup>
-      </CanAccess>
-      <MoreGroup title="Account">
-        <CanAccess resource="configuration" action="edit">
-          <MoreTile
-            to="/settings"
-            label="Settings"
-            Icon={Settings}
+        <MoreGroup title="Workspace">
+          <CanAccess resource="sales" action="list">
+            <MoreRow
+              to="/sales"
+              label="Team"
+              detail="Who can sign in"
+              Icon={Users}
+              onPick={onOpenChange}
+            />
+          </CanAccess>
+          <MoreRow
+            to="/companies"
+            label="Companies"
+            detail="Businesses you deal with"
+            Icon={Building2}
             onPick={onOpenChange}
           />
+          <MoreRow
+            to={ImportPage.path}
+            label="Import data"
+            detail="Bring in contacts and deals"
+            Icon={Import}
+            onPick={onOpenChange}
+          />
+        </MoreGroup>
+        <CanAccess resource="configuration" action="edit">
+          <MoreGroup title="Channels">
+            <MoreRow
+              to="/facebook"
+              label="Facebook"
+              detail="Connected Pages"
+              Icon={Plug}
+              onPick={onOpenChange}
+            />
+            <MoreRow
+              to="/messenger_settings/1"
+              label="Auto-replies"
+              detail="Greeting and away messages"
+              Icon={MessageCircle}
+              onPick={onOpenChange}
+            />
+            <MoreRow
+              to="/errors"
+              label="Error log"
+              detail="What went wrong, and when"
+              Icon={Bug}
+              onPick={onOpenChange}
+            />
+          </MoreGroup>
         </CanAccess>
-        <MoreTile
-          to="/profile"
-          label="My profile"
-          Icon={User}
-          onPick={onOpenChange}
-        />
-      </MoreGroup>
+        <MoreGroup title="Account">
+          <CanAccess resource="configuration" action="edit">
+            <MoreRow
+              to="/settings"
+              label="Settings"
+              detail="Business details and pipeline"
+              Icon={Settings}
+              onPick={onOpenChange}
+            />
+          </CanAccess>
+          <MoreRow
+            to="/profile"
+            label="My profile"
+            detail="Your name, photo and password"
+            Icon={User}
+            onPick={onOpenChange}
+          />
+        </MoreGroup>
+      </div>
     </SheetContent>
   </Sheet>
 );
 
+// One white cell per group; rows are split by hairlines inset past the icon.
 const MoreGroup = ({
   title,
   children,
@@ -282,35 +305,47 @@ const MoreGroup = ({
   title: string;
   children: React.ReactNode;
 }) => (
-  <section className="flex flex-col gap-2">
-    <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+  <section className="flex flex-col gap-1.5">
+    <h3 className="px-1 text-sm font-semibold text-muted-foreground">
       {title}
     </h3>
-    <div className="grid grid-cols-3 gap-2">{children}</div>
+    <div className="overflow-hidden rounded-xl bg-card shadow-[var(--shadow-card)] [&>a+a]:before:absolute [&>a+a]:before:inset-x-0 [&>a+a]:before:top-0 [&>a+a]:before:ml-14 [&>a+a]:before:h-px [&>a+a]:before:bg-border">
+      {children}
+    </div>
   </section>
 );
 
-// A large tile: at least 44px tall, with the name under the icon.
-const MoreTile = ({
+const MoreRow = ({
   to,
   label,
+  detail,
   Icon,
   onPick,
 }: {
   to: string;
   label: string;
+  detail: string;
   Icon: React.ComponentType<{ className?: string }>;
   onPick: (open: boolean) => void;
 }) => (
   <Link
     to={to}
     onClick={() => onPick(false)}
-    className="flex min-h-20 flex-col items-center justify-center gap-2 rounded-xl bg-muted p-3 text-center text-sm font-medium transition-colors hover:bg-accent active:bg-accent"
+    className="group relative flex min-h-14 items-center gap-3 px-3 py-2 active:bg-muted"
   >
-    <span className="flex size-9 items-center justify-center rounded-full bg-card text-primary shadow-sm">
-      <Icon className="size-5" />
+    <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+      <Icon className="size-[18px]" />
     </span>
-    {label}
+    <span className="min-w-0 flex-1">
+      <span className="block truncate text-base font-medium">{label}</span>
+      <span className="block truncate text-sm text-muted-foreground">
+        {detail}
+      </span>
+    </span>
+    <ChevronRight
+      aria-hidden
+      className="size-4 shrink-0 text-muted-foreground/60"
+    />
   </Link>
 );
 
