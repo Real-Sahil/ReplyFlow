@@ -1,8 +1,6 @@
-import { useState } from "react";
 import { useGetIdentity, useGetList } from "ra-core";
 import { Link } from "react-router";
-import { ArrowRight, Clock, MessageCircle, Package } from "lucide-react";
-import { Card } from "@/components/ui/card";
+import { ChevronRight } from "lucide-react";
 import { FacebookPagesPrompt } from "../facebook/FacebookPagesPrompt";
 import { cn } from "@/lib/utils";
 
@@ -34,6 +32,9 @@ type OrderRow = {
   next_update_due: string | null;
 };
 
+const DAY = 24 * 60 * 60 * 1000;
+const WINDOW = DAY; // Messenger lets a business reply for 24 hours after a customer writes.
+
 const greeting = () => {
   const hour = new Date().getHours();
   return hour < 12
@@ -46,152 +47,108 @@ const greeting = () => {
 const initials = (first: string, last: string | null) =>
   `${first?.[0] ?? ""}${last?.[0] ?? ""}`.toUpperCase() || "?";
 
-// One figure in the overview card. Each links to the list behind it.
-const OverviewStat = ({
+// "2h left", "34m left", "Closed": the reply window for a conversation.
+const windowLeft = (lastSentAt: string, now: number) => {
+  const ms = new Date(lastSentAt).getTime() + WINDOW - now;
+  if (ms <= 0) return { label: "Closed", urgent: true };
+  const hours = Math.floor(ms / (60 * 60 * 1000));
+  if (hours >= 1) return { label: `${hours}h left`, urgent: hours < 3 };
+  return {
+    label: `${Math.max(1, Math.round(ms / 60000))}m left`,
+    urgent: true,
+  };
+};
+
+const plural = (n: number, one: string, many = `${one}s`) =>
+  `${n} ${n === 1 ? one : many}`;
+
+// A grouped list: rows share one white cell and are split by inset hairlines.
+const Group = ({
+  title,
   to,
-  label,
-  value,
-  hint,
+  action,
+  children,
+}: {
+  title: string;
+  to?: string;
+  action?: string;
+  children: React.ReactNode;
+}) => (
+  <section aria-label={title} className="flex flex-col gap-2">
+    <div className="flex items-baseline justify-between gap-3 px-1">
+      <h2 className="text-sm font-semibold text-muted-foreground">{title}</h2>
+      {to && action ? (
+        <Link
+          to={to}
+          className="rounded-md text-sm text-primary hover:underline"
+        >
+          {action}
+        </Link>
+      ) : null}
+    </div>
+    <div className="overflow-hidden rounded-xl bg-card shadow-[var(--shadow-card)] [&>*+*]:relative [&>*+*]:before:absolute [&>*+*]:before:inset-x-4 [&>*+*]:before:top-0 [&>*+*]:before:h-px [&>*+*]:before:bg-border">
+      {children}
+    </div>
+  </section>
+);
+
+const Row = ({
+  to,
+  title,
+  detail,
+  trailing,
+  urgent,
+  lead,
 }: {
   to: string;
-  label: string;
-  value: React.ReactNode;
-  hint?: string;
+  title: React.ReactNode;
+  detail?: React.ReactNode;
+  trailing?: React.ReactNode;
+  urgent?: boolean;
+  lead?: React.ReactNode;
 }) => (
-  <Link to={to} className="group min-w-0">
-    <div className="text-xs font-medium opacity-80">{label}</div>
-    <div className="mt-1 text-2xl font-semibold tabular-nums group-hover:underline md:text-3xl">
-      {value}
+  <Link
+    to={to}
+    className="group flex min-h-14 items-center gap-3 px-4 py-2.5 hover:bg-muted/70 active:bg-muted"
+  >
+    {lead}
+    <div className="min-w-0 flex-1">
+      <div className="truncate text-[15px] font-medium">{title}</div>
+      {detail ? (
+        <div className="truncate text-sm text-muted-foreground">{detail}</div>
+      ) : null}
     </div>
-    {hint && <div className="mt-0.5 truncate text-xs opacity-80">{hint}</div>}
+    {trailing ? (
+      <span
+        className={cn(
+          "shrink-0 rounded-md px-1.5 py-0.5 font-mono text-xs tabular-nums",
+          urgent ? "bg-warning-soft text-warning" : "text-muted-foreground",
+        )}
+      >
+        {trailing}
+      </span>
+    ) : null}
+    <ChevronRight
+      aria-hidden
+      className="size-4 shrink-0 text-muted-foreground/60 transition-transform group-hover:translate-x-0.5"
+    />
   </Link>
 );
 
-// A summary card for one active order, in the style of the reference's activity cards.
-const OrderCard = ({ order, today }: { order: OrderRow; today: string }) => {
-  const { currency } = useConfigurationContext();
-  const due = !!order.next_update_due && order.next_update_due <= today;
-  return (
-    <Link to={`/orders/${order.id}`} className="group block">
-      <Card className="h-full gap-3 p-5 transition-shadow group-hover:shadow-md">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <div className="truncate text-sm font-semibold">
-              {order.product_summary ?? "Order"}
-            </div>
-            <div className="text-xs text-muted-foreground">
-              {order.reference}
-            </div>
-          </div>
-          {due && (
-            <span className="shrink-0 rounded-full bg-destructive/10 px-2 py-0.5 text-xs text-destructive">
-              Update due
-            </span>
-          )}
-        </div>
-        <div className="text-sm text-muted-foreground">
-          {orderStatusLabel(order.status)}
-        </div>
-        <div className="text-sm font-medium tabular-nums">
-          {order.balance_pence
-            ? `${formatPrice(order.balance_pence, currency)} to pay`
-            : "Paid in full"}
-        </div>
-      </Card>
-    </Link>
-  );
-};
+const Avatar = ({ first, last }: { first: string; last: string | null }) => (
+  <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-semibold text-accent-foreground">
+    {initials(first, last)}
+  </span>
+);
 
-// Conversations with a switch between "Need a reply" and everything in the inbox.
-const ConversationsCard = ({ inbox }: { inbox: InboxRow[] }) => {
-  const [view, setView] = useState<"reply" | "all">("reply");
-  const needsReply = inbox.filter((c) => c.unread && c.window_open);
-  const rows = view === "reply" ? needsReply : inbox;
-
-  return (
-    <Card className="gap-4 p-5">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold">Conversations</h2>
-        <Link
-          to="/messenger_inbox"
-          className="flex items-center gap-1 text-sm text-primary"
-        >
-          View all <ArrowRight className="size-3.5" />
-        </Link>
-      </div>
-      <div
-        role="group"
-        aria-label="Show"
-        className="inline-flex w-full rounded-full bg-muted p-1 text-sm"
-      >
-        {(
-          [
-            ["reply", `Need a reply (${needsReply.length})`],
-            ["all", "All"],
-          ] as const
-        ).map(([key, label]) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setView(key)}
-            aria-pressed={view === key}
-            className={cn(
-              "flex-1 rounded-full px-3 py-1.5 transition-colors",
-              view === key
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-      <div className="flex flex-col gap-1">
-        {rows.length === 0 && (
-          <p className="py-4 text-sm text-muted-foreground">
-            {view === "reply"
-              ? "No unread conversations with an open reply window."
-              : "No Messenger conversations yet."}
-          </p>
-        )}
-        {rows.slice(0, 6).map((c) => (
-          <Link
-            key={c.contact_id}
-            to="/messenger_inbox"
-            className="flex items-center gap-3 rounded-lg p-2 hover:bg-accent/60"
-          >
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
-              {initials(c.first_name, c.last_name)}
-            </span>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <span className="truncate">
-                  {c.first_name} {c.last_name}
-                </span>
-                {c.unread && (
-                  <span className="size-2 shrink-0 rounded-full bg-primary" />
-                )}
-              </div>
-              <div className="truncate text-xs text-muted-foreground">
-                {c.last_body}
-              </div>
-            </div>
-            <span className="shrink-0 text-xs text-muted-foreground">
-              {new Date(c.last_sent_at).toLocaleTimeString("en-GB", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </span>
-          </Link>
-        ))}
-      </div>
-    </Card>
-  );
-};
+const Empty = ({ children }: { children: React.ReactNode }) => (
+  <p className="px-4 py-4 text-sm text-muted-foreground">{children}</p>
+);
 
 export const TodayDashboard = () => {
   const { identity } = useGetIdentity();
   const { currency, dealStages } = useConfigurationContext();
+  const now = Date.now();
   const endOfToday = new Date();
   endOfToday.setHours(23, 59, 59, 999);
 
@@ -199,22 +156,15 @@ export const TodayDashboard = () => {
     sort: { field: "last_sent_at", order: "DESC" },
     pagination: { page: 1, perPage: 100 },
   });
-  const { data: tasks } = useGetList<Task>("tasks", {
-    filter: { "done_date@is": null },
-    pagination: { page: 1, perPage: 300 },
-  });
   const { data: deals } = useGetList<Deal>("deals", {
     filter: { "archived_at@is": null },
     pagination: { page: 1, perPage: 500 },
   });
-  // Counts come from the server, so they are right beyond the rows fetched above.
-  const { total: dueTaskTotal } = useGetList<Task>("tasks", {
-    filter: {
-      "done_date@is": null,
-      "due_date@lte": endOfToday.toISOString(),
-    },
-    pagination: { page: 1, perPage: 1 },
+  const { data: tasks } = useGetList<Task>("tasks", {
+    filter: { "done_date@is": null },
+    pagination: { page: 1, perPage: 300 },
   });
+  // Counts come from the server, so they are right beyond the rows fetched above.
   const { total: quoteTotal } = useGetList<Deal>("deals", {
     filter: { "archived_at@is": null, stage: "proposal-sent" },
     pagination: { page: 1, perPage: 1 },
@@ -224,12 +174,29 @@ export const TodayDashboard = () => {
     pagination: { page: 1, perPage: 200 },
   });
 
-  const needsReply = (inbox ?? []).filter((c) => c.unread && c.window_open);
-  const dueTasks = (tasks ?? []).filter(
-    (t) => t.due_date && new Date(t.due_date).getTime() <= endOfToday.getTime(),
-  );
+  // Soonest window to close first: that is the order to answer in.
+  const needsReply = (inbox ?? [])
+    .filter((c) => c.unread && c.window_open)
+    .sort(
+      (a, b) =>
+        new Date(a.last_sent_at).getTime() - new Date(b.last_sent_at).getTime(),
+    );
+  const dueTasks = (tasks ?? [])
+    .filter(
+      (t) =>
+        t.due_date && new Date(t.due_date).getTime() <= endOfToday.getTime(),
+    )
+    .sort(
+      (a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime(),
+    );
   const quotes = (deals ?? []).filter((d) => d.stage === "proposal-sent");
   const quoteValue = quotes.reduce((sum, d) => sum + (d.amount ?? 0), 0);
+  const quotesLongest = [...quotes]
+    .sort(
+      (a, b) =>
+        new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime(),
+    )
+    .slice(0, 4);
   const activeOrders = (orders ?? []).filter(
     (o) => !["delivered", "completed", "cancelled"].includes(o.status),
   );
@@ -246,11 +213,32 @@ export const TodayDashboard = () => {
     .filter((stage) => !["won", "lost"].includes(stage.value));
   const maxCount = Math.max(1, ...stageCounts.map((s) => s.count));
 
+  const closingSoon = needsReply.filter(
+    (c) => windowLeft(c.last_sent_at, now).urgent,
+  ).length;
+  const summary = [
+    needsReply.length
+      ? `${plural(needsReply.length, "person is", "people are")} waiting on a reply${
+          closingSoon
+            ? `, and ${closingSoon} close${closingSoon === 1 ? "s" : ""} soon`
+            : ""
+        }.`
+      : "Nobody is waiting on a reply.",
+    quotes.length
+      ? `You have ${plural(quoteTotal ?? quotes.length, "quote")} out, worth ${formatPrice(quoteValue * 100, currency)}.`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const attentionCount =
+    needsReply.length + dueTasks.length + orderUpdates.length;
+
   return (
-    <div className="mt-2 flex flex-col gap-6">
+    <div className="flex flex-col gap-8">
       <FacebookPagesPrompt />
 
-      <header>
+      <header className="flex flex-col gap-1">
         <p className="text-sm text-muted-foreground">
           {new Date().toLocaleDateString("en-GB", {
             weekday: "long",
@@ -258,184 +246,138 @@ export const TodayDashboard = () => {
             month: "long",
           })}
         </p>
-        <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">
+        <h1 className="text-3xl font-semibold tracking-tight">
           {greeting()}
           {identity?.fullName
             ? `, ${String(identity.fullName).split(" ")[0]}`
             : ""}
-        </h2>
+        </h1>
+        <p className="max-w-[60ch] text-base text-muted-foreground">
+          {summary}
+        </p>
       </header>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="flex min-w-0 flex-col gap-6 lg:col-span-2">
-          <section className="overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary to-primary/70 p-5 text-primary-foreground shadow-sm md:p-6">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="text-sm font-medium opacity-90">Overview</h2>
-              <Link to="/deals" className="text-xs opacity-90 hover:underline">
-                Pipeline
-              </Link>
-            </div>
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
+        <div className="flex min-w-0 flex-col gap-8">
+          <Group
+            title="Needs attention"
+            to="/messenger_inbox"
+            action="Open inbox"
+          >
+            {attentionCount === 0 ? (
+              <Empty>You are all caught up. Nothing is waiting on you.</Empty>
+            ) : null}
+            {needsReply.slice(0, 5).map((c) => {
+              const left = windowLeft(c.last_sent_at, now);
+              return (
+                <Row
+                  key={`c${c.contact_id}`}
+                  to="/messenger_inbox"
+                  lead={<Avatar first={c.first_name} last={c.last_name} />}
+                  title={`${c.first_name} ${c.last_name ?? ""}`.trim()}
+                  detail={c.last_body}
+                  trailing={left.label}
+                  urgent={left.urgent}
+                />
+              );
+            })}
+            {dueTasks.slice(0, 4).map((t) => (
+              <Row
+                key={`t${t.id}`}
+                to={`/contacts/${t.contact_id}/show`}
+                title={t.text}
+                detail={
+                  new Date(t.due_date).getTime() < now - DAY
+                    ? "Follow-up, overdue"
+                    : "Follow-up, due today"
+                }
+                trailing={new Date(t.due_date).toLocaleDateString("en-GB", {
+                  day: "numeric",
+                  month: "short",
+                })}
+              />
+            ))}
+            {orderUpdates.slice(0, 3).map((o) => (
+              <Row
+                key={`o${o.id}`}
+                to={`/orders/${o.id}`}
+                title={o.product_summary ?? "Order"}
+                detail={`${o.reference}, customer update due`}
+                trailing="Update due"
+                urgent
+              />
+            ))}
+          </Group>
 
-            <div className="mt-5 grid grid-cols-3 gap-3 md:gap-6">
-              <OverviewStat
-                to="/messenger_inbox"
-                label="Need a reply"
-                value={needsReply.length}
-              />
-              <OverviewStat
-                to="/"
-                label="Follow-ups due"
-                value={dueTaskTotal ?? dueTasks.length}
-              />
-              <OverviewStat
-                to="/deals"
-                label="Quotes out"
-                value={quoteTotal ?? quotes.length}
-                hint={
-                  quoteValue
-                    ? formatPrice(quoteValue * 100, currency)
-                    : undefined
+          <Group title="Orders in progress" to="/orders" action="See all">
+            {activeOrders.length === 0 ? (
+              <Empty>No orders in progress.</Empty>
+            ) : null}
+            {activeOrders.slice(0, 4).map((o) => (
+              <Row
+                key={o.id}
+                to={`/orders/${o.id}`}
+                title={o.product_summary ?? "Order"}
+                detail={`${o.reference}, ${orderStatusLabel(o.status)}`}
+                trailing={
+                  o.balance_pence
+                    ? `${formatPrice(o.balance_pence, currency)} to pay`
+                    : "Paid"
                 }
               />
-            </div>
+            ))}
+          </Group>
 
-            <div className="mt-6">
-              <div className="flex h-28 items-end gap-2 md:gap-3">
-                {stageCounts.map((stage) => (
-                  <div
-                    key={stage.value}
-                    className="flex h-full flex-1 flex-col justify-end"
-                    title={`${stage.label}: ${stage.count}`}
-                  >
-                    <div
-                      className="rounded-t-md bg-white/80 transition-all duration-700"
-                      style={{
-                        height: `${Math.max(6, (stage.count / maxCount) * 100)}%`,
-                      }}
-                    />
-                  </div>
-                ))}
-              </div>
-              <div className="mt-2 flex gap-2 md:gap-3">
-                {stageCounts.map((stage) => (
-                  <span
-                    key={stage.value}
-                    className="flex-1 truncate text-center text-xs opacity-80"
-                  >
-                    {stage.label} · {stage.count}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          <div className="grid gap-3 sm:grid-cols-3">
-            <Link to="/orders" className="group block">
-              <Card className="h-full gap-2 p-5 transition-shadow group-hover:shadow-md">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Package className="size-4" /> Orders in progress
-                </div>
-                <div className="text-3xl font-semibold tabular-nums">
-                  {activeOrders.length}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {orderUpdates.length
-                    ? `${orderUpdates.length} need a customer update`
-                    : "No updates overdue"}
-                </div>
-              </Card>
-            </Link>
-            <Link to="/messenger_inbox" className="group block">
-              <Card className="h-full gap-2 p-5 transition-shadow group-hover:shadow-md">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <MessageCircle className="size-4" /> Need a reply
-                </div>
-                <div className="text-3xl font-semibold tabular-nums">
-                  {needsReply.length}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {needsReply.length
-                    ? "Customers waiting on Messenger"
-                    : "All caught up"}
-                </div>
-              </Card>
-            </Link>
-            <Link to="/" className="group block">
-              <Card className="h-full gap-2 p-5 transition-shadow group-hover:shadow-md">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Clock className="size-4" /> Follow-ups due
-                </div>
-                <div className="text-3xl font-semibold tabular-nums">
-                  {dueTaskTotal ?? dueTasks.length}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Due today or overdue
-                </div>
-              </Card>
-            </Link>
-          </div>
-
-          <div>
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Orders to keep moving</h2>
+          <Group
+            title="Enquiries in the pipeline"
+            to="/deals"
+            action="Open pipeline"
+          >
+            {stageCounts.map((stage) => (
               <Link
-                to="/orders"
-                className="flex items-center gap-1 text-sm text-primary"
-              >
-                View all <ArrowRight className="size-3.5" />
-              </Link>
-            </div>
-            {activeOrders.length === 0 ? (
-              <Card className="p-5 text-sm text-muted-foreground">
-                No orders in progress.
-              </Card>
-            ) : (
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                {activeOrders.slice(0, 3).map((o) => (
-                  <OrderCard key={o.id} order={o} today={today} />
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div>
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-lg font-semibold">
-                Enquiries in the pipeline
-              </h2>
-              <Link
+                key={stage.value}
                 to="/deals"
-                className="flex items-center gap-1 text-sm text-primary"
+                className="group flex min-h-12 items-center gap-3 px-4 py-2 text-sm hover:bg-muted/70"
               >
-                View all <ArrowRight className="size-3.5" />
-              </Link>
-            </div>
-            <Card className="gap-4 p-5">
-              {stageCounts.map((stage) => (
-                <div
-                  key={stage.value}
-                  className="flex items-center gap-3 text-sm"
+                <span className="w-32 shrink-0 font-medium">{stage.label}</span>
+                <span
+                  aria-hidden
+                  className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted"
                 >
-                  <span className="w-32 shrink-0 text-muted-foreground">
-                    {stage.label}
-                  </span>
-                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
-                    <div
-                      className="h-full rounded-full bg-primary transition-all duration-700"
-                      style={{ width: `${(stage.count / maxCount) * 100}%` }}
-                    />
-                  </div>
-                  <span className="w-6 text-right tabular-nums">
-                    {stage.count}
-                  </span>
-                </div>
-              ))}
-            </Card>
-          </div>
+                  <span
+                    className="block h-full origin-left rounded-full bg-primary transition-transform duration-700"
+                    style={{ transform: `scaleX(${stage.count / maxCount})` }}
+                  />
+                </span>
+                <span className="w-8 text-right font-mono tabular-nums">
+                  {stage.count}
+                </span>
+              </Link>
+            ))}
+          </Group>
         </div>
 
-        <div className="flex min-w-0 flex-col gap-6">
-          <ConversationsCard inbox={inbox ?? []} />
+        <div className="flex min-w-0 flex-col gap-8">
+          <Group title="Quotes waiting longest" to="/deals" action="See all">
+            {quotesLongest.length === 0 ? (
+              <Empty>No quotes are out.</Empty>
+            ) : null}
+            {quotesLongest.map((d) => {
+              const days = Math.max(
+                0,
+                Math.floor((now - new Date(d.updated_at).getTime()) / DAY),
+              );
+              return (
+                <Row
+                  key={d.id}
+                  to={`/deals/${d.id}/show`}
+                  title={d.name}
+                  detail={`${plural(days, "day")} with no change`}
+                  trailing={formatPrice(d.amount * 100, currency)}
+                />
+              );
+            })}
+          </Group>
           <TasksList />
           <DashboardActivityLog />
         </div>

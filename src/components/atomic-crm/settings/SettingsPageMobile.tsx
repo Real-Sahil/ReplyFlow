@@ -1,5 +1,4 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useTheme } from "@/components/admin/use-theme";
 import { ChevronRight, KeyRound } from "lucide-react";
 import { Link } from "react-router";
 import { Button } from "@/components/ui/button";
@@ -18,8 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Check, Copy, LogOut, Moon, Smartphone, Sun } from "lucide-react";
+import { Check, Copy, LogOut } from "lucide-react";
 import {
   email,
   Form,
@@ -435,8 +433,6 @@ const PreferencesSection = () => {
       </SectionLabel>
       <ItemGroup className="rounded-lg border overflow-hidden">
         <LanguageRow />
-        <ItemSeparator />
-        <ThemeRow />
       </ItemGroup>
     </div>
   );
@@ -473,54 +469,6 @@ const LanguageRow = () => {
           </SelectContent>
         </Select>
       </ItemActions>
-    </Item>
-  );
-};
-
-const ThemeRow = () => {
-  const translate = useTranslate();
-  const { theme, setTheme } = useTheme();
-
-  return (
-    <Item size="sm" className="flex-col items-stretch gap-2">
-      <ItemTitle className="font-normal text-muted-foreground">
-        {translate("crm.theme.label", { _: "Theme" })}
-      </ItemTitle>
-      <ToggleGroup
-        type="single"
-        value={theme}
-        onValueChange={(value) =>
-          value && setTheme(value as "light" | "dark" | "system")
-        }
-        size="lg"
-        variant="outline"
-        className="w-full"
-      >
-        <ToggleGroupItem
-          value="system"
-          aria-label={translate("crm.theme.system")}
-          className="flex-1 gap-2"
-        >
-          <Smartphone className="size-4" />
-          {translate("crm.theme.system")}
-        </ToggleGroupItem>
-        <ToggleGroupItem
-          value="light"
-          aria-label={translate("crm.theme.light")}
-          className="flex-1 gap-2"
-        >
-          <Sun className="size-4" />
-          {translate("crm.theme.light")}
-        </ToggleGroupItem>
-        <ToggleGroupItem
-          value="dark"
-          aria-label={translate("crm.theme.dark")}
-          className="flex-1 gap-2"
-        >
-          <Moon className="size-4" />
-          {translate("crm.theme.dark")}
-        </ToggleGroupItem>
-      </ToggleGroup>
     </Item>
   );
 };

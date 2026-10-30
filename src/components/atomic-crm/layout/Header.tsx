@@ -1,24 +1,19 @@
+import { useLayoutEffect, useRef, useState } from "react";
 import {
   Bug,
   Building2,
   ChevronLeft,
   MoreHorizontal,
-  House,
   Import,
-  Kanban,
-  Megaphone,
   MessageCircle,
-  Package,
   Plug,
   Settings,
-  Sofa,
   User,
   Users,
 } from "lucide-react";
 import { CanAccess, useGetList, useTranslate, useUserMenu } from "ra-core";
 import { Link, matchPath, useLocation } from "react-router";
 import { RefreshButton } from "@/components/admin/refresh-button";
-import { ThemeModeToggle } from "@/components/admin/theme-mode-toggle";
 import { UserMenu } from "@/components/admin/user-menu";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import {
@@ -33,13 +28,13 @@ import { GlobalSearchButton } from "../search/GlobalSearchButton";
 import { cn } from "@/lib/utils";
 
 const SECTIONS = [
-  { path: "/", label: "Today", Icon: House },
-  { path: "/messenger_inbox", label: "Inbox", Icon: MessageCircle },
-  { path: "/contacts", label: "Contacts", Icon: Users },
-  { path: "/deals", label: "Deals", Icon: Kanban },
-  { path: "/orders", label: "Orders", Icon: Package },
-  { path: "/page_posts", label: "Posts", Icon: Megaphone },
-  { path: "/products", label: "Products", Icon: Sofa },
+  { path: "/", label: "Today" },
+  { path: "/messenger_inbox", label: "Inbox" },
+  { path: "/contacts", label: "Contacts" },
+  { path: "/deals", label: "Deals" },
+  { path: "/orders", label: "Orders" },
+  { path: "/page_posts", label: "Posts" },
+  { path: "/products", label: "Products" },
 ] as const;
 
 // The section of the app the current address belongs to.
@@ -51,44 +46,12 @@ const sectionFor = (pathname: string) => {
   );
 };
 
-// Left navigation rail: icons, with the name on hover, in the violet panel.
-export const SideRail = () => {
+// The toolbar: brand, the sections as tabs with a sliding marker, then search,
+// refresh, More and the user menu. It stays put and blurs what scrolls under it.
+export const Toolbar = () => {
   const { darkModeLogo, title } = useConfigurationContext();
   const location = useLocation();
   const active = sectionFor(location.pathname);
-  return (
-    <aside className="sticky top-4 hidden h-[calc(100vh-2rem)] w-20 shrink-0 flex-col items-center gap-3 rounded-3xl bg-sidebar py-5 text-sidebar-foreground shadow-lg md:flex">
-      <Link
-        to="/"
-        aria-label={title}
-        className="mb-2 flex size-11 items-center justify-center rounded-2xl bg-white/15"
-      >
-        <img src={darkModeLogo} alt="" className="h-5 brightness-0 invert" />
-      </Link>
-      <nav
-        aria-label="Main"
-        className="flex flex-1 flex-col items-center gap-2"
-      >
-        {SECTIONS.map(({ path, label, Icon }) =>
-          path === "/messenger_inbox" ? (
-            <InboxRailLink key={path} active={active === path} />
-          ) : (
-            <RailLink
-              key={path}
-              to={path}
-              label={label}
-              Icon={Icon}
-              active={active === path}
-            />
-          ),
-        )}
-      </nav>
-      <MoreMenu />
-    </aside>
-  );
-};
-
-const InboxRailLink = ({ active }: { active: boolean }) => {
   const { total: unread } = useGetList("messenger_inbox", {
     filter: { unread: true },
     pagination: { page: 1, perPage: 1 },
@@ -97,51 +60,126 @@ const InboxRailLink = ({ active }: { active: boolean }) => {
     filter: { status: "new" },
     pagination: { page: 1, perPage: 1 },
   });
-  const total = (unread ?? 0) + (newComments ?? 0);
+  const inboxCount = (unread ?? 0) + (newComments ?? 0);
+
   return (
-    <RailLink
-      to="/messenger_inbox"
-      label="Inbox"
-      Icon={MessageCircle}
-      active={active}
-      badge={total || undefined}
-    />
+    <header
+      data-slot="toolbar"
+      className="sticky top-0 z-30 border-b border-border"
+    >
+      <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4 md:px-6">
+        <Link
+          to="/"
+          aria-label={title}
+          className="flex shrink-0 items-center gap-2 rounded-lg py-1 text-[15px] font-semibold tracking-tight"
+        >
+          <img src={darkModeLogo} alt="" className="h-5" />
+          <span className="hidden lg:inline">{title}</span>
+        </Link>
+        <Tabs active={active} inboxCount={inboxCount} />
+        <div className="flex shrink-0 items-center gap-1">
+          <GlobalSearchButton />
+          <RefreshButton />
+          <MoreMenu />
+          <UserMenu>
+            <ProfileMenu />
+            <CanAccess resource="sales" action="list">
+              <UsersMenu />
+            </CanAccess>
+            <CanAccess resource="configuration" action="edit">
+              <SettingsMenu />
+              <MessengerSettingsMenu />
+              <FacebookMenu />
+            </CanAccess>
+            <CompaniesMenu />
+            <ImportFromJsonMenuItem />
+          </UserMenu>
+        </div>
+      </div>
+    </header>
   );
 };
 
-const RailLink = ({
-  to,
-  label,
-  Icon,
+// The marker is one element that glides under the active tab. It moves with
+// transform only: a fixed 100px bar, scaled to the tab's width.
+const Tabs = ({
   active,
-  badge,
+  inboxCount,
 }: {
-  to: string;
-  label: string;
-  Icon: React.ComponentType<{ className?: string }>;
-  active: boolean;
-  badge?: number;
-}) => (
-  <Link
-    to={to}
-    title={label}
-    aria-label={label}
-    aria-current={active ? "page" : undefined}
-    className={cn(
-      "relative flex size-11 items-center justify-center rounded-2xl transition-colors",
-      active
-        ? "bg-white text-sidebar shadow-sm"
-        : "text-sidebar-foreground/75 hover:bg-white/15 hover:text-sidebar-foreground",
-    )}
-  >
-    <Icon className="size-5" />
-    {badge ? (
-      <span className="absolute -right-1 -top-1 rounded-full bg-rose-600 px-1.5 text-xs leading-4 font-semibold text-white tabular-nums">
-        {badge}
-      </span>
-    ) : null}
-  </Link>
-);
+  active: string | null;
+  inboxCount: number;
+}) => {
+  const listRef = useRef<HTMLElement>(null);
+  const [marker, setMarker] = useState<{ x: number; w: number } | null>(null);
+
+  useLayoutEffect(() => {
+    const measure = () => {
+      const el = listRef.current?.querySelector<HTMLElement>(
+        '[aria-current="page"]',
+      );
+      setMarker(el ? { x: el.offsetLeft, w: el.offsetWidth } : null);
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [active, inboxCount]);
+
+  return (
+    <nav
+      ref={listRef}
+      aria-label="Main"
+      className="relative flex min-w-0 flex-1 items-center gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+    >
+      {SECTIONS.map(({ path, label }) => (
+        <Link
+          key={path}
+          to={path}
+          aria-current={active === path ? "page" : undefined}
+          className={cn(
+            "relative flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-3 text-sm font-medium",
+            active === path
+              ? "text-foreground"
+              : "text-muted-foreground hover:bg-muted hover:text-foreground",
+          )}
+        >
+          {label}
+          {path === "/messenger_inbox" && inboxCount > 0 ? (
+            <span className="rounded-full bg-primary px-1.5 font-mono text-xs leading-4 text-primary-foreground tabular-nums">
+              {inboxCount}
+            </span>
+          ) : null}
+        </Link>
+      ))}
+      {marker ? (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute bottom-0 left-0 h-0.5 w-[100px] origin-left rounded-full bg-primary transition-transform duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
+          style={{
+            transform: `translateX(${marker.x}px) scaleX(${marker.w / 100})`,
+          }}
+        />
+      ) : null}
+    </nav>
+  );
+};
+
+// On a record page (a contact, a deal), a way back to the list it came from.
+export const RecordBackLink = () => {
+  const location = useLocation();
+  const active = sectionFor(location.pathname);
+  const section = SECTIONS.find((s) => s.path === active);
+  const segments = location.pathname.split("/").filter(Boolean);
+  if (!section || section.path === "/" || segments.length < 2) return null;
+  return (
+    <Link
+      to={section.path}
+      className="mb-3 inline-flex items-center gap-1 rounded-md text-sm text-muted-foreground hover:text-foreground"
+    >
+      <ChevronLeft className="size-4" aria-hidden />
+      {section.label}
+    </Link>
+  );
+};
 
 // Links that used to sit only in the user menu, grouped so they are easy to find.
 const MoreLink = ({
@@ -184,12 +222,12 @@ const MoreMenu = () => (
         type="button"
         aria-label="More"
         title="More"
-        className="mt-auto flex size-11 items-center justify-center rounded-2xl text-sidebar-foreground/75 transition-colors hover:bg-white/15 hover:text-sidebar-foreground"
+        className="flex size-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
       >
         <MoreHorizontal className="size-5" />
       </button>
     </PopoverTrigger>
-    <PopoverContent side="right" align="end" className="w-64 p-2">
+    <PopoverContent side="bottom" align="end" className="w-64 p-2">
       <MoreGroup title="Workspace">
         <CanAccess resource="sales" action="list">
           <MoreLink to="/sales" label="Team" Icon={Users} />
@@ -217,62 +255,6 @@ const MoreMenu = () => (
     </PopoverContent>
   </Popover>
 );
-
-// Top bar: the section name, search, theme, refresh and the user menu.
-export const TopBar = () => {
-  const location = useLocation();
-  const active = sectionFor(location.pathname);
-  const section = SECTIONS.find((s) => s.path === active);
-  const segments = location.pathname.split("/").filter(Boolean);
-  // A record page: /contacts/12/show, or /contacts/create.
-  const isRecord = !!section && section.path !== "/" && segments.length > 1;
-  const recordTitle =
-    segments[1] === "create"
-      ? "New record"
-      : /^\d+$/.test(segments[1] ?? "")
-        ? "Record"
-        : null;
-  const title =
-    isRecord && recordTitle ? recordTitle : (section?.label ?? "ReplyFlow");
-  return (
-    <header className="flex items-center justify-between gap-3 rounded-3xl bg-card px-4 py-3 shadow-sm md:px-6">
-      <div className="min-w-0">
-        {isRecord && section ? (
-          <Link
-            to={section.path}
-            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
-          >
-            <ChevronLeft className="size-3.5" aria-hidden />
-            {section.label}
-          </Link>
-        ) : (
-          <p className="text-xs text-muted-foreground">Workspace</p>
-        )}
-        <h1 className="truncate text-lg font-semibold tracking-tight">
-          {title}
-        </h1>
-      </div>
-      <div className="flex shrink-0 items-center gap-1">
-        <GlobalSearchButton />
-        <ThemeModeToggle />
-        <RefreshButton />
-        <UserMenu>
-          <ProfileMenu />
-          <CanAccess resource="sales" action="list">
-            <UsersMenu />
-          </CanAccess>
-          <CanAccess resource="configuration" action="edit">
-            <SettingsMenu />
-            <MessengerSettingsMenu />
-            <FacebookMenu />
-          </CanAccess>
-          <CompaniesMenu />
-          <ImportFromJsonMenuItem />
-        </UserMenu>
-      </div>
-    </header>
-  );
-};
 
 const UsersMenu = () => {
   const translate = useTranslate();

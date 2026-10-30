@@ -59,7 +59,8 @@ export const MobileNavigation = () => {
   return (
     <nav
       aria-label={translate("crm.navigation.label")}
-      className="fixed inset-x-0 bottom-0 z-50 border-t bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80"
+      data-slot="toolbar"
+      className="fixed inset-x-0 bottom-0 z-50 border-t"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       <div className="mx-auto grid h-16 max-w-md grid-cols-6 items-center px-1">
@@ -121,7 +122,7 @@ const NavigationButton = ({
     <span
       className={cn(
         "flex h-7 w-12 items-center justify-center rounded-full transition-colors",
-        isActive && "bg-primary/10",
+        isActive && "bg-accent",
       )}
     >
       <Icon className="size-5" />
@@ -153,13 +154,13 @@ const InboxButton = ({ isActive }: { isActive: boolean }) => {
       <span
         className={cn(
           "flex h-7 w-12 items-center justify-center rounded-full transition-colors",
-          isActive && "bg-primary/10",
+          isActive && "bg-accent",
         )}
       >
         <MessageCircle className="size-5" />
       </span>
       {total ? (
-        <span className="absolute right-3 top-1 rounded-full bg-rose-600 px-1.5 text-xs leading-4 font-semibold text-white tabular-nums">
+        <span className="absolute right-3 top-1 rounded-full bg-primary px-1.5 font-mono text-xs leading-4 text-primary-foreground tabular-nums">
           {total}
         </span>
       ) : null}
@@ -304,7 +305,7 @@ const MoreTile = ({
   <Link
     to={to}
     onClick={() => onPick(false)}
-    className="flex min-h-20 flex-col items-center justify-center gap-2 rounded-2xl bg-muted p-3 text-center text-sm font-medium transition-colors active:bg-accent"
+    className="flex min-h-20 flex-col items-center justify-center gap-2 rounded-xl bg-muted p-3 text-center text-sm font-medium transition-colors hover:bg-accent active:bg-accent"
   >
     <span className="flex size-9 items-center justify-center rounded-full bg-card text-primary shadow-sm">
       <Icon className="size-5" />
@@ -342,7 +343,7 @@ const CreateButton = () => {
           <Button
             variant="default"
             size="icon"
-            className="-mt-6 size-14 rounded-full shadow-lg"
+            className="-mt-6 size-14 rounded-full shadow-[var(--shadow-lift)]"
             aria-label={translate("ra.action.create")}
           >
             <Plus className="size-7" />

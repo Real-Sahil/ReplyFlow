@@ -10,7 +10,8 @@ type ThemeProviderProps = {
 };
 
 /**
- * Theme provider that enables light, dark, and system theme modes.
+ * Theme provider. ReplyFlow ships one light theme, so the stored choice is
+ * ignored and the document is always marked light.
  *
  * @internal
  */
@@ -20,29 +21,17 @@ export function ThemeProvider({
   storageKey = "theme",
   ...props
 }: ThemeProviderProps) {
-  const [theme, setTheme] = useStore<Theme>(storageKey, defaultTheme);
+  const [, setStored] = useStore<Theme>(storageKey, defaultTheme);
 
   useEffect(() => {
     const root = window.document.documentElement;
-
     root.classList.remove("light", "dark");
-
-    if (theme === "system") {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
-        .matches
-        ? "dark"
-        : "light";
-
-      root.classList.add(systemTheme);
-      return;
-    }
-
-    root.classList.add(theme);
-  }, [theme]);
+    root.classList.add("light");
+  }, []);
 
   const value = {
-    theme,
-    setTheme,
+    theme: "light" as Theme,
+    setTheme: setStored,
   };
 
   return (
