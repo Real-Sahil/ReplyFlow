@@ -24,6 +24,11 @@ shadow_port = 54320
 # server_version;` on the remote database to check.
 major_version = 15
 
+[db.seed]
+# seed.sql inserts into favicons_excluded_domains, a table no migration creates any more, so
+# seeding fails on a fresh database. Disabled until the file is brought up to date.
+enabled = false
+
 [db.pooler]
 enabled = false
 # Port to use for the local connection pooler.
