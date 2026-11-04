@@ -18,6 +18,36 @@ window.addEventListener("vite:preloadError", () => {
   }
 });
 
+// When a new version of the app takes over, show it without asking people to refresh by hand.
+// The first install is not an update, so it never reloads. If someone is typing, the reload
+// waits until they leave the tab, so a half-written message is never lost.
+if ("serviceWorker" in navigator) {
+  let hadController = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!hadController) {
+      hadController = true;
+      return;
+    }
+    const active = document.activeElement as HTMLElement | null;
+    const typing =
+      !!active &&
+      (active.tagName === "INPUT" ||
+        active.tagName === "TEXTAREA" ||
+        active.isContentEditable);
+    if (!typing) {
+      window.location.reload();
+      return;
+    }
+    document.addEventListener(
+      "visibilitychange",
+      () => {
+        if (document.visibilityState === "hidden") window.location.reload();
+      },
+      { once: true },
+    );
+  });
+}
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <App />
