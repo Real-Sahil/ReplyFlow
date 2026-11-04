@@ -20,6 +20,7 @@ import {
   Sparkles,
   User,
   Users,
+  Wallet,
 } from "lucide-react";
 import { CanAccess, useGetList, useTranslate } from "ra-core";
 import {
@@ -246,6 +247,13 @@ const MoreSheet = ({
             label="Import data"
             detail="Bring in contacts and deals"
             Icon={Import}
+            onPick={onOpenChange}
+          />
+          <MoreRow
+            to="/bills"
+            label="Bills and expenses"
+            detail="Supplier bills, receipts and VAT"
+            Icon={Wallet}
             onPick={onOpenChange}
           />
           <MoreRow

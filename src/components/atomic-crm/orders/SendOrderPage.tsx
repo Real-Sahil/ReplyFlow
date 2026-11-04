@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 
 import { send } from "../contacts/messengerSend";
 import { getSupabaseClient } from "../providers/supabase/supabase";
+import { useBusinessSettings } from "../finance/useBusinessSettings";
 import {
   MESSENGER_TEXT_LIMIT,
   orderPageMessage,
@@ -124,25 +125,41 @@ const SendDialogBody = ({
   );
 };
 
-const SendForm = ({
-  order,
-  contactId,
-  firstName,
-  lastInbound,
-  onDone,
-}: {
+// Waits for the business's name, so the message is signed with it from the start.
+const SendForm = (props: SendFormProps) => {
+  const { data: settings, isPending } = useBusinessSettings();
+  if (isPending) return null;
+  return (
+    <SendFormInner
+      {...props}
+      businessName={settings?.trading_name || settings?.legal_name || null}
+    />
+  );
+};
+
+type SendFormProps = {
   order: OrderForSend;
   contactId: number;
   firstName: string | null;
   lastInbound: string | null;
   onDone: () => void;
-}) => {
+};
+
+const SendFormInner = ({
+  order,
+  contactId,
+  firstName,
+  lastInbound,
+  onDone,
+  businessName,
+}: SendFormProps & { businessName: string | null }) => {
   const notify = useNotify();
   const refresh = useRefresh();
   const [text, setText] = useState(() =>
     orderPageMessage({
       firstName,
       reference: order.reference,
+      businessName,
       link: trackingLink(
         import.meta.env.VITE_SUPABASE_URL,
         order.tracking_token,

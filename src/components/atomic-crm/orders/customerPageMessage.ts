@@ -11,15 +11,18 @@ export const orderPageMessage = ({
   firstName,
   reference,
   link,
+  businessName,
 }: {
   firstName: string | null | undefined;
   reference: string;
   link: string;
+  // The sending business, from its settings. Left out when it has not set a name.
+  businessName?: string | null;
 }) => {
   const name = firstName?.trim() || "there";
   return [
     `Hi ${name}, here is the page for your order ${reference}, where you can see each stage and our latest update:`,
     link,
-    "Reply here if you have any questions. Mere & Row",
+    `Reply here if you have any questions.${businessName?.trim() ? ` ${businessName.trim()}` : ""}`,
   ].join("\n\n");
 };

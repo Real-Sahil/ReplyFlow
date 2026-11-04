@@ -1,3 +1,4 @@
+import { getSupabaseClient } from "../providers/supabase/supabase";
 import { formatPence, quoteTotals, type QuoteLine } from "./quoteMath";
 
 export type QuoteForPdf = {
@@ -10,9 +11,15 @@ export type QuoteForPdf = {
   created_at: string;
 };
 
-// Seller name only. The business address is not in the CRM yet; add it here when it is
-// given. No VAT is charged, so none is shown.
-const SELLER = "Mere & Row";
+// The seller is the signed-in person's own business, from Business and VAT. VAT is not
+// charged on quotes, so none is shown.
+const sellerName = async () => {
+  const { data } = await getSupabaseClient()
+    .from("business_settings")
+    .select("legal_name, trading_name")
+    .maybeSingle();
+  return data?.trading_name || data?.legal_name || "";
+};
 
 // jsPDF is loaded on demand so the CRM does not carry it on every page.
 export const downloadQuotePdf = async (
@@ -20,6 +27,7 @@ export const downloadQuotePdf = async (
   customer: string,
 ) => {
   const { jsPDF } = await import("jspdf");
+  const seller = await sellerName();
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const left = 48;
   const right = 547;
@@ -27,7 +35,7 @@ export const downloadQuotePdf = async (
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(18);
-  doc.text(SELLER, left, y);
+  doc.text(seller, left, y);
   doc.setFontSize(11);
   doc.text("Quote", right, y, { align: "right" });
 

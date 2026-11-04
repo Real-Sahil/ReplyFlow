@@ -385,3 +385,71 @@ export const invoiceLedgerExport = (): ExportConfig => ({
     supplier_vat: text(row.supplier_vat_number),
   }),
 });
+
+// Supplier bills and expenses, one row per bill. Each row names the order it is a cost of, what that
+// order is for and the order's own note, so nobody has to chase where a cost belongs. Voided bills
+// are included and marked, so the file matches the history. Read from bill_ledger.
+export const billLedgerExport = (): ExportConfig => ({
+  filename: "bills",
+  title: "Bills and expenses",
+  table: "bill_ledger",
+  select:
+    "bill_date, due_date, supplier_name, supplier_vat_number, reference, category_label, description, note, order_reference, order_summary, order_note, vat_code, net_pence, vat_pence, gross_pence, vat_reclaimable, paid_date, payment_method, status, void_reason, receipt_path",
+  dateColumn: "bill_date",
+  dateKind: "date",
+  filters: [
+    {
+      label: "Status",
+      column: "status",
+      options: [
+        { value: "unpaid", label: "Unpaid" },
+        { value: "paid", label: "Paid" },
+        { value: "void", label: "Voided" },
+      ],
+    },
+  ],
+  columns: [
+    { key: "date", label: "Date" },
+    { key: "supplier", label: "Supplier" },
+    { key: "supplier_vat", label: "Supplier VAT number" },
+    { key: "reference", label: "Their invoice number" },
+    { key: "category", label: "Category" },
+    { key: "description", label: "What it was for" },
+    { key: "order", label: "Cost of order" },
+    { key: "order_for", label: "Order is for" },
+    { key: "net", label: "Net (£)" },
+    { key: "vat", label: "VAT (£)" },
+    { key: "gross", label: "Gross (£)" },
+    { key: "vat_code", label: "VAT code" },
+    { key: "reclaimable", label: "VAT reclaimable" },
+    { key: "status", label: "Status" },
+    { key: "paid_date", label: "Paid on" },
+    { key: "method", label: "Paid by" },
+    { key: "order_note", label: "Order note" },
+    { key: "note", label: "Note on bill" },
+    { key: "void_reason", label: "Void reason" },
+    { key: "receipt", label: "Receipt on file" },
+  ],
+  toRow: (row: Row) => ({
+    date: text(row.bill_date),
+    supplier: text(row.supplier_name),
+    supplier_vat: text(row.supplier_vat_number),
+    reference: text(row.reference),
+    category: text(row.category_label),
+    description: text(row.description),
+    order: text(row.order_reference),
+    order_for: text(row.order_summary),
+    net: pounds(row.net_pence),
+    vat: pounds(row.vat_pence),
+    gross: pounds(row.gross_pence),
+    vat_code: text(row.vat_code),
+    reclaimable: yesNo(row.vat_reclaimable),
+    status: text(row.status),
+    paid_date: text(row.paid_date),
+    method: text(row.payment_method),
+    order_note: text(row.order_note),
+    note: text(row.note),
+    void_reason: text(row.void_reason),
+    receipt: row.receipt_path ? "Yes" : "No",
+  }),
+});
