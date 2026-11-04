@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 
 import { GlobalSearchButton } from "../search/GlobalSearchButton";
+import { ThemeQuickToggle } from "../settings/AppearanceControls";
 import { MobileRefreshButton } from "./MobileRefreshButton";
 
 // The search lives here rather than in each screen: there is no Cmd+K on a
@@ -66,6 +67,7 @@ const MobileHeader = ({
       <div className="flex items-center">
         <GlobalSearchButton variant="icon" />
         {showRefresh ? <MobileRefreshButton /> : null}
+        <ThemeQuickToggle />
       </div>
     </header>
   );

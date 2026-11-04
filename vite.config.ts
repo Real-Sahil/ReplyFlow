@@ -41,8 +41,12 @@ export default defineConfig({
       manifest: false, // Use existing manifest.json from public/
     }),
   ],
-  define:
-    process.env.NODE_ENV === "production" && process.env.VITE_SUPABASE_URL
+  define: {
+    // Shown at the bottom of the More sheet, so it is easy to tell which build a device is running.
+    __APP_VERSION__: JSON.stringify(
+      `${(process.env.VERCEL_GIT_COMMIT_SHA ?? "dev").slice(0, 7)} · ${new Date().toISOString().slice(0, 16).replace("T", " ")}`,
+    ),
+    ...(process.env.NODE_ENV === "production" && process.env.VITE_SUPABASE_URL
       ? {
           "import.meta.env.VITE_IS_DEMO": JSON.stringify(
             process.env.VITE_IS_DEMO,
@@ -60,7 +64,8 @@ export default defineConfig({
             process.env.VITE_ATTACHMENTS_BUCKET,
           ),
         }
-      : undefined,
+      : {}),
+  },
   base: "./",
   build: {
     rolldownOptions: {

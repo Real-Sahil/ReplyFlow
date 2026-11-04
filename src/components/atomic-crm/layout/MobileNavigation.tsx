@@ -353,6 +353,9 @@ const MoreSheet = ({
             onPick={onOpenChange}
           />
         </MoreGroup>
+        <p className="px-1 text-center text-xs text-muted-foreground">
+          Version {__APP_VERSION__}
+        </p>
       </div>
     </SheetContent>
   </Sheet>
