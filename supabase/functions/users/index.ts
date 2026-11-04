@@ -50,6 +50,26 @@ async function updateSaleAdministrator(
   return sales.at(0);
 }
 
+// The access level an administrator can give besides full access. An accountant can read the
+// finance pages of the business and change nothing (see the accountant migration).
+const accessRole = (value: unknown): "agent" | "accountant" | undefined =>
+  value === "accountant"
+    ? "accountant"
+    : value === "agent"
+      ? "agent"
+      : undefined;
+
+async function updateSaleRole(user_id: string, role: "agent" | "accountant") {
+  const { error } = await supabaseAdmin
+    .from("sales")
+    .update({ role })
+    .eq("user_id", user_id);
+  if (error) {
+    console.error("Error setting the access level:", error);
+    throw error;
+  }
+}
+
 async function createSale(
   user_id: string,
   data: {
@@ -59,6 +79,7 @@ async function createSale(
     last_name: string;
     disabled: boolean;
     administrator: boolean;
+    role?: string;
   },
   organisationId: number,
 ) {
@@ -144,8 +165,18 @@ async function updateSaleAvatar(user_id: string, avatar: string) {
 }
 
 async function inviteUser(req: Request, currentUserSale: any) {
-  const { email, password, first_name, last_name, disabled, administrator } =
-    await req.json();
+  const {
+    email,
+    password,
+    first_name,
+    last_name,
+    disabled,
+    administrator: requestedAdministrator,
+    role: requestedRole,
+  } = await req.json();
+  const accountant = accessRole(requestedRole) === "accountant";
+  // An accountant is never an administrator.
+  const administrator = accountant ? false : requestedAdministrator;
 
   if (!currentUserSale.administrator) {
     return createErrorResponse(401, "Not Authorized");
@@ -215,6 +246,7 @@ async function inviteUser(req: Request, currentUserSale: any) {
           last_name,
           disabled,
           administrator,
+          ...(accountant ? { role: "accountant" } : {}),
         },
         organisationId,
       );
@@ -258,11 +290,15 @@ async function inviteUser(req: Request, currentUserSale: any) {
 
   try {
     await updateSaleDisabled(user.id, disabled, organisationId);
-    const sale = await updateSaleAdministrator(
+    let sale = await updateSaleAdministrator(
       user.id,
       administrator,
       organisationId,
     );
+    if (accountant) {
+      await updateSaleRole(user.id, "accountant");
+      sale = { ...sale, role: "accountant" };
+    }
 
     return new Response(
       JSON.stringify({
@@ -288,6 +324,7 @@ async function patchUser(req: Request, currentUserSale: any) {
     avatar,
     administrator,
     disabled,
+    role: requestedRole,
   } = await req.json();
   const { data: sale } = await supabaseAdmin
     .from("sales")
@@ -419,7 +456,16 @@ async function patchUser(req: Request, currentUserSale: any) {
 
   try {
     await updateSaleDisabled(data.user.id, disabled);
-    const sale = await updateSaleAdministrator(data.user.id, administrator);
+    const access = accessRole(requestedRole);
+    // An accountant is never an administrator.
+    let sale = await updateSaleAdministrator(
+      data.user.id,
+      access === "accountant" ? false : administrator,
+    );
+    if (access) {
+      await updateSaleRole(data.user.id, access);
+      sale = { ...sale, role: sale.administrator ? "admin" : access };
+    }
     return new Response(
       JSON.stringify({
         data: sale,

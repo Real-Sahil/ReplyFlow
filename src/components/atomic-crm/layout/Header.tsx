@@ -177,6 +177,69 @@ const Tabs = ({
 };
 
 // On a record page (a contact, a deal), a way back to the list it came from.
+// The toolbar an accountant sees: the finance pages only, and their own menu.
+const ACCOUNTANT_TABS: { to: string; label: string }[] = [
+  { to: "/accountant", label: "Accountant's pack" },
+  { to: "/owed", label: "Owed and owing" },
+  { to: "/invoices", label: "Invoices" },
+  { to: "/bills", label: "Bills" },
+  { to: "/money", label: "Money book" },
+  { to: "/reports", label: "Reports" },
+];
+
+export const AccountantToolbar = () => {
+  const { darkModeLogo, title } = useConfigurationContext();
+  const location = useLocation();
+  return (
+    <header
+      data-slot="toolbar"
+      data-titlebar
+      className="sticky top-0 z-30 border-b border-border"
+    >
+      <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4 md:px-6">
+        <Link
+          to="/accountant"
+          aria-label={title}
+          className="flex shrink-0 items-center gap-2 rounded-lg py-1 text-[15px] font-semibold tracking-tight"
+        >
+          <img src={darkModeLogo} alt="" className="h-5" />
+          <span className="hidden lg:inline">{title}</span>
+        </Link>
+        <nav
+          aria-label="Finance"
+          className="flex min-w-0 flex-1 gap-1 overflow-x-auto"
+        >
+          {ACCOUNTANT_TABS.map((tab) => {
+            const active =
+              location.pathname === tab.to ||
+              location.pathname.startsWith(`${tab.to}/`);
+            return (
+              <Link
+                key={tab.to}
+                to={tab.to}
+                aria-current={active ? "page" : undefined}
+                className={`shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium ${
+                  active
+                    ? "bg-accent text-accent-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                {tab.label}
+              </Link>
+            );
+          })}
+        </nav>
+        <div className="flex shrink-0 items-center gap-1">
+          <ThemeQuickToggle />
+          <UserMenu>
+            <ProfileMenu />
+          </UserMenu>
+        </div>
+      </div>
+    </header>
+  );
+};
+
 export const RecordBackLink = () => {
   const location = useLocation();
   const active = sectionFor(location.pathname);

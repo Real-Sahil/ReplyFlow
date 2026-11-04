@@ -154,7 +154,11 @@ export const getAuthProvider = (): AuthProvider => {
       if (sale == null) return false;
 
       // Compute access rights from the sale role
-      const role = sale.administrator ? "admin" : "user";
+      const role = sale.administrator
+        ? "admin"
+        : sale.role === "accountant"
+          ? "accountant"
+          : "user";
       return canAccess(role, params);
     },
     getAuthorizationDetails(authorizationId: string) {

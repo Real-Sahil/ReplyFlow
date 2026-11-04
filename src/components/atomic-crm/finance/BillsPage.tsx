@@ -16,6 +16,7 @@ import { getSupabaseClient } from "../providers/supabase/supabase";
 import { formatPence } from "../quotes/quoteMath";
 import { BILLS_KEY, METHOD_LABEL, type Bill } from "./billTypes";
 import { BillDialog } from "./BillDialog";
+import { useIsAccountant } from "../misc/useIsAccountant";
 import { useBusinessSettings } from "./useBusinessSettings";
 import { useBills } from "./useBills";
 
@@ -43,6 +44,7 @@ export const openReceipt = async (path: string) => {
 // cost of. Void rather than delete: a voided bill stays in the history but not in the totals.
 export const BillsPage = () => {
   const notify = useNotify();
+  const readOnly = useIsAccountant();
   const queryClient = useQueryClient();
   const [preset, setPreset] = useState<PeriodPreset>("this_month");
   const [from, setFrom] = useState("");
@@ -88,9 +90,11 @@ export const BillsPage = () => {
           <Wallet className="size-6 text-muted-foreground" /> Bills and expenses
         </h1>
         <ExportDialogButton config={billLedgerExport()} />
-        <Button size="sm" onClick={() => setEditing("new")}>
-          <Plus /> Add a bill
-        </Button>
+        {!readOnly && (
+          <Button size="sm" onClick={() => setEditing("new")}>
+            <Plus /> Add a bill
+          </Button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
@@ -247,7 +251,7 @@ export const BillsPage = () => {
                         Receipt
                       </Button>
                     )}
-                    {b.status === "unpaid" && (
+                    {!readOnly && b.status === "unpaid" && (
                       <Button
                         variant="ghost"
                         size="sm"
@@ -264,7 +268,7 @@ export const BillsPage = () => {
                         Mark paid
                       </Button>
                     )}
-                    {b.status !== "void" && (
+                    {!readOnly && b.status !== "void" && (
                       <>
                         <Button
                           variant="ghost"

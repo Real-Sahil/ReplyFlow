@@ -22,6 +22,14 @@ export function SalesInputs() {
         helperText={false}
       />
       <BooleanInput
+        source="role"
+        label="Accountant (can only read the finance pages)"
+        format={(value: string | undefined) => value === "accountant"}
+        parse={(checked: boolean) => (checked ? "accountant" : "agent")}
+        readOnly={record?.id === identity?.id || !!record?.administrator}
+        helperText="An accountant sees invoices, bills, the money book, reports and the accountant's pack. They cannot see customers or messages, and cannot change anything."
+      />
+      <BooleanInput
         source="disabled"
         readOnly={record?.id === identity?.id}
         helperText={false}

@@ -17,6 +17,11 @@ export const canAccess = <
     return true;
   }
 
+  // An accountant reads the finance pages only, which are not resources.
+  if (role === "accountant") {
+    return false;
+  }
+
   // Non admins can't access the sales resource
   if (params.resource === "sales") {
     return false;

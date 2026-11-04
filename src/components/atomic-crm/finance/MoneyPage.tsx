@@ -16,6 +16,7 @@ import { getSupabaseClient } from "../providers/supabase/supabase";
 import { formatPence } from "../quotes/quoteMath";
 import { openReceipt } from "./BillsPage";
 import { downloadCashBookPdf, type CashRow } from "./cashBookPdf";
+import { useIsAccountant } from "../misc/useIsAccountant";
 import { useBusinessSettings } from "./useBusinessSettings";
 import { MoneyDialog } from "./MoneyDialog";
 import {
@@ -42,6 +43,7 @@ const day = (value: string) =>
 // note that explains it. Planned entries are money expected, not yet happened.
 export const MoneyPage = () => {
   const notify = useNotify();
+  const readOnly = useIsAccountant();
   const queryClient = useQueryClient();
   const [preset, setPreset] = useState<PeriodPreset>("this_month");
   const [from, setFrom] = useState("");
@@ -144,12 +146,20 @@ export const MoneyPage = () => {
           {making ? "Making the PDF…" : "PDF report"}
         </Button>
         <ExportDialogButton config={moneyLedgerExport()} />
-        <Button size="sm" variant="outline" onClick={() => setEditing("out")}>
-          <Plus /> Money out
-        </Button>
-        <Button size="sm" onClick={() => setEditing("in")}>
-          <Plus /> Money in
-        </Button>
+        {!readOnly && (
+          <>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setEditing("out")}
+            >
+              <Plus /> Money out
+            </Button>
+            <Button size="sm" onClick={() => setEditing("in")}>
+              <Plus /> Money in
+            </Button>
+          </>
+        )}
       </div>
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
@@ -322,7 +332,7 @@ export const MoneyPage = () => {
                         Receipt
                       </Button>
                     )}
-                    {e.state === "planned" && (
+                    {!readOnly && e.state === "planned" && (
                       <Button
                         variant="ghost"
                         size="sm"
@@ -342,7 +352,7 @@ export const MoneyPage = () => {
                         Mark done
                       </Button>
                     )}
-                    {e.state !== "void" && (
+                    {!readOnly && e.state !== "void" && (
                       <>
                         <Button
                           variant="ghost"

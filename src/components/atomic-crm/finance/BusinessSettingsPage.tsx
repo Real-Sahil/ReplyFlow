@@ -29,6 +29,7 @@ type Form = {
   flat_rate_percent: string;
   prices_include_vat: boolean;
   invoice_prefix: string;
+  books_locked_until: string;
   code_sales: string;
   code_bank: string;
   code_bills: Record<string, string>;
@@ -46,6 +47,7 @@ const empty: Form = {
   flat_rate_percent: "",
   prices_include_vat: true,
   invoice_prefix: "INV-",
+  books_locked_until: "",
   code_sales: "",
   code_bank: "",
   code_bills: {},
@@ -69,6 +71,7 @@ const fromSettings = (
           s.flat_rate_percent == null ? "" : String(s.flat_rate_percent),
         prices_include_vat: s.prices_include_vat,
         invoice_prefix: s.invoice_prefix,
+        books_locked_until: s.books_locked_until ?? "",
         code_sales: s.accounting_codes?.sales ?? "",
         code_bank: s.accounting_codes?.bank ?? "",
         code_bills: s.accounting_codes?.bills ?? {},
@@ -154,6 +157,13 @@ export const BusinessSettingsPage = () => {
             : null,
         prices_include_vat: form.prices_include_vat,
         invoice_prefix: form.invoice_prefix.trim() || "INV-",
+        // Sent only when the column exists (the saved settings carry it) or a date was entered, so
+        // saving stays safe on a database that does not have the lock yet.
+        ...(settings && "books_locked_until" in settings
+          ? { books_locked_until: form.books_locked_until || null }
+          : form.books_locked_until
+            ? { books_locked_until: form.books_locked_until }
+            : {}),
         accounting_codes: {
           ...(form.code_sales.trim() ? { sales: form.code_sales.trim() } : {}),
           ...(form.code_bank.trim() ? { bank: form.code_bank.trim() } : {}),
@@ -253,6 +263,19 @@ export const BusinessSettingsPage = () => {
             maxLength={10}
             value={form.invoice_prefix}
             onChange={(e) => set("invoice_prefix", e.target.value)}
+          />
+        </Field>
+        <Field
+          id="books-locked-until"
+          label="Lock the books up to"
+          hint="Once your accountant has signed a month off, set this to its last day. Nothing dated on or before it can then be added or changed in invoices, bills, the money book or customer payments. Clear it to unlock."
+        >
+          <Input
+            id="books-locked-until"
+            type="date"
+            className="w-44"
+            value={form.books_locked_until}
+            onChange={(e) => set("books_locked_until", e.target.value)}
           />
         </Field>
       </section>
@@ -401,14 +424,17 @@ export const BusinessSettingsPage = () => {
 const Field = ({
   id,
   label,
+  hint,
   children,
 }: {
   id: string;
   label: string;
+  hint?: string;
   children: React.ReactNode;
 }) => (
   <div className="flex flex-col gap-1.5">
     <Label htmlFor={id}>{label}</Label>
     {children}
+    {hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
   </div>
 );

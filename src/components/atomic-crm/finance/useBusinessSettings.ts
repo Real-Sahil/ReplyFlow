@@ -15,6 +15,8 @@ export type BusinessSettings = {
   prices_include_vat: boolean;
   invoice_prefix: string;
   next_invoice_number: number;
+  // Nothing dated on or before this day can be added to or changed in the books.
+  books_locked_until: string | null;
   accounting_codes: {
     sales?: string;
     bills?: Record<string, string>;

@@ -25,6 +25,8 @@ export type SalesFormData = {
   last_name: string;
   administrator: boolean;
   disabled: boolean;
+  // "accountant": can read the finance pages of the business and change nothing.
+  role?: "agent" | "accountant" | "admin" | "viewer";
 };
 
 export type Sale = {
