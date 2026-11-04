@@ -453,3 +453,79 @@ export const billLedgerExport = (): ExportConfig => ({
     receipt: row.receipt_path ? "Yes" : "No",
   }),
 });
+
+// The money book, one row per entry, with the note and the order it belongs to. Money out is
+// negative, so the file adds up. Voided and planned entries are included and labelled. Read from
+// money_ledger.
+export const moneyLedgerExport = (): ExportConfig => ({
+  filename: "money-book",
+  title: "Money book",
+  table: "money_ledger",
+  select:
+    "entry_date, period_from, period_to, direction, category_label, category_group, state, amount_pence, counterparty, payment_method, reference, channel, order_reference, order_summary, order_note, regulated, note, void_reason, receipt_path",
+  dateColumn: "entry_date",
+  dateKind: "date",
+  filters: [
+    {
+      label: "Direction",
+      column: "direction",
+      options: [
+        { value: "in", label: "Money in" },
+        { value: "out", label: "Money out" },
+      ],
+    },
+    {
+      label: "Status",
+      column: "state",
+      options: [
+        { value: "done", label: "Done" },
+        { value: "planned", label: "Planned" },
+        { value: "void", label: "Voided" },
+      ],
+    },
+  ],
+  columns: [
+    { key: "date", label: "Date" },
+    { key: "state", label: "Status" },
+    { key: "direction", label: "In or out" },
+    { key: "group", label: "Group" },
+    { key: "category", label: "Category" },
+    { key: "amount", label: "Amount (£)" },
+    { key: "who", label: "With" },
+    { key: "method", label: "Paid by" },
+    { key: "reference", label: "Reference" },
+    { key: "channel", label: "Sales channel" },
+    { key: "period", label: "Covers" },
+    { key: "order", label: "Order" },
+    { key: "order_for", label: "Order is for" },
+    { key: "regulated", label: "Regulated" },
+    { key: "note", label: "Note" },
+    { key: "order_note", label: "Order note" },
+    { key: "void_reason", label: "Void reason" },
+    { key: "receipt", label: "Receipt on file" },
+  ],
+  toRow: (row: Row) => ({
+    date: text(row.entry_date),
+    state: text(row.state),
+    direction: row.direction === "in" ? "Money in" : "Money out",
+    group: text(row.category_group),
+    category: text(row.category_label),
+    amount: pounds(
+      row.direction === "in" ? row.amount_pence : -Number(row.amount_pence),
+    ),
+    who: text(row.counterparty),
+    method: text(row.payment_method),
+    reference: text(row.reference),
+    channel: text(row.channel),
+    period: row.period_from
+      ? `${text(row.period_from)} to ${text(row.period_to)}`
+      : "",
+    order: text(row.order_reference),
+    order_for: text(row.order_summary),
+    regulated: yesNo(row.regulated),
+    note: text(row.note),
+    order_note: text(row.order_note),
+    void_reason: text(row.void_reason),
+    receipt: row.receipt_path ? "Yes" : "No",
+  }),
+});

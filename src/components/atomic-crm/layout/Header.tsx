@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import {
+  BookOpen,
   Bug,
   Building2,
   ChevronLeft,
@@ -242,6 +243,7 @@ const MoreMenu = () => (
         <MoreLink to="/companies" label="Companies" Icon={Building2} />
         <MoreLink to={ImportPage.path} label="Import data" Icon={Import} />
         <MoreLink to="/invoices" label="Invoices" Icon={Receipt} />
+        <MoreLink to="/money" label="Money book" Icon={BookOpen} />
         <MoreLink to="/bills" label="Bills and expenses" Icon={Wallet} />
         <MoreLink
           to="/accountant"

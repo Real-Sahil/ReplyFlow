@@ -46,6 +46,7 @@ import { ProfilePage } from "../settings/ProfilePage";
 import { BusinessSettingsPage } from "../finance/BusinessSettingsPage";
 import { InvoicesPage } from "../finance/InvoicesPage";
 import { BillsPage } from "../finance/BillsPage";
+import { MoneyPage } from "../finance/MoneyPage";
 import { AccountantPackPage } from "../finance/AccountantPackPage";
 import { asMobileScreen } from "../layout/MobileScreen";
 import { SettingsPage } from "../settings/SettingsPage";
@@ -281,6 +282,7 @@ const DesktopAdmin = (
         <Route path="/business" element={<BusinessSettingsPage />} />
         <Route path="/invoices" element={<InvoicesPage />} />
         <Route path="/bills" element={<BillsPage />} />
+        <Route path="/money" element={<MoneyPage />} />
         <Route path="/accountant" element={<AccountantPackPage />} />
         <Route path={ImportPage.path} element={<ImportPage />} />
         <Route path="/transactions" element={<TransactionsPage />} />
@@ -326,6 +328,7 @@ const MobileAccountant = asMobileScreen(
   "Accountant's pack",
   AccountantPackPage,
 );
+const MobileMoney = asMobileScreen("Money book", MoneyPage);
 const MobileBills = asMobileScreen("Bills and expenses", BillsPage);
 const MobileInvoices = asMobileScreen("Invoices", InvoicesPage);
 const MobileBusiness = asMobileScreen("Business and VAT", BusinessSettingsPage);
@@ -398,6 +401,7 @@ const MobileAdmin = (
           <Route path="/business" element={<MobileBusiness />} />
           <Route path="/invoices" element={<MobileInvoices />} />
           <Route path="/bills" element={<MobileBills />} />
+          <Route path="/money" element={<MobileMoney />} />
           <Route path="/accountant" element={<MobileAccountant />} />
           <Route path={ChangelogPage.path} element={<ChangelogPage />} />
           <Route path="/transactions" element={<TransactionsPage />} />
