@@ -66,7 +66,7 @@ const Group = ({
   lead?: React.ReactNode;
   children: React.ReactNode;
 }) => (
-  <section aria-label={title} className="flex flex-col gap-2">
+  <section aria-label={title} className="reveal flex flex-col gap-2">
     <div className="flex items-baseline justify-between gap-3 px-1">
       <h2 className="text-sm font-semibold text-muted-foreground">{title}</h2>
       {to && action ? (

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import {
   BookOpen,
   Boxes,
@@ -60,6 +60,33 @@ export const MobileNavigation = () => {
   const location = useLocation();
   const translate = useTranslate();
   const [moreOpen, setMoreOpen] = useState(false);
+  const barRef = useRef<HTMLDivElement>(null);
+  // The selected tab's glass lens is one element that glides to the new tab on a spring, the way
+  // the system tab bar does, instead of each tab switching its own background on and off.
+  const [lens, setLens] = useState<{ x: number; y: number } | null>(null);
+  const [lensReady, setLensReady] = useState(false);
+
+  useLayoutEffect(() => {
+    const measure = () => {
+      const bar = barRef.current;
+      const target = bar?.querySelector<HTMLElement>("[data-lens-target]");
+      if (!bar || !target) {
+        setLens(null);
+        return;
+      }
+      const a = bar.getBoundingClientRect();
+      const b = target.getBoundingClientRect();
+      setLens({ x: b.left - a.left, y: b.top - a.top });
+    };
+    measure();
+    // Let the first position settle without animating from the corner.
+    const frame = requestAnimationFrame(() => setLensReady(true));
+    window.addEventListener("resize", measure);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("resize", measure);
+    };
+  }, [location.pathname]);
 
   const isActive = (path: string) =>
     path === "/"
@@ -72,7 +99,21 @@ export const MobileNavigation = () => {
       className="glass fixed inset-x-3 z-50 rounded-[28px]"
       style={{ bottom: "calc(env(safe-area-inset-bottom) + 0.5rem)" }}
     >
-      <div className="mx-auto grid h-16 max-w-md grid-cols-6 items-center px-1">
+      <div
+        ref={barRef}
+        className="relative mx-auto grid h-16 max-w-md grid-cols-6 items-center px-1"
+      >
+        <span
+          aria-hidden
+          className="lens pointer-events-none absolute left-0 top-0 h-7 w-12 rounded-full"
+          style={{
+            transform: `translate(${lens?.x ?? 0}px, ${lens?.y ?? 0}px)`,
+            opacity: lens ? 1 : 0,
+            transition: lensReady
+              ? "transform 520ms var(--spring), opacity 200ms ease"
+              : "none",
+          }}
+        />
         <NavigationButton
           href="/"
           Icon={Home}
@@ -129,10 +170,8 @@ const NavigationButton = ({
     )}
   >
     <span
-      className={cn(
-        "flex h-7 w-12 items-center justify-center rounded-full transition-colors",
-        isActive && "lens",
-      )}
+      data-lens-target={isActive ? "" : undefined}
+      className="relative flex h-7 w-12 items-center justify-center rounded-full"
     >
       <Icon className="size-5" />
     </span>
@@ -162,10 +201,8 @@ const InboxButton = ({ isActive }: { isActive: boolean }) => {
       )}
     >
       <span
-        className={cn(
-          "flex h-7 w-12 items-center justify-center rounded-full transition-colors",
-          isActive && "lens",
-        )}
+        data-lens-target={isActive ? "" : undefined}
+        className="relative flex h-7 w-12 items-center justify-center rounded-full"
       >
         <MessageCircle className="size-5" />
       </span>
@@ -201,7 +238,7 @@ const MoreSheet = ({
           <ThemeQuickToggle className="mr-8" />
         </div>
       </SheetHeader>
-      <div className="flex flex-col gap-6">
+      <div className="stagger flex flex-col gap-6">
         <MoreGroup title="Sell and publish">
           <MoreRow
             to="/tasks"
@@ -354,7 +391,8 @@ const MoreSheet = ({
           />
         </MoreGroup>
         <p className="px-1 text-center text-xs text-muted-foreground">
-          Version {__APP_VERSION__}
+          Version{" "}
+          {typeof __APP_VERSION__ === "undefined" ? "dev" : __APP_VERSION__}
         </p>
       </div>
     </SheetContent>

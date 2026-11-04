@@ -291,12 +291,12 @@ h3 {
 @keyframes rise {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(14px) scale(0.992);
   }
 }
 
 #main-content > * {
-  animation: rise 420ms var(--ease-spring) both;
+  animation: rise 560ms var(--spring) both;
 }
 
 /* Motion: short, springy, and gone entirely for people who ask for less. */
@@ -701,4 +701,108 @@ html[data-glass="off"] .lens {
 
 .glass-strong {
   --glass-boost: 1.7;
+}
+
+/* ---------------------------------------------------------------------------------------
+   Motion. Everything springs a little and stops for people who ask for less movement.
+   --------------------------------------------------------------------------------------- */
+
+/* Children arrive one after another instead of all at once. */
+.stagger > * {
+  animation: rise 560ms var(--spring) both;
+  animation-delay: calc(var(--i, 0) * 40ms);
+}
+.stagger > :nth-child(1) {
+  --i: 0;
+}
+.stagger > :nth-child(2) {
+  --i: 1;
+}
+.stagger > :nth-child(3) {
+  --i: 2;
+}
+.stagger > :nth-child(4) {
+  --i: 3;
+}
+.stagger > :nth-child(5) {
+  --i: 4;
+}
+.stagger > :nth-child(6) {
+  --i: 5;
+}
+.stagger > :nth-child(7) {
+  --i: 6;
+}
+.stagger > :nth-child(8) {
+  --i: 7;
+}
+.stagger > :nth-child(n + 9) {
+  --i: 8;
+}
+
+/* A tick mark pops in as a checkbox is ticked. */
+@keyframes tick-pop {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+[data-slot="checkbox-indicator"] {
+  animation: tick-pop 360ms var(--spring) both;
+}
+
+/* Sections ease into view as they scroll on, where the browser can do it off the main thread. */
+@supports (animation-timeline: view()) {
+  .reveal {
+    animation: reveal linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 40%;
+  }
+  @keyframes reveal {
+    from {
+      opacity: 0;
+      transform: translateY(18px) scale(0.985);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+/* Changing between light and dark fades instead of flashing. */
+html.theme-fade,
+html.theme-fade *,
+html.theme-fade *::before,
+html.theme-fade *::after {
+  transition:
+    background-color 420ms ease,
+    color 420ms ease,
+    border-color 420ms ease,
+    box-shadow 420ms ease,
+    fill 420ms ease !important;
+}
+
+/* The scrolling area keeps its own bounce and does not hand the gesture to the page. */
+.scroll-area {
+  overscroll-behavior-y: contain;
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stagger > *,
+  [data-slot="checkbox-indicator"],
+  .reveal {
+    animation: none !important;
+  }
+  .scroll-area {
+    scroll-behavior: auto;
+  }
 }

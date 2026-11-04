@@ -10,7 +10,7 @@ export const MobileContent = ({
   title?: string;
 }) => (
   <main
-    className="max-w-screen-xl mx-auto pt-16 px-4 pb-28 h-dvh overflow-y-auto"
+    className="scroll-area max-w-screen-xl mx-auto pt-16 px-4 pb-28 h-dvh overflow-y-auto"
     id="main-content"
     data-large-title={title ? "true" : undefined}
   >

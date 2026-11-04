@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useStore } from "ra-core";
 
 import {
@@ -52,13 +52,22 @@ export function ThemeProvider({
   const resolvedTheme: "light" | "dark" =
     theme === "dark" || (theme === "system" && systemDark) ? "dark" : "light";
 
+  const firstPaint = useRef(true);
   useEffect(() => {
     const root = window.document.documentElement;
+    // Fade between themes, but never on the first paint.
+    let timer: number | undefined;
+    if (!firstPaint.current) {
+      root.classList.add("theme-fade");
+      timer = window.setTimeout(() => root.classList.remove("theme-fade"), 500);
+    }
+    firstPaint.current = false;
     root.classList.remove("light", "dark");
     root.classList.add(resolvedTheme);
     document
       .querySelector('meta[name="theme-color"]')
       ?.setAttribute("content", BROWSER_COLOUR[resolvedTheme]);
+    return () => window.clearTimeout(timer);
   }, [resolvedTheme]);
 
   useEffect(() => {
