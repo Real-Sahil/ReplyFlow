@@ -26,6 +26,22 @@ const base: TrackingOrder = {
   security_held_pence: 0,
 };
 
+describe("the business's own name", () => {
+  it("shows the seller's name, escaped, and never another business's", () => {
+    const html = renderTrackingPage({
+      ...base,
+      business_name: "Oak & Pine <Ltd>",
+    });
+    expect(html).toContain("Oak &amp; Pine &lt;Ltd&gt;");
+    expect(html).not.toContain("Mere");
+  });
+  it("shows no name at all when the business has none", () => {
+    const html = renderTrackingPage({ ...base, business_name: null });
+    expect(html).not.toContain("<footer>");
+    expect(html).not.toContain("Mere");
+  });
+});
+
 describe("renderTrackingPage", () => {
   it("marks passed stages done, the current stage now, and the rest not started", () => {
     const html = renderTrackingPage(base);
@@ -98,7 +114,7 @@ describe("paymentLines", () => {
 
   it("says cash on delivery and the balance due", () => {
     const lines = paymentLines(base2);
-    expect(lines[0]).toContain("cash when your sofa is delivered");
+    expect(lines[0]).toContain("cash when your order is delivered");
     expect(lines.join(" ")).toContain("Balance due on delivery: £250.00");
   });
 

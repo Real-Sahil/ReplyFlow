@@ -41,6 +41,8 @@ export type TrackingOrder = {
   balance_pence: number | null;
   security_requested_pence: number | null;
   security_held_pence: number | null;
+  // The business that sold it, so every business sees its own name on its customers' page.
+  business_name?: string | null;
 };
 
 const pounds = (pence: number) =>
@@ -54,8 +56,8 @@ export const paymentLines = (order: TrackingOrder): string[] => {
   const lines: string[] = [];
   lines.push(
     order.payment_terms === "deposit_first"
-      ? "A deposit is paid first. The balance is paid when your sofa is delivered."
-      : "The balance is paid in cash when your sofa is delivered.",
+      ? "A deposit is paid first. The balance is paid when your order is delivered."
+      : "The balance is paid in cash when your order is delivered.",
   );
   const balance = order.balance_pence ?? null;
   if (balance !== null && balance > 0) {
@@ -94,7 +96,11 @@ const day = (iso: string) =>
     month: "long",
   });
 
-const shell = (title: string, body: string) => `<!doctype html>
+const shell = (
+  title: string,
+  body: string,
+  businessName?: string | null,
+) => `<!doctype html>
 <html lang="en-GB">
 <head>
 <meta charset="utf-8">
@@ -134,7 +140,7 @@ footer { color: var(--muted); font-size: 13px; text-align: center; }
 <body>
 <main>
 ${body}
-<footer>Mere &amp; Row</footer>
+${businessName ? `<footer>${esc(businessName)}</footer>` : ""}
 </main>
 </body>
 </html>
@@ -142,13 +148,16 @@ ${body}
 
 export const renderNotFound = () =>
   shell(
-    "Order not found · Mere & Row",
+    "Order not found",
     `<div class="card"><h1>We could not find that order</h1>
 <p class="muted">Check the link in your message, or ask us to send it again.</p></div>`,
   );
 
 export const renderTrackingPage = (order: TrackingOrder) => {
-  const title = `Your order ${order.reference} · Mere & Row`;
+  const name = order.business_name?.trim() || null;
+  const title = name
+    ? `Your order ${order.reference} · ${name}`
+    : `Your order ${order.reference}`;
   const header = `<div class="card"><p class="muted">Order ${esc(order.reference)}</p>
 <h1>${esc(order.product_summary || "Your order")}</h1></div>`;
 
@@ -156,12 +165,14 @@ export const renderTrackingPage = (order: TrackingOrder) => {
     return shell(
       title,
       `${header}<div class="card"><p>This order has been cancelled. If you did not ask for this, please get in touch with us.</p></div>`,
+      name,
     );
   }
   if (order.status === "quoted") {
     return shell(
       title,
       `${header}<div class="card"><p>Your order will appear here once it has been confirmed.</p></div>`,
+      name,
     );
   }
 
@@ -198,7 +209,7 @@ export const renderTrackingPage = (order: TrackingOrder) => {
     .join("\n");
 
   const update = order.customer_update?.trim()
-    ? `<div class="card"><h2>Latest update from Mere &amp; Row</h2><p class="update">${esc(order.customer_update.trim())}</p></div>`
+    ? `<div class="card"><h2>Latest update${name ? ` from ${esc(name)}` : ""}</h2><p class="update">${esc(order.customer_update.trim())}</p></div>`
     : "";
 
   return shell(
@@ -212,5 +223,6 @@ ${timing.length ? `<div class="card">${timing.map((line) => `<p>${esc(line)}</p>
 <div class="card"><h2>Payment</h2>
 ${payment}
 </div>`,
+    name,
   );
 };

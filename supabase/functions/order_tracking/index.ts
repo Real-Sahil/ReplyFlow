@@ -33,7 +33,7 @@ Deno.serve(async (req: Request) => {
   const { data, error } = await supabaseAdmin
     .from("orders")
     .select(
-      "id, reference, product_summary, status, stage_lights, delivery_window_start, delivery_window_end, next_update_due, customer_update, payment_terms, balance_pence, security_deposit_pence",
+      "id, organisation_id, reference, product_summary, status, stage_lights, delivery_window_start, delivery_window_end, next_update_due, customer_update, payment_terms, balance_pence, security_deposit_pence",
     )
     .eq("tracking_token", token)
     .maybeSingle();
@@ -61,9 +61,26 @@ Deno.serve(async (req: Request) => {
     0,
   );
 
+  // The seller's own name, from its business settings (or its organisation name).
+  const { data: settings } = await supabaseAdmin
+    .from("business_settings")
+    .select("trading_name, legal_name")
+    .eq("organisation_id", data.organisation_id)
+    .maybeSingle();
+  let businessName = settings?.trading_name || settings?.legal_name || null;
+  if (!businessName) {
+    const { data: organisation } = await supabaseAdmin
+      .from("organisations")
+      .select("name")
+      .eq("id", data.organisation_id)
+      .maybeSingle();
+    businessName = organisation?.name ?? null;
+  }
+
   return page(
     renderTrackingPage({
       ...(data as TrackingOrder),
+      business_name: businessName,
       security_requested_pence: Number(data.security_deposit_pence ?? 0),
       security_held_pence: held,
     }),

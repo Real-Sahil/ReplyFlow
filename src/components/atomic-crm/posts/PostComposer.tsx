@@ -25,6 +25,7 @@ import { ProductPicker } from "../contacts/MessengerConversation";
 import { PagePicker } from "./PagePicker";
 import { formatPrice } from "../products/formatPrice";
 import { storagePath } from "../providers/supabase/organisationFolder";
+import { useBusinessSettings } from "../finance/useBusinessSettings";
 import { getSupabaseClient } from "../providers/supabase/supabase";
 import { AiWriting } from "./AiWriting";
 import { PostStatusBadge, type PostRow } from "./postStatus";
@@ -109,6 +110,10 @@ const callWriteWithAi = async (productId: number): Promise<string> => {
 };
 
 export const PostComposer = () => {
+  // The page the post goes out under is the signed-in business's own.
+  const { data: business } = useBusinessSettings();
+  const businessName =
+    business?.trading_name || business?.legal_name || "Your page";
   const record = useRecordContext<PostRow>();
   const dataProvider = useDataProvider();
   const notify = useNotify();
@@ -483,7 +488,7 @@ export const PostComposer = () => {
           <div className="mx-4 mb-3 overflow-hidden rounded-lg border bg-card">
             <div className="flex items-center gap-2 p-3">
               <div className="size-8 rounded-full bg-primary/20" />
-              <div className="text-sm font-medium">Mere &amp; Row</div>
+              <div className="text-sm font-medium">{businessName}</div>
             </div>
             <div className="whitespace-pre-wrap px-3 pb-3 text-sm">
               {message || (

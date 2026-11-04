@@ -9,7 +9,7 @@ import { readSignedRequest } from "./signedRequest.ts";
 
 const html = (status: number, body: string) =>
   new Response(
-    `<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>Data deletion · Mere &amp; Row</title></head><body style="font:16px/1.5 system-ui,sans-serif;max-width:560px;margin:40px auto;padding:0 16px">${body}</body></html>`,
+    `<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>Data deletion · ReplyFlow</title></head><body style="font:16px/1.5 system-ui,sans-serif;max-width:560px;margin:40px auto;padding:0 16px">${body}</body></html>`,
     {
       status,
       headers: {
