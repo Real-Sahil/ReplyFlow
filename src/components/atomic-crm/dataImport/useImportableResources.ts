@@ -15,9 +15,8 @@ export const IMPORTABLE_RESOURCES = ["contacts", "companies", "deals"] as const;
 export type ImportableResourceName = (typeof IMPORTABLE_RESOURCES)[number];
 
 /**
- * The importable resources, restricted to those the running Admin registers:
- * the mobile app has no deals screens, so it must not offer to import records
- * the user would never be able to see.
+ * The importable resources, restricted to those the running Admin registers, so
+ * the app never offers to import records the user would not be able to see.
  */
 export function useImportableResources(): ImportableResource[] {
   const processContacts = useContactImport();
