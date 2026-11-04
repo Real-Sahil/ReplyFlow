@@ -3,8 +3,10 @@ import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.tsx";
 import { installErrorReporting } from "./lib/errorReporting";
+import { installScreenTransitions } from "./lib/screenTransitions";
 
 installErrorReporting();
+installScreenTransitions();
 
 // After a new deploy, the service worker may replace its pre-cache while
 // the page still holds old chunk references. A reload picks up the new

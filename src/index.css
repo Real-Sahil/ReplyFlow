@@ -806,3 +806,163 @@ html.theme-fade *::after {
     scroll-behavior: auto;
   }
 }
+
+/* ---------------------------------------------------------------------------------------
+   Screen transitions (see src/lib/screenTransitions.ts). Only the main content moves; the
+   toolbar and tab bar stay put. Where the browser lacks View Transitions none of this applies.
+   --------------------------------------------------------------------------------------- */
+@supports (view-transition-name: none) {
+  #main-content {
+    view-transition-name: screen;
+  }
+  /* The rest of the page (header, bar) just fades if anything about it changed. */
+  ::view-transition-group(root) {
+    animation-duration: 0s;
+  }
+  ::view-transition-old(root) {
+    animation: vt-fade-out 180ms ease both;
+  }
+  ::view-transition-new(root) {
+    animation: vt-fade-in 220ms ease both;
+  }
+  /* The screen does not stretch between the old and new size; the two just slide. */
+  ::view-transition-group(screen) {
+    animation: none;
+  }
+  ::view-transition-image-pair(screen) {
+    isolation: auto;
+  }
+  /* The entrance animation would double up with the slide. */
+  html[data-nav] #main-content > * {
+    animation: none;
+  }
+
+  /* Going deeper: the new screen slides in from the right over the old, which drifts left and dims. */
+  html[data-nav="forward"]::view-transition-old(screen) {
+    animation: vt-push-out 480ms var(--ease-spring) both;
+  }
+  html[data-nav="forward"]::view-transition-new(screen) {
+    animation: vt-push-in 520ms var(--spring) both;
+    z-index: 2;
+    box-shadow: -14px 0 32px oklch(0% 0 0 / 18%);
+  }
+  /* Going back: the screen on top slides away to the right, revealing the one beneath. */
+  html[data-nav="back"]::view-transition-old(screen) {
+    animation: vt-pop-out 440ms var(--ease-spring) both;
+    z-index: 2;
+    box-shadow: -14px 0 32px oklch(0% 0 0 / 18%);
+  }
+  html[data-nav="back"]::view-transition-new(screen) {
+    animation: vt-pop-in 480ms var(--ease-spring) both;
+  }
+  /* Between main sections: a short sideways glide with a fade, no stacking. */
+  html[data-nav="tab-forward"]::view-transition-old(screen) {
+    animation: vt-tab-out-left 220ms ease both;
+  }
+  html[data-nav="tab-forward"]::view-transition-new(screen) {
+    animation: vt-tab-in-right 480ms var(--spring) both;
+  }
+  html[data-nav="tab-back"]::view-transition-old(screen) {
+    animation: vt-tab-out-right 220ms ease both;
+  }
+  html[data-nav="tab-back"]::view-transition-new(screen) {
+    animation: vt-tab-in-left 480ms var(--spring) both;
+  }
+
+  @keyframes vt-fade-out {
+    to {
+      opacity: 0;
+    }
+  }
+  @keyframes vt-fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes vt-push-in {
+    from {
+      transform: translateX(100%);
+    }
+  }
+  @keyframes vt-push-out {
+    to {
+      transform: translateX(-28%);
+      opacity: 0.55;
+    }
+  }
+  @keyframes vt-pop-out {
+    to {
+      transform: translateX(100%);
+    }
+  }
+  @keyframes vt-pop-in {
+    from {
+      transform: translateX(-28%);
+      opacity: 0.55;
+    }
+  }
+  @keyframes vt-tab-out-left {
+    to {
+      transform: translateX(-9%);
+      opacity: 0;
+    }
+  }
+  @keyframes vt-tab-out-right {
+    to {
+      transform: translateX(9%);
+      opacity: 0;
+    }
+  }
+  @keyframes vt-tab-in-right {
+    from {
+      transform: translateX(9%);
+      opacity: 0;
+    }
+  }
+  @keyframes vt-tab-in-left {
+    from {
+      transform: translateX(-9%);
+      opacity: 0;
+    }
+  }
+
+  /* On a wide screen, a full-width slide is too much: shorter travel, same feel. */
+  @media (min-width: 768px) {
+    @keyframes vt-push-in {
+      from {
+        transform: translateX(42px);
+        opacity: 0;
+      }
+    }
+    @keyframes vt-push-out {
+      to {
+        transform: translateX(-24px);
+        opacity: 0;
+      }
+    }
+    @keyframes vt-pop-out {
+      to {
+        transform: translateX(42px);
+        opacity: 0;
+      }
+    }
+    @keyframes vt-pop-in {
+      from {
+        transform: translateX(-24px);
+        opacity: 0;
+      }
+    }
+    html[data-nav="forward"]::view-transition-new(screen),
+    html[data-nav="back"]::view-transition-old(screen) {
+      box-shadow: none;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}

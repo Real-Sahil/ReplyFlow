@@ -8,6 +8,7 @@ import { DataImportProvider } from "../dataImport/DataImportProvider";
 import { useConfigurationLoader } from "../root/useConfigurationLoader";
 import { useGlobalShortcuts } from "@/hooks/use-global-shortcuts";
 import { RecordBackLink, Toolbar } from "./Header";
+import { ScreenReady } from "./ScreenReady";
 
 export const Layout = ({ children }: { children: ReactNode }) => {
   useConfigurationLoader();
@@ -15,6 +16,7 @@ export const Layout = ({ children }: { children: ReactNode }) => {
   return (
     <DataImportProvider>
       <div className="min-h-screen bg-background">
+        <ScreenReady />
         <Toolbar />
         <main
           className="mx-auto min-w-0 max-w-6xl px-4 py-6 md:px-6 md:py-8"
