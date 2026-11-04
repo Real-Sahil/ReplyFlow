@@ -49,11 +49,14 @@ const run = (dir: Direction, change?: () => void) => {
   const root = document.documentElement;
   root.dataset.nav = dir;
   const transition = document.startViewTransition(() => {
-    change?.();
-    return new Promise<void>((resolve) => {
+    // Listen for "screen ready" before making the change: the router may draw the new screen
+    // synchronously inside it, and a signal that arrives before anyone listens is lost.
+    const ready = new Promise<void>((resolve) => {
       release = resolve;
       window.setTimeout(resolve, MAX_WAIT_MS);
     });
+    change?.();
+    return ready;
   });
   transition.finished.finally(() => {
     delete root.dataset.nav;
@@ -65,12 +68,11 @@ const run = (dir: Direction, change?: () => void) => {
 // which is how a native app behaves. Holding the old screen still until the new one was ready made
 // every tap feel late.
 export const screenReady = () => {
-  if (!release) return;
-  requestAnimationFrame(() => {
-    const done = release;
-    release = null;
-    done?.();
-  });
+  // No waiting for a frame here: while the browser holds the old screen it stops running frame
+  // callbacks, so they would never fire. The new screen is already in the page at this point.
+  const done = release;
+  release = null;
+  done?.();
 };
 
 export const installScreenTransitions = () => {

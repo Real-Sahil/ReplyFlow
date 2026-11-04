@@ -106,6 +106,9 @@
     0 0 0 0.5px oklch(32% 0.03 50 / 12%),
     0 10px 28px -12px oklch(32% 0.03 50 / 28%);
   --ease-spring: cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* The curve of a native push: fast start, long gentle stop, no overshoot. Used for full-width
+     slides, where a spring would pull the screen past its edge. */
+  --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
   /* A real spring: it overshoots a little and settles. Transforms only; colours
      use the plain curve above because they cannot overshoot. */
   --spring: linear(
@@ -839,34 +842,34 @@ html.theme-fade *::after {
 
   /* Going deeper: the new screen slides in from the right over the old, which drifts left and dims. */
   html[data-nav="forward"]::view-transition-old(screen) {
-    animation: vt-push-out 480ms var(--ease-spring) both;
+    animation: vt-push-out 400ms var(--ease-ios) both;
   }
   html[data-nav="forward"]::view-transition-new(screen) {
-    animation: vt-push-in 520ms var(--spring) both;
+    animation: vt-push-in 400ms var(--ease-ios) both;
     z-index: 2;
     box-shadow: -14px 0 32px oklch(0% 0 0 / 18%);
   }
   /* Going back: the screen on top slides away to the right, revealing the one beneath. */
   html[data-nav="back"]::view-transition-old(screen) {
-    animation: vt-pop-out 440ms var(--ease-spring) both;
+    animation: vt-pop-out 360ms var(--ease-ios) both;
     z-index: 2;
     box-shadow: -14px 0 32px oklch(0% 0 0 / 18%);
   }
   html[data-nav="back"]::view-transition-new(screen) {
-    animation: vt-pop-in 480ms var(--ease-spring) both;
+    animation: vt-pop-in 400ms var(--ease-ios) both;
   }
   /* Between main sections: a short sideways glide with a fade, no stacking. */
   html[data-nav="tab-forward"]::view-transition-old(screen) {
     animation: vt-tab-out-left 220ms ease both;
   }
   html[data-nav="tab-forward"]::view-transition-new(screen) {
-    animation: vt-tab-in-right 480ms var(--spring) both;
+    animation: vt-tab-in-right 380ms var(--ease-ios) both;
   }
   html[data-nav="tab-back"]::view-transition-old(screen) {
     animation: vt-tab-out-right 220ms ease both;
   }
   html[data-nav="tab-back"]::view-transition-new(screen) {
-    animation: vt-tab-in-left 480ms var(--spring) both;
+    animation: vt-tab-in-left 380ms var(--ease-ios) both;
   }
 
   @keyframes vt-fade-out {

@@ -23,3 +23,25 @@ export const lazyScreen = <P extends object = object>(
   Wrapped.displayName = `Lazy(${name})`;
   return Wrapped;
 };
+
+// The screens people open most are fetched in the background once the app has settled, so the first
+// tap is not waiting on the network and the transition can start straight away.
+export const preloadCommonScreens = () => {
+  const load = () => {
+    void import("../contacts/ContactList");
+    void import("../contacts/ContactShow");
+    void import("../orders/OrderList");
+    void import("../orders/OrderEdit");
+    void import("../inbox/InboxList");
+    void import("../deals/DealList");
+    void import("../posts/PostScreens");
+    void import("../products/ProductList");
+  };
+  const idle = (
+    window as unknown as {
+      requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => void;
+    }
+  ).requestIdleCallback;
+  if (idle) idle(load, { timeout: 4000 });
+  else window.setTimeout(load, 2500);
+};
