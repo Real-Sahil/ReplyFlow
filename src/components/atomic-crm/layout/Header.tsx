@@ -5,6 +5,7 @@ import {
   ChevronLeft,
   MoreHorizontal,
   Import,
+  Landmark,
   MessageCircle,
   Plug,
   Settings,
@@ -237,6 +238,9 @@ const MoreMenu = () => (
         </CanAccess>
         <MoreLink to="/companies" label="Companies" Icon={Building2} />
         <MoreLink to={ImportPage.path} label="Import data" Icon={Import} />
+        <CanAccess resource="configuration" action="edit">
+          <MoreLink to="/business" label="Business and VAT" Icon={Landmark} />
+        </CanAccess>
       </MoreGroup>
       <CanAccess resource="configuration" action="edit">
         <MoreGroup title="Channels">

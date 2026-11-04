@@ -5,6 +5,7 @@ import {
   ChevronRight,
   Home,
   Import,
+  Landmark,
   Kanban,
   ListTodo,
   Megaphone,
@@ -246,6 +247,15 @@ const MoreSheet = ({
             Icon={Import}
             onPick={onOpenChange}
           />
+          <CanAccess resource="configuration" action="edit">
+            <MoreRow
+              to="/business"
+              label="Business and VAT"
+              detail="Details on invoices, and the VAT switch"
+              Icon={Landmark}
+              onPick={onOpenChange}
+            />
+          </CanAccess>
         </MoreGroup>
         <CanAccess resource="configuration" action="edit">
           <MoreGroup title="Channels">

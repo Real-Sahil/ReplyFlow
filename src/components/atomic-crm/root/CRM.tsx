@@ -43,6 +43,7 @@ import {
 import sales from "../sales";
 import { SettingsPageMobile } from "../settings/SettingsPageMobile";
 import { ProfilePage } from "../settings/ProfilePage";
+import { BusinessSettingsPage } from "../finance/BusinessSettingsPage";
 import { asMobileScreen } from "../layout/MobileScreen";
 import { SettingsPage } from "../settings/SettingsPage";
 import { ErrorLogPage } from "../errors/ErrorLogPage";
@@ -274,6 +275,7 @@ const DesktopAdmin = (
         <Route path={SettingsPage.path} element={<SettingsPage />} />
         <Route path="/facebook" element={<FacebookConnectionPage />} />
         <Route path="/errors" element={<ErrorLogPage />} />
+        <Route path="/business" element={<BusinessSettingsPage />} />
         <Route path={ImportPage.path} element={<ImportPage />} />
         <Route path="/transactions" element={<TransactionsPage />} />
         <Route path="/links" element={<TrackedLinksPage />} />
@@ -314,6 +316,7 @@ const MobileSalesCreate = asMobileScreen("New team member", sales.create);
 const MobileSalesEdit = asMobileScreen("Edit team member", sales.edit);
 const MobileProfile = asMobileScreen("My profile", ProfilePage);
 const MobileImport = asMobileScreen("Import data", ImportPage);
+const MobileBusiness = asMobileScreen("Business and VAT", BusinessSettingsPage);
 
 const MobileAdmin = (
   props: CoreAdminProps & {
@@ -380,6 +383,7 @@ const MobileAdmin = (
           <Route path={ImportPage.path} element={<MobileImport />} />
           <Route path="/facebook" element={<FacebookConnectionPage />} />
           <Route path="/errors" element={<ErrorLogPage />} />
+          <Route path="/business" element={<MobileBusiness />} />
           <Route path={ChangelogPage.path} element={<ChangelogPage />} />
           <Route path="/transactions" element={<TransactionsPage />} />
           <Route path="/links" element={<TrackedLinksPage />} />
