@@ -31,10 +31,25 @@ export const OrderCosts = () => {
       return Number(data?.stock_cost_pence ?? 0);
     },
   });
+  // Bills that bought stock into the stock book are costed when that stock is used, so counting
+  // them here as well would count the same money twice.
+  const liveBillIds = bills.filter((b) => b.status !== "void").map((b) => b.id);
+  const { data: stockedBillIds = [] } = useQuery({
+    queryKey: ["order_stocked_bills", liveBillIds.join(",")],
+    enabled: liveBillIds.length > 0,
+    queryFn: async () => {
+      const { data } = await getSupabaseClient()
+        .from("stock_movements")
+        .select("bill_id")
+        .in("bill_id", liveBillIds);
+      return (data ?? []).map((r) => Number(r.bill_id));
+    },
+  });
   if (!order) return null;
 
+  const countedElsewhere = new Set(stockedBillIds);
   const billCosts = bills
-    .filter((b) => b.status !== "void")
+    .filter((b) => b.status !== "void" && !countedElsewhere.has(Number(b.id)))
     .reduce((sum, b) => sum + b.net_pence, 0);
   const costs = billCosts + stockCost;
   const sold = documents.reduce(
@@ -96,6 +111,11 @@ export const OrderCosts = () => {
               <span className="font-medium">{b.supplier_name}</span>
               <span className="text-muted-foreground">{b.description}</span>
               <span className="ml-auto tabular-nums">
+                {countedElsewhere.has(Number(b.id)) ? (
+                  <span className="mr-2 text-xs text-muted-foreground">
+                    bought into stock, costed when used
+                  </span>
+                ) : null}
                 {formatPence(b.net_pence)}
               </span>
             </li>

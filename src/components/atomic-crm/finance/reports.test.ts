@@ -78,14 +78,28 @@ describe("profitAndLoss", () => {
       amount_pence: 200000,
       vat_pence: 0,
     }),
+    entry({
+      direction: "out",
+      category: "ni_self_employed",
+      category_label: "National Insurance, self-employed (Class 2 / Class 4)",
+      amount_pence: 40000,
+      vat_pence: 0,
+    }),
+    entry({
+      direction: "out",
+      category: "employer_ni",
+      category_label: "Employer's National Insurance",
+      amount_pence: 2000,
+      vat_pence: 0,
+    }),
     entry({ state: "planned", amount_pence: 77777 }),
   ];
   const p = profitAndLoss(sales, bills, entries);
 
   it("adds income net of VAT, takes credit notes off, and counts wages as a cost", () => {
     expect(p.incomeTotal).toBe(135000);
-    expect(p.costsTotal).toBe(71200);
-    expect(p.profit).toBe(63800);
+    expect(p.costsTotal).toBe(73200);
+    expect(p.profit).toBe(61800);
   });
   it("counts VAT that cannot be reclaimed as a cost and leaves voided and planned rows out", () => {
     expect(p.costs.find((l) => l.label === "Entertainment")?.pence).toBe(1200);
@@ -99,6 +113,15 @@ describe("profitAndLoss", () => {
       200000,
     );
     expect(p.income.some((l) => l.label === "Loan received")).toBe(false);
+  });
+  it("keeps the owner's self-employed NI out of profit but counts employer NI as a cost", () => {
+    expect(
+      p.excluded.find((l) => l.label.startsWith("National Insurance, self"))
+        ?.pence,
+    ).toBe(-40000);
+    expect(
+      p.costs.find((l) => l.label === "Employer's National Insurance")?.pence,
+    ).toBe(2000);
   });
   it("groups by month", () => {
     expect(p.months.map((m) => m.month)).toEqual(["2026-11", "2026-12"]);

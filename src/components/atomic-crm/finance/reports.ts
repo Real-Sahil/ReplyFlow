@@ -13,6 +13,7 @@ import type { BillRow, EntryRow, SalesRow } from "./accountantPack";
 export const NOT_PROFIT = new Set([
   "tax_vat",
   "tax_paye_ni",
+  "ni_self_employed",
   "tax_corporation",
   "tax_income",
   "loan_received",
