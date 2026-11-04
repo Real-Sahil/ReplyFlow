@@ -380,7 +380,7 @@ export const PostList = () => {
   return (
     <div className="mt-2 flex flex-col gap-4 px-4 md:px-0">
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="min-w-0 flex-1 text-2xl font-semibold tracking-tight">
+        <h1 className="page-title min-w-0 flex-1 text-2xl font-semibold tracking-tight">
           Posts
         </h1>
         <Tabs tab={tab} onChange={setTab} />

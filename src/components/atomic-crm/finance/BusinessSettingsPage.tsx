@@ -205,7 +205,7 @@ export const BusinessSettingsPage = () => {
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6">
-      <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
+      <h1 className="page-title flex items-center gap-2 text-2xl font-semibold tracking-tight">
         <Building2 className="size-6 text-muted-foreground" /> Business and VAT
       </h1>
 

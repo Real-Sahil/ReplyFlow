@@ -77,7 +77,9 @@ export const PostImport = () => {
 
   return (
     <div className="mt-2 flex flex-col gap-4 px-4 md:px-0">
-      <h1 className="text-2xl font-semibold tracking-tight">Import drafts</h1>
+      <h1 className="page-title text-2xl font-semibold tracking-tight">
+        Import drafts
+      </h1>
       <p className="text-sm text-muted-foreground">
         Upload a CSV with the columns <code>reference</code>,{" "}
         <code>caption</code> and, optionally, <code>alt_text</code> (up to 200

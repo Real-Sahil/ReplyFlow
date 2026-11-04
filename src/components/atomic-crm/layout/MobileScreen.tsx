@@ -18,7 +18,7 @@ export const MobileScreen = ({
       <MobileBackButton />
       <h1 className="truncate text-xl font-semibold">{title}</h1>
     </MobileHeader>
-    <MobileContent>{children}</MobileContent>
+    <MobileContent framed>{children}</MobileContent>
   </>
 );
 

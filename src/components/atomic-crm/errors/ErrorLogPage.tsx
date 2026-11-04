@@ -43,7 +43,9 @@ export const ErrorLogPage = () => {
     <div className="mx-auto mt-2 flex max-w-4xl flex-col gap-4">
       <div className="flex items-center">
         <div className="flex-1">
-          <h1 className="text-2xl font-semibold tracking-tight">Error log</h1>
+          <h1 className="page-title text-2xl font-semibold tracking-tight">
+            Error log
+          </h1>
           <p className="text-sm text-muted-foreground">
             Problems found in the app and its background services. The most
             recent {LIMIT} are shown and entries are kept for 60 days.

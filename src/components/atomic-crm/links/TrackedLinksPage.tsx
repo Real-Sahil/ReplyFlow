@@ -86,7 +86,7 @@ export const TrackedLinksPage = () => {
 
   return (
     <div className="mt-2 flex flex-col gap-6 px-4 md:px-0">
-      <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
+      <h1 className="page-title flex items-center gap-2 text-2xl font-semibold tracking-tight">
         <Link2 className="size-6 text-muted-foreground" /> Tracked links
       </h1>
 

@@ -86,7 +86,10 @@ export const DealListContent = () => {
           const value = deals.reduce((sum, d) => sum + (d.amount ?? 0), 0);
           const selected = focus === stage.value;
           return (
-            <div key={stage.value} className="flex min-w-0 flex-1 items-center">
+            <div
+              key={stage.value}
+              className="flex min-w-32 flex-1 shrink-0 items-center"
+            >
               <button
                 type="button"
                 aria-pressed={selected}
@@ -101,7 +104,7 @@ export const DealListContent = () => {
                     });
                 }}
                 className={cn(
-                  "press flex min-w-28 flex-1 flex-col gap-0.5 rounded-xl px-3 py-2 text-left",
+                  "press flex min-w-0 flex-1 flex-col gap-0.5 rounded-xl px-3 py-2 text-left",
                   selected
                     ? "bg-accent ring-1 ring-primary"
                     : "bg-muted/60 hover:bg-muted",

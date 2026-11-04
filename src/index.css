@@ -969,3 +969,9 @@ html.theme-fade *::after {
     animation: none !important;
   }
 }
+
+/* A desktop page shown in the phone frame already has its title in the top bar, so the page's own
+   heading is not repeated (it also left the buttons beside it too little room). */
+[data-mobile-screen] .page-title {
+  display: none;
+}

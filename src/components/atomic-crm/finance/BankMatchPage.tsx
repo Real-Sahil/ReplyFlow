@@ -216,7 +216,7 @@ export const BankMatchPage = () => {
   return (
     <div className="mt-2 flex flex-col gap-5 px-4 md:px-0">
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="flex min-w-0 flex-1 items-center gap-2 text-2xl font-semibold tracking-tight">
+        <h1 className="page-title flex min-w-0 basis-full items-center gap-2 text-2xl font-semibold tracking-tight sm:basis-0 sm:flex-1">
           <Landmark className="size-6 text-muted-foreground" /> Bank match
         </h1>
         <input

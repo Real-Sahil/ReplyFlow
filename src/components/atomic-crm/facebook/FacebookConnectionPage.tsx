@@ -185,7 +185,7 @@ export const FacebookConnectionPage = () => {
       <ConnectFacebookCard />
       <MetaPagesCard />
       <div className="flex items-center">
-        <h1 className="flex-1 text-2xl font-semibold tracking-tight">
+        <h1 className="page-title flex-1 text-2xl font-semibold tracking-tight">
           Facebook connection
         </h1>
         <Button

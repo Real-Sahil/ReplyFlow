@@ -74,7 +74,7 @@ export const ReportsPage = () => {
   const [tab, setTab] = useState<Tab>("pnl");
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-5 px-4 md:px-0">
-      <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
+      <h1 className="page-title flex items-center gap-2 text-2xl font-semibold tracking-tight">
         <ChartColumn className="size-6 text-muted-foreground" /> Reports
       </h1>
       <Segmented

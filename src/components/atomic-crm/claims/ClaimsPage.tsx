@@ -286,7 +286,9 @@ const MyClaims = ({ claims }: { claims: Claim[] }) => {
   return (
     <div className="mx-auto flex max-w-xl flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight">My expenses</h1>
+        <h1 className="page-title text-2xl font-semibold tracking-tight">
+          My expenses
+        </h1>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setSheet(true)}>
             <FileSpreadsheet className="size-4" /> Send a sheet
@@ -593,7 +595,9 @@ const ClaimRow = ({ claim }: { claim: Claim }) => {
 const AllClaims = ({ claims }: { claims: Claim[] }) => (
   <div className="mx-auto flex max-w-3xl flex-col gap-4">
     <div>
-      <h1 className="text-2xl font-semibold tracking-tight">Staff expenses</h1>
+      <h1 className="page-title text-2xl font-semibold tracking-tight">
+        Staff expenses
+      </h1>
       <p className="text-sm text-muted-foreground">
         {waiting(claims).length > 0
           ? `${waiting(claims).length} waiting (${formatPence(waitingTotal(claims))}${flaggedCount(claims) > 0 ? `, ${flaggedCount(claims)} may be duplicates` : ""}). `

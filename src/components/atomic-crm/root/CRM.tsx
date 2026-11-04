@@ -397,6 +397,29 @@ const MobileBills = asMobileScreen("Bills and expenses", BillsPage);
 const MobileInvoices = asMobileScreen("Invoices", InvoicesPage);
 const MobileOwed = asMobileScreen("Owed and owing", OwedPage);
 const MobileSummary = asMobileScreen("Weekly summary", SummaryPage);
+const MobileFacebook = asMobileScreen("Facebook", FacebookConnectionPage);
+const MobileTransactions = asMobileScreen("Transactions", TransactionsPage);
+const MobileLinks = asMobileScreen("Tracked links", TrackedLinksPage);
+const MobileAccounts = asMobileScreen("Account", AccountsPage);
+const MobileErrors = asMobileScreen("Error log", ErrorLogPage);
+const MobilePostImport = asMobileScreen("Import drafts", PostImport);
+// The Orders, Products and Posts screens were built for the desktop. On the phone they get the same
+// top bar and bottom room as every other screen, so nothing sits under the status bar or the tab bar.
+const mobileOrders = {
+  list: asMobileScreen("Orders", orders.list),
+  create: asMobileScreen("New order", orders.create),
+  edit: asMobileScreen("Order", orders.edit),
+};
+const mobileProducts = {
+  list: asMobileScreen("Products", products.list),
+  create: asMobileScreen("New product", products.create),
+  edit: asMobileScreen("Product", products.edit),
+};
+const mobilePosts = {
+  list: asMobileScreen("Posts", posts.list),
+  create: asMobileScreen("New post", posts.create),
+  edit: asMobileScreen("Post", posts.edit),
+};
 const MobileClaimsScreen = asMobileScreen("Staff expenses", ClaimsPage);
 // An expenses-only person has no mobile header or tab bar, only their own bar and this page.
 const MobileClaims = () =>
@@ -475,8 +498,8 @@ const MobileAdmin = (
           />
           <Route path={ProfilePage.path} element={<MobileProfile />} />
           <Route path={ImportPage.path} element={<MobileImport />} />
-          <Route path="/facebook" element={<FacebookConnectionPage />} />
-          <Route path="/errors" element={<ErrorLogPage />} />
+          <Route path="/facebook" element={<MobileFacebook />} />
+          <Route path="/errors" element={<MobileErrors />} />
           <Route path="/business" element={<MobileBusiness />} />
           <Route path="/owed" element={<MobileOwed />} />
           <Route path="/summary" element={<MobileSummary />} />
@@ -491,10 +514,10 @@ const MobileAdmin = (
           <Route path="/reports" element={<MobileReports />} />
           <Route path="/accountant" element={<MobileAccountant />} />
           <Route path={ChangelogPage.path} element={<ChangelogPage />} />
-          <Route path="/transactions" element={<TransactionsPage />} />
-          <Route path="/links" element={<TrackedLinksPage />} />
-          <Route path="/posts/import" element={<PostImport />} />
-          <Route path="/accounts" element={<AccountsPage />} />
+          <Route path="/transactions" element={<MobileTransactions />} />
+          <Route path="/links" element={<MobileLinks />} />
+          <Route path="/posts/import" element={<MobilePostImport />} />
+          <Route path="/accounts" element={<MobileAccounts />} />
         </CustomRoutes>
         <Resource
           name="contacts"
@@ -525,10 +548,10 @@ const MobileAdmin = (
         <Resource name="saved_replies" />
         <Resource name="page_comments" />
         <Resource name="audit_log" />
-        <Resource name="page_posts" {...posts} />
+        <Resource name="page_posts" {...mobilePosts} />
         <Resource name="messenger_settings" {...messengerSettings} />
-        <Resource name="products" {...products} />
-        <Resource name="orders" {...orders} />
+        <Resource name="products" {...mobileProducts} />
+        <Resource name="orders" {...mobileOrders} />
       </Admin>
     </PersistQueryClientProvider>
   );
