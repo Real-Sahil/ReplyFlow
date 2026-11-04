@@ -270,7 +270,7 @@ export const TodayDashboard = () => {
                 <div className="p-3 pb-1">
                   <Link
                     to="/messenger_inbox"
-                    className="press group flex items-center gap-3 rounded-xl bg-card p-3 pl-4 shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-lift)]"
+                    className="glass press group flex items-center gap-3 rounded-2xl p-3 pl-4 hover:shadow-[var(--shadow-lift)]"
                   >
                     <span className="min-w-0 flex-1">
                       <span className="block text-xs text-muted-foreground">
@@ -283,7 +283,7 @@ export const TodayDashboard = () => {
                         </span>
                       </span>
                     </span>
-                    <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-transform group-hover:translate-x-0.5">
+                    <span className="icon-tile flex size-9 shrink-0 items-center justify-center rounded-full transition-transform group-hover:translate-x-0.5">
                       <ArrowRight aria-hidden className="size-4" />
                     </span>
                   </Link>

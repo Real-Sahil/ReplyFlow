@@ -47,6 +47,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { ThemeQuickToggle } from "../settings/AppearanceControls";
 import { cn } from "@/lib/utils";
 import { useAppBadge } from "@/hooks/use-app-badge";
 import { ContactCreateSheet } from "../contacts/ContactCreateSheet";
@@ -68,8 +69,7 @@ export const MobileNavigation = () => {
   return (
     <nav
       aria-label={translate("crm.navigation.label")}
-      data-slot="toolbar"
-      className="fixed inset-x-3 z-50 rounded-[28px] border shadow-[var(--shadow-lift)]"
+      className="glass fixed inset-x-3 z-50 rounded-[28px]"
       style={{ bottom: "calc(env(safe-area-inset-bottom) + 0.5rem)" }}
     >
       <div className="mx-auto grid h-16 max-w-md grid-cols-6 items-center px-1">
@@ -131,7 +131,7 @@ const NavigationButton = ({
     <span
       className={cn(
         "flex h-7 w-12 items-center justify-center rounded-full transition-colors",
-        isActive && "bg-accent",
+        isActive && "lens",
       )}
     >
       <Icon className="size-5" />
@@ -164,7 +164,7 @@ const InboxButton = ({ isActive }: { isActive: boolean }) => {
       <span
         className={cn(
           "flex h-7 w-12 items-center justify-center rounded-full transition-colors",
-          isActive && "bg-accent",
+          isActive && "lens",
         )}
       >
         <MessageCircle className="size-5" />
@@ -191,12 +191,15 @@ const MoreSheet = ({
   <Sheet open={open} onOpenChange={onOpenChange}>
     <SheetContent
       side="bottom"
-      className="max-h-[88vh] gap-0 overflow-y-auto rounded-t-2xl bg-background px-4 pb-8"
+      className="glass max-h-[88vh] gap-0 overflow-y-auto rounded-t-2xl px-4 pb-8"
     >
       <SheetHeader className="px-1 pt-7 pb-4">
-        <SheetTitle className="text-2xl font-semibold tracking-tight">
-          More
-        </SheetTitle>
+        <div className="flex items-center justify-between gap-3">
+          <SheetTitle className="text-2xl font-semibold tracking-tight">
+            More
+          </SheetTitle>
+          <ThemeQuickToggle className="mr-8" />
+        </div>
       </SheetHeader>
       <div className="flex flex-col gap-6">
         <MoreGroup title="Sell and publish">

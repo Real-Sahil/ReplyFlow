@@ -423,6 +423,7 @@ const InlineEditRow = ({
   );
 };
 
+import { AppearanceControls } from "./AppearanceControls";
 import { NotificationsToggle } from "./NotificationsToggle";
 
 const PreferencesSection = () => {
@@ -436,6 +437,7 @@ const PreferencesSection = () => {
       <ItemGroup className="rounded-lg border overflow-hidden">
         <LanguageRow />
         <NotificationsToggle />
+        <AppearanceControls />
       </ItemGroup>
     </div>
   );

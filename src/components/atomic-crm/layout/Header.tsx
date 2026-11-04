@@ -32,6 +32,7 @@ import {
 import { useConfigurationContext } from "../root/ConfigurationContext";
 import { ImportPage } from "../misc/ImportPage";
 import { GlobalSearchButton } from "../search/GlobalSearchButton";
+import { ThemeQuickToggle } from "../settings/AppearanceControls";
 import { cn } from "@/lib/utils";
 import { useAppBadge } from "@/hooks/use-app-badge";
 
@@ -90,6 +91,7 @@ export const Toolbar = () => {
         <div className="flex shrink-0 items-center gap-1">
           <GlobalSearchButton />
           <RefreshButton />
+          <ThemeQuickToggle />
           <MoreMenu />
           <UserMenu>
             <ProfileMenu />

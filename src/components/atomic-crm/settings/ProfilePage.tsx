@@ -39,6 +39,7 @@ import type { CrmDataProvider } from "../providers/types";
 import { getSalesErrorNotification } from "../sales/salesErrorNotification";
 import type { Sale, SalesFormData } from "../types";
 
+import { AppearanceControls } from "./AppearanceControls";
 import { NotificationsToggle } from "./NotificationsToggle";
 
 export const ProfilePage = () => {
@@ -97,6 +98,9 @@ export const ProfilePage = () => {
       </Form>
       <div className="mt-4 overflow-hidden rounded-2xl bg-card shadow-[var(--shadow-card)]">
         <NotificationsToggle />
+      </div>
+      <div className="mt-4 overflow-hidden rounded-2xl bg-card shadow-[var(--shadow-card)]">
+        <AppearanceControls />
       </div>
     </div>
   );

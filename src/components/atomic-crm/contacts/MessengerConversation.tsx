@@ -188,8 +188,8 @@ export const MessengerConversation = ({
             className={cn(
               "max-w-[80%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-sm",
               message.direction === "inbound"
-                ? "self-start bg-muted"
-                : "self-end bg-primary text-primary-foreground",
+                ? "bubble-in self-start"
+                : "bubble-out self-end",
             )}
             title={new Date(message.sent_at).toLocaleString("en-GB")}
           >
