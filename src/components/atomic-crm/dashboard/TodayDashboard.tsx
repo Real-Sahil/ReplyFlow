@@ -12,6 +12,8 @@ import type { Deal, Task } from "../types";
 import { overdue, total } from "../finance/owed";
 import { expiryLabel, expiryState, needingAttention } from "../people/people";
 import { usePeople, usePersonDocuments } from "../people/usePeople";
+import { owedToStaff, waiting, waitingTotal } from "../claims/claims";
+import { useClaims } from "../claims/useClaims";
 import { useOwedByCustomers, useOwedToSuppliers } from "../finance/useOwed";
 import { formatPence } from "../quotes/quoteMath";
 import { DashboardActivityLog } from "./DashboardActivityLog";
@@ -159,6 +161,7 @@ export const TodayDashboard = () => {
   // Documents running out are for administrators only.
   const isAdmin = !!identity?.administrator;
   const { data: people = [] } = usePeople(isAdmin);
+  const { data: claims = [] } = useClaims(isAdmin);
   const { data: personDocuments = [] } = usePersonDocuments(isAdmin);
   const expiring = needingAttention(personDocuments, people, new Date());
   const { currency, dealStages } = useConfigurationContext();
@@ -396,6 +399,29 @@ export const TodayDashboard = () => {
                   }
                   trailing={formatPence(total(owedSuppliers))}
                   urgent={overdue(owedSuppliers, new Date()).length > 0}
+                />
+              ) : null}
+            </Group>
+          ) : null}
+
+          {isAdmin &&
+          (waiting(claims).length > 0 || owedToStaff(claims) > 0) ? (
+            <Group title="Staff expenses" to="/claims" action="See all">
+              {waiting(claims).length > 0 ? (
+                <Row
+                  to="/claims"
+                  title="Claims waiting for you"
+                  detail={`${waiting(claims).length} to approve`}
+                  trailing={formatPence(waitingTotal(claims))}
+                  urgent
+                />
+              ) : null}
+              {owedToStaff(claims) > 0 ? (
+                <Row
+                  to="/claims"
+                  title="Approved, to pay back"
+                  detail="Mark as paid once you have sent the money"
+                  trailing={formatPence(owedToStaff(claims))}
                 />
               ) : null}
             </Group>

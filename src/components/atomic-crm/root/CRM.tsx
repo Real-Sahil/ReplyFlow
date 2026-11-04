@@ -41,6 +41,7 @@ import sales from "../sales";
 import { SettingsPageMobile } from "../settings/SettingsPageMobile";
 import { ProfilePage } from "../settings/ProfilePage";
 import { asMobileScreen } from "../layout/MobileScreen";
+import { useIsClaimant } from "../misc/useIsClaimant";
 import { lazyScreen } from "./lazyScreen";
 import { SettingsPage } from "../settings/SettingsPage";
 import {
@@ -102,6 +103,10 @@ const SummaryPage = lazyScreen(
   "SummaryPage",
 );
 const OwedPage = lazyScreen(() => import("../finance/OwedPage"), "OwedPage");
+const ClaimsPage = lazyScreen(
+  () => import("../claims/ClaimsPage"),
+  "ClaimsPage",
+);
 const AccountantPackPage = lazyScreen(
   () => import("../finance/AccountantPackPage"),
   "AccountantPackPage",
@@ -334,6 +339,7 @@ const DesktopAdmin = (
         <Route path="/bank" element={<BankMatchPage />} />
         <Route path="/suppliers" element={<SuppliersPage />} />
         <Route path="/people" element={<PeoplePage />} />
+        <Route path="/claims" element={<ClaimsPage />} />
         <Route path="/invoices" element={<InvoicesPage />} />
         <Route path="/bills" element={<BillsPage />} />
         <Route path="/money" element={<MoneyPage />} />
@@ -391,6 +397,16 @@ const MobileBills = asMobileScreen("Bills and expenses", BillsPage);
 const MobileInvoices = asMobileScreen("Invoices", InvoicesPage);
 const MobileOwed = asMobileScreen("Owed and owing", OwedPage);
 const MobileSummary = asMobileScreen("Weekly summary", SummaryPage);
+const MobileClaimsScreen = asMobileScreen("Staff expenses", ClaimsPage);
+// An expenses-only person has no mobile header or tab bar, only their own bar and this page.
+const MobileClaims = () =>
+  useIsClaimant() ? (
+    <div className="px-4 pb-10 pt-4">
+      <ClaimsPage />
+    </div>
+  ) : (
+    <MobileClaimsScreen />
+  );
 const MobileBank = asMobileScreen("Bank match", BankMatchPage);
 const MobileSuppliers = asMobileScreen("Suppliers and shopping", SuppliersPage);
 const MobilePeople = asMobileScreen("People", PeoplePage);
@@ -467,6 +483,7 @@ const MobileAdmin = (
           <Route path="/bank" element={<MobileBank />} />
           <Route path="/suppliers" element={<MobileSuppliers />} />
           <Route path="/people" element={<MobilePeople />} />
+          <Route path="/claims" element={<MobileClaims />} />
           <Route path="/invoices" element={<MobileInvoices />} />
           <Route path="/bills" element={<MobileBills />} />
           <Route path="/money" element={<MobileMoney />} />

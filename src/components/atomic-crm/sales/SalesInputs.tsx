@@ -1,5 +1,6 @@
 import { email, required, useGetIdentity, useRecordContext } from "ra-core";
 import { BooleanInput } from "@/components/admin/boolean-input";
+import { SelectInput } from "@/components/admin/select-input";
 import { TextInput } from "@/components/admin/text-input";
 
 import type { Sale } from "../types";
@@ -21,13 +22,22 @@ export function SalesInputs() {
         readOnly={record?.id === identity?.id}
         helperText={false}
       />
-      <BooleanInput
+      <SelectInput
         source="role"
-        label="Accountant (can only read the finance pages)"
-        format={(value: string | undefined) => value === "accountant"}
-        parse={(checked: boolean) => (checked ? "accountant" : "agent")}
-        readOnly={record?.id === identity?.id || !!record?.administrator}
-        helperText="An accountant sees invoices, bills, the money book, reports and the accountant's pack. They cannot see customers or messages, and cannot change anything."
+        label="Access"
+        choices={[
+          { id: "agent", name: "Team member" },
+          {
+            id: "accountant",
+            name: "Accountant (reads the finance pages only)",
+          },
+          { id: "claimant", name: "Expenses only (sends expense claims)" },
+        ]}
+        format={(value: string | undefined) =>
+          value === "accountant" || value === "claimant" ? value : "agent"
+        }
+        disabled={record?.id === identity?.id || !!record?.administrator}
+        helperText="An accountant sees invoices, bills, the money book and reports, and cannot change anything. An expenses-only person can send expense claims and see how they went, and nothing else."
       />
       <BooleanInput
         source="disabled"

@@ -287,6 +287,7 @@ export const createDataProvider = ({
       }
       return true;
     },
+    salesResetPassword: async (): Promise<string> => "demo-pass-word",
     updatePassword: async (id: Identifier): Promise<true> => {
       const currentUser = await getIdentity();
       if (!currentUser) {

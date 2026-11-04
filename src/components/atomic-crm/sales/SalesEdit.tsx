@@ -16,11 +16,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import type { CrmDataProvider } from "../providers/types";
 import type { Sale, SalesFormData } from "../types";
 import { getSalesErrorNotification } from "./salesErrorNotification";
+import { ResetPasswordButton } from "./ResetPasswordButton";
 import { SalesInputs } from "./SalesInputs";
 
 function EditToolbar() {
   return (
-    <div className="flex justify-end gap-4">
+    <div className="flex flex-wrap items-center justify-end gap-4">
+      <ResetPasswordButton />
       <CancelButton />
       <SaveButton />
     </div>

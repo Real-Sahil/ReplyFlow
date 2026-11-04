@@ -26,7 +26,8 @@ export type SalesFormData = {
   administrator: boolean;
   disabled: boolean;
   // "accountant": can read the finance pages of the business and change nothing.
-  role?: "agent" | "accountant" | "admin" | "viewer";
+  // "claimant" (shown as Expenses only): can send and follow its own expense claims.
+  role?: "agent" | "accountant" | "claimant" | "admin" | "viewer";
 };
 
 export type Sale = {

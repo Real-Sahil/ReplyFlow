@@ -22,6 +22,11 @@ export const canAccess = <
     return false;
   }
 
+  // An expenses-only sign-in uses one screen, which is not a resource.
+  if (role === "claimant") {
+    return false;
+  }
+
   // Non admins can't access the sales resource
   if (params.resource === "sales") {
     return false;

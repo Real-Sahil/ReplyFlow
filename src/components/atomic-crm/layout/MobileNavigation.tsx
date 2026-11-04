@@ -18,6 +18,7 @@ import {
   PackageCheck,
   Plug,
   Receipt,
+  ReceiptText,
   Plus,
   Settings,
   Sofa,
@@ -345,6 +346,15 @@ const MoreSheet = ({
             Icon={Wallet}
             onPick={onOpenChange}
           />
+          <CanAccess resource="configuration" action="edit">
+            <MoreRow
+              to="/claims"
+              label="Staff expenses"
+              detail="Approve and pay back staff claims"
+              Icon={ReceiptText}
+              onPick={onOpenChange}
+            />
+          </CanAccess>
           <MoreRow
             to="/suppliers"
             label="Suppliers and shopping"

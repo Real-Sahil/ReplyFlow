@@ -139,7 +139,26 @@ const getDataProviderWithCustomMethods = () => {
         );
       }
 
-      return data.data;
+      // The one-time password, when one was made. It is shown once and is not stored.
+      const created: Sale & { temporary_password?: string } = {
+        ...data.data,
+        temporary_password: (data as { temporary_password?: string })
+          .temporary_password,
+      };
+      return created;
+    },
+    async salesResetPassword(id: Identifier) {
+      const { data, error } = await getSupabaseClient().functions.invoke<{
+        temporary_password?: string;
+      }>("users", {
+        method: "PATCH",
+        body: { sales_id: id, reset_password: true },
+      });
+      if (error || !data?.temporary_password) {
+        console.error("salesResetPassword.error", error);
+        throw new Error("The password could not be reset.");
+      }
+      return data.temporary_password;
     },
     async salesUpdate(
       id: Identifier,

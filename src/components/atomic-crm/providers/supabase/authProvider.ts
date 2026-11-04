@@ -158,7 +158,9 @@ export const getAuthProvider = (): AuthProvider => {
         ? "admin"
         : sale.role === "accountant"
           ? "accountant"
-          : "user";
+          : sale.role === "claimant"
+            ? "claimant"
+            : "user";
       return canAccess(role, params);
     },
     getAuthorizationDetails(authorizationId: string) {

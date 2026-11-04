@@ -13,6 +13,7 @@ import {
   PackageCheck,
   Plug,
   Receipt,
+  ReceiptText,
   Settings,
   User,
   Users,
@@ -325,6 +326,9 @@ const MoreMenu = () => (
         <MoreLink to="/bank" label="Bank match" Icon={Landmark} />
         <MoreLink to="/invoices" label="Invoices" Icon={Receipt} />
         <MoreLink to="/bills" label="Bills and expenses" Icon={Wallet} />
+        <CanAccess resource="configuration" action="edit">
+          <MoreLink to="/claims" label="Staff expenses" Icon={ReceiptText} />
+        </CanAccess>
         <MoreLink to="/money" label="Money book" Icon={BookOpen} />
         <MoreLink to="/stock" label="Stock" Icon={Boxes} />
         <MoreLink to="/suppliers" label="Suppliers and shopping" Icon={Store} />

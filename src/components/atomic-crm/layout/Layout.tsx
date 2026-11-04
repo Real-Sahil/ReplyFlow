@@ -8,7 +8,11 @@ import { DataImportProvider } from "../dataImport/DataImportProvider";
 import { useConfigurationLoader } from "../root/useConfigurationLoader";
 import { useGlobalShortcuts } from "@/hooks/use-global-shortcuts";
 import { useIsAccountant } from "../misc/useIsAccountant";
+import { useIsClaimant } from "../misc/useIsClaimant";
 import { AccountantGuard } from "./AccountantGuard";
+import { ClaimantBar } from "./ClaimantBar";
+import { ClaimantGuard } from "./ClaimantGuard";
+import { PasswordGate } from "./PasswordGate";
 import { AccountantToolbar, RecordBackLink, Toolbar } from "./Header";
 import { ScreenReady } from "./ScreenReady";
 
@@ -16,17 +20,26 @@ export const Layout = ({ children }: { children: ReactNode }) => {
   useConfigurationLoader();
   useGlobalShortcuts();
   const accountant = useIsAccountant();
+  const claimant = useIsClaimant();
   return (
     <DataImportProvider>
       <div className="min-h-screen bg-background">
         <ScreenReady />
         <AccountantGuard />
-        {accountant ? <AccountantToolbar /> : <Toolbar />}
+        <ClaimantGuard />
+        <PasswordGate />
+        {claimant ? (
+          <ClaimantBar />
+        ) : accountant ? (
+          <AccountantToolbar />
+        ) : (
+          <Toolbar />
+        )}
         <main
           className="mx-auto min-w-0 max-w-6xl px-4 py-6 md:px-6 md:py-8"
           id="main-content"
         >
-          {accountant ? null : <RecordBackLink />}
+          {accountant || claimant ? null : <RecordBackLink />}
           <ErrorBoundary FallbackComponent={Error}>
             <Suspense
               fallback={<Skeleton className="h-12 w-12 rounded-full" />}

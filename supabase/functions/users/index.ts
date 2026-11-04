@@ -52,14 +52,28 @@ async function updateSaleAdministrator(
 
 // The access level an administrator can give besides full access. An accountant can read the
 // finance pages of the business and change nothing (see the accountant migration).
-const accessRole = (value: unknown): "agent" | "accountant" | undefined =>
-  value === "accountant"
-    ? "accountant"
-    : value === "agent"
-      ? "agent"
-      : undefined;
+// A claimant can only submit and follow its own expense claims (see the expense claims migration).
+type AccessRole = "agent" | "accountant" | "claimant";
+const accessRole = (value: unknown): AccessRole | undefined =>
+  value === "accountant" || value === "claimant" || value === "agent"
+    ? value
+    : undefined;
+// These two are never administrators.
+const isRestricted = (role: AccessRole | undefined) =>
+  role === "accountant" || role === "claimant";
 
-async function updateSaleRole(user_id: string, role: "agent" | "accountant") {
+// A password an administrator can read out or paste into a message: 12 characters in three groups,
+// without the letters and digits that look alike. No email is sent; the administrator hands it over.
+function generatePassword(): string {
+  const alphabet = "abcdefghjkmnpqrstuvwxyz23456789";
+  const bytes = crypto.getRandomValues(new Uint8Array(12));
+  const chars = Array.from(bytes, (b) => alphabet[b % alphabet.length]);
+  return [chars.slice(0, 4), chars.slice(4, 8), chars.slice(8, 12)]
+    .map((g) => g.join(""))
+    .join("-");
+}
+
+async function updateSaleRole(user_id: string, role: AccessRole) {
   const { error } = await supabaseAdmin
     .from("sales")
     .update({ role })
@@ -74,7 +88,6 @@ async function createSale(
   user_id: string,
   data: {
     email: string;
-    password: string;
     first_name: string;
     last_name: string;
     disabled: boolean;
@@ -174,14 +187,23 @@ async function inviteUser(req: Request, currentUserSale: any) {
     administrator: requestedAdministrator,
     role: requestedRole,
   } = await req.json();
-  const accountant = accessRole(requestedRole) === "accountant";
-  // An accountant is never an administrator.
-  const administrator = accountant ? false : requestedAdministrator;
+  const access = accessRole(requestedRole);
+  const restricted = isRestricted(access);
+  // An accountant or a claimant is never an administrator.
+  const administrator = restricted ? false : requestedAdministrator;
 
   if (!currentUserSale.administrator) {
     return createErrorResponse(401, "Not Authorized");
   }
   const organisationId = Number(currentUserSale.organisation_id);
+
+  // No email is sent. When no password is given, one is made here and returned once, for the
+  // administrator to hand over. The person is asked to choose their own at first sign-in.
+  const temporaryPassword =
+    typeof password === "string" && password.length >= 8
+      ? undefined
+      : generatePassword();
+  const initialPassword = temporaryPassword ?? password;
 
   const takenEmail = await findEmailUsedByAnotherSale(
     email ? [email.trim().toLowerCase()] : [],
@@ -196,8 +218,9 @@ async function inviteUser(req: Request, currentUserSale: any) {
 
   const { data, error: userError } = await supabaseAdmin.auth.admin.createUser({
     email,
-    password,
-    user_metadata: { first_name, last_name },
+    password: initialPassword,
+    email_confirm: true,
+    user_metadata: { first_name, last_name, must_change_password: true },
     // The database rejects every signup without this flag once an administrator
     // exists. It lives in app_metadata, which only the service role can set.
     app_metadata: { replyflow_invited: true },
@@ -241,12 +264,11 @@ async function inviteUser(req: Request, currentUserSale: any) {
         user.id,
         {
           email,
-          password,
           first_name,
           last_name,
           disabled,
           administrator,
-          ...(accountant ? { role: "accountant" } : {}),
+          ...(restricted && access ? { role: access } : {}),
         },
         organisationId,
       );
@@ -279,30 +301,29 @@ async function inviteUser(req: Request, currentUserSale: any) {
       console.error("Error inviting user: undefined user");
       return createErrorResponse(500, "Internal Server Error");
     }
-    const { error: emailError } =
-      await supabaseAdmin.auth.admin.inviteUserByEmail(email);
-
-    if (emailError) {
-      console.error(`Error inviting user, email_error=${emailError}`);
-      return createErrorResponse(500, "Failed to send invitation mail");
-    }
   }
 
   try {
+    // A restricted sign-in is limited first, before anything else is set, so it is never left with
+    // full access if a later step fails.
+    if (restricted && access) {
+      await updateSaleRole(user.id, access);
+    }
     await updateSaleDisabled(user.id, disabled, organisationId);
     let sale = await updateSaleAdministrator(
       user.id,
       administrator,
       organisationId,
     );
-    if (accountant) {
-      await updateSaleRole(user.id, "accountant");
-      sale = { ...sale, role: "accountant" };
+    if (restricted && access) {
+      sale = { ...sale, role: access };
     }
 
     return new Response(
       JSON.stringify({
         data: sale,
+        // Shown to the administrator once. It is not stored anywhere readable.
+        ...(temporaryPassword ? { temporary_password: temporaryPassword } : {}),
       }),
       {
         headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -325,6 +346,7 @@ async function patchUser(req: Request, currentUserSale: any) {
     administrator,
     disabled,
     role: requestedRole,
+    reset_password,
   } = await req.json();
   const { data: sale } = await supabaseAdmin
     .from("sales")
@@ -341,6 +363,34 @@ async function patchUser(req: Request, currentUserSale: any) {
   // Users can only update their own profile unless they are an administrator
   if (!currentUserSale.administrator && currentUserSale.id !== sale.id) {
     return createErrorResponse(401, "Not Authorized");
+  }
+
+  // An administrator sets a new one-time password for someone else, to hand over in person. No
+  // email is sent. The person is asked to choose their own at the next sign-in.
+  if (reset_password) {
+    if (!currentUserSale.administrator || currentUserSale.id === sale.id) {
+      return createErrorResponse(401, "Not Authorized");
+    }
+    const temporaryPassword = generatePassword();
+    const { error: resetError } = await supabaseAdmin.auth.admin.updateUserById(
+      sale.user_id,
+      {
+        password: temporaryPassword,
+        user_metadata: {
+          first_name: sale.first_name,
+          last_name: sale.last_name,
+          must_change_password: true,
+        },
+      },
+    );
+    if (resetError) {
+      console.error("Error resetting the password:", resetError);
+      return createErrorResponse(500, "Internal Server Error");
+    }
+    return new Response(
+      JSON.stringify({ data: sale, temporary_password: temporaryPassword }),
+      { headers: { "Content-Type": "application/json", ...corsHeaders } },
+    );
   }
 
   if (email && email.trim().toLowerCase() !== sale.email.toLowerCase()) {
@@ -457,10 +507,10 @@ async function patchUser(req: Request, currentUserSale: any) {
   try {
     await updateSaleDisabled(data.user.id, disabled);
     const access = accessRole(requestedRole);
-    // An accountant is never an administrator.
+    // An accountant or a claimant is never an administrator.
     let sale = await updateSaleAdministrator(
       data.user.id,
-      access === "accountant" ? false : administrator,
+      isRestricted(access) ? false : administrator,
     );
     if (access) {
       await updateSaleRole(data.user.id, access);
