@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Camera, Check, Plus, X } from "lucide-react";
+import { Camera, Check, FileSpreadsheet, Plus, X } from "lucide-react";
 import { useGetIdentity, useNotify } from "ra-core";
 
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,8 @@ import {
   waitingTotal,
   type Claim,
 } from "./claims";
+import { ImportDialog, TemplateButtons } from "../importer/ImportDialog";
+import { claimsSpec } from "../importer/specs";
 import { CLAIMS_KEY, useClaims } from "./useClaims";
 
 const day = (iso: string | null) =>
@@ -238,13 +240,20 @@ const NewClaimDialog = ({ onClose }: { onClose: () => void }) => {
 
 const MyClaims = ({ claims }: { claims: Claim[] }) => {
   const [open, setOpen] = useState(false);
+  const [sheet, setSheet] = useState(false);
+  const refresh = useRefresh();
   return (
     <div className="mx-auto flex max-w-xl flex-col gap-4">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold tracking-tight">My expenses</h1>
-        <Button onClick={() => setOpen(true)}>
-          <Plus className="size-4" /> New claim
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setSheet(true)}>
+            <FileSpreadsheet className="size-4" /> Send a sheet
+          </Button>
+          <Button onClick={() => setOpen(true)}>
+            <Plus className="size-4" /> New claim
+          </Button>
+        </div>
       </div>
       {claims.length === 0 ? (
         <p className="rounded-xl bg-card p-6 text-center text-sm text-muted-foreground shadow-[var(--shadow-card)]">
@@ -283,6 +292,19 @@ const MyClaims = ({ claims }: { claims: Claim[] }) => {
         </ul>
       )}
       {open ? <NewClaimDialog onClose={() => setOpen(false)} /> : null}
+      {sheet ? (
+        <ImportDialog
+          spec={claimsSpec()}
+          onClose={() => setSheet(false)}
+          onImport={async (rows) => {
+            const { error } = await getSupabaseClient()
+              .from("expense_claims")
+              .insert(rows);
+            if (error) throw error;
+            refresh();
+          }}
+        />
+      ) : null}
     </div>
   );
 };
@@ -521,6 +543,16 @@ const AllClaims = ({ claims }: { claims: Claim[] }) => (
           ? `You owe staff ${formatPence(owedToStaff(claims))} for approved claims.`
           : ""}
       </p>
+    </div>
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-card p-4 text-sm shadow-[var(--shadow-card)]">
+      <span className="min-w-0 flex-1">
+        <span className="block font-medium">A sheet for your staff</span>
+        <span className="text-muted-foreground">
+          Staff who claim often can fill this in and send it from their own
+          sign-in. Each row arrives as a claim for you to approve.
+        </span>
+      </span>
+      <TemplateButtons spec={claimsSpec()} />
     </div>
     {claims.length === 0 ? (
       <p className="rounded-xl bg-card p-6 text-center text-sm text-muted-foreground shadow-[var(--shadow-card)]">

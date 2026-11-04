@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router";
-import { Plus, Wallet } from "lucide-react";
+import { FileSpreadsheet, Plus, Wallet } from "lucide-react";
 import { useNotify } from "ra-core";
 
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,9 @@ import { BILLS_KEY, METHOD_LABEL, type Bill } from "./billTypes";
 import { BillDialog } from "./BillDialog";
 import { useIsAccountant } from "../misc/useIsAccountant";
 import { useBusinessSettings } from "./useBusinessSettings";
-import { useBills } from "./useBills";
+import { useBills, useExpenseCategories } from "./useBills";
+import { ImportDialog } from "../importer/ImportDialog";
+import { billsSpec } from "../importer/specs";
 
 const PRESETS: { value: PeriodPreset; label: string }[] = [
   { value: "this_month", label: "This month" },
@@ -46,6 +48,8 @@ export const BillsPage = () => {
   const notify = useNotify();
   const readOnly = useIsAccountant();
   const queryClient = useQueryClient();
+  const [importing, setImporting] = useState(false);
+  const { data: expenseCategories = [] } = useExpenseCategories();
   const [preset, setPreset] = useState<PeriodPreset>("this_month");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
@@ -91,9 +95,18 @@ export const BillsPage = () => {
         </h1>
         <ExportDialogButton config={billLedgerExport()} />
         {!readOnly && (
-          <Button size="sm" onClick={() => setEditing("new")}>
-            <Plus /> Add a bill
-          </Button>
+          <>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setImporting(true)}
+            >
+              <FileSpreadsheet /> Send a sheet
+            </Button>
+            <Button size="sm" onClick={() => setEditing("new")}>
+              <Plus /> Add a bill
+            </Button>
+          </>
         )}
       </div>
 
@@ -351,6 +364,19 @@ export const BillsPage = () => {
           </div>
         </div>
       )}
+      {importing ? (
+        <ImportDialog
+          spec={billsSpec(expenseCategories)}
+          onClose={() => setImporting(false)}
+          onImport={async (rows) => {
+            const { error } = await getSupabaseClient()
+              .from("bills")
+              .insert(rows);
+            if (error) throw error;
+            queryClient.invalidateQueries({ queryKey: BILLS_KEY });
+          }}
+        />
+      ) : null}
     </div>
   );
 };

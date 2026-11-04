@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router";
-import { BookOpen, Plus } from "lucide-react";
-import { useCanAccess, useNotify } from "ra-core";
+import { BookOpen, FileSpreadsheet, Plus } from "lucide-react";
+import { useCanAccess, useGetIdentity, useNotify } from "ra-core";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,8 @@ import { formatPence } from "../quotes/quoteMath";
 import { openReceipt } from "./BillsPage";
 import { downloadCashBookPdf, type CashRow } from "./cashBookPdf";
 import { useIsAccountant } from "../misc/useIsAccountant";
+import { ImportDialog } from "../importer/ImportDialog";
+import { moneySpec } from "../importer/specs";
 import { MileageDialog } from "./MileageDialog";
 import { useBusinessSettings } from "./useBusinessSettings";
 import { MoneyDialog } from "./MoneyDialog";
@@ -46,6 +48,8 @@ export const MoneyPage = () => {
   const notify = useNotify();
   const readOnly = useIsAccountant();
   const [mileage, setMileage] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const { identity } = useGetIdentity();
   const queryClient = useQueryClient();
   const [preset, setPreset] = useState<PeriodPreset>("this_month");
   const [from, setFrom] = useState("");
@@ -163,6 +167,13 @@ export const MoneyPage = () => {
               onClick={() => setMileage(true)}
             >
               Mileage
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setImporting(true)}
+            >
+              <FileSpreadsheet /> Send a sheet
             </Button>
             <Button size="sm" onClick={() => setEditing("in")}>
               <Plus /> Money in
@@ -447,6 +458,27 @@ export const MoneyPage = () => {
         </div>
       )}
       {mileage ? <MileageDialog onClose={() => setMileage(false)} /> : null}
+      {importing ? (
+        <ImportDialog
+          spec={moneySpec(
+            categories
+              .filter((c) => !c.admin_only || identity?.administrator)
+              .map((c) => ({
+                code: c.code,
+                label: c.label,
+                direction: c.direction as "in" | "out",
+              })),
+          )}
+          onClose={() => setImporting(false)}
+          onImport={async (rows) => {
+            const { error } = await getSupabaseClient()
+              .from("money_entries")
+              .insert(rows);
+            if (error) throw error;
+            queryClient.invalidateQueries({ queryKey: MONEY_KEY });
+          }}
+        />
+      ) : null}
     </div>
   );
 };
