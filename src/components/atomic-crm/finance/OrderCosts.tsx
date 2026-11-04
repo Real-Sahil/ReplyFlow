@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Coins } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { useRecordContext } from "ra-core";
 
 import { Button } from "@/components/ui/button";
 
+import { getSupabaseClient } from "../providers/supabase/supabase";
 import { formatPence } from "../quotes/quoteMath";
 import { BillDialog } from "./BillDialog";
 import { useBills } from "./useBills";
@@ -16,11 +18,25 @@ export const OrderCosts = () => {
   const { data: bills = [] } = useBills({ orderId: order?.id });
   const { data: documents = [] } = useInvoices({ orderId: order?.id });
   const [adding, setAdding] = useState(false);
+  // Stock taken from the shelf for this order, valued when it was taken.
+  const { data: stockCost = 0 } = useQuery({
+    queryKey: ["order_stock_cost", order?.id],
+    enabled: !!order?.id,
+    queryFn: async () => {
+      const { data } = await getSupabaseClient()
+        .from("order_stock_costs")
+        .select("stock_cost_pence")
+        .eq("order_id", order!.id)
+        .maybeSingle();
+      return Number(data?.stock_cost_pence ?? 0);
+    },
+  });
   if (!order) return null;
 
-  const costs = bills
+  const billCosts = bills
     .filter((b) => b.status !== "void")
     .reduce((sum, b) => sum + b.net_pence, 0);
+  const costs = billCosts + stockCost;
   const sold = documents.reduce(
     (sum, d) => sum + (d.kind === "credit_note" ? -d.net_pence : d.net_pence),
     0,
@@ -51,7 +67,14 @@ export const OrderCosts = () => {
         </div>
         <div>
           <dt className="text-xs text-muted-foreground">Costs</dt>
-          <dd className="tabular-nums">{formatPence(costs)}</dd>
+          <dd className="tabular-nums">
+            {formatPence(costs)}
+            {stockCost > 0 ? (
+              <span className="block text-xs text-muted-foreground">
+                includes {formatPence(stockCost)} of stock used
+              </span>
+            ) : null}
+          </dd>
         </div>
         <div>
           <dt className="text-xs text-muted-foreground">Margin</dt>

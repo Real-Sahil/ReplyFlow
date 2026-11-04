@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
   BookOpen,
+  Boxes,
   Bug,
   Building2,
   ChevronRight,
@@ -256,6 +257,13 @@ const MoreSheet = ({
             label="Accountant's pack"
             detail="Files for Xero, QuickBooks and Sage, and VAT workings"
             Icon={PackageCheck}
+            onPick={onOpenChange}
+          />
+          <MoreRow
+            to="/stock"
+            label="Stock"
+            detail="What you hold, buy and use in production"
+            Icon={Boxes}
             onPick={onOpenChange}
           />
           <MoreRow

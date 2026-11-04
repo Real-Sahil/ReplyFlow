@@ -76,6 +76,20 @@ export const OrderInputs = () => (
           helperText={false}
         />
       </ReferenceInput>
+      <SelectInput
+        source="sales_channel"
+        label="Where the sale came from"
+        emptyText="Not stated"
+        choices={[
+          { id: "ecommerce", name: "E-commerce" },
+          { id: "facebook", name: "Facebook" },
+          { id: "email", name: "Email" },
+          { id: "phone", name: "Phone" },
+          { id: "in_person", name: "In person" },
+          { id: "other", name: "Other" },
+        ]}
+        helperText={false}
+      />
       <TextInput
         source="product_summary"
         label="What they are buying"

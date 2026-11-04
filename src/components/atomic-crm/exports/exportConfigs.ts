@@ -55,7 +55,7 @@ export const ordersExport = (): ExportConfig => ({
   title: "Orders",
   table: "orders",
   select:
-    "reference, status, product_summary, payment_terms, agreed_price_pence, deposit_required_pence, paid_pence, balance_pence, security_deposit_pence, delivery_window_end, created_at, contacts(first_name, last_name)",
+    "reference, status, sales_channel, product_summary, payment_terms, agreed_price_pence, deposit_required_pence, paid_pence, balance_pence, security_deposit_pence, delivery_window_end, created_at, contacts(first_name, last_name)",
   dateColumn: "created_at",
   dateKind: "timestamp",
   filters: [
@@ -71,6 +71,7 @@ export const ordersExport = (): ExportConfig => ({
     { key: "customer", label: "Customer" },
     { key: "product", label: "Product" },
     { key: "status", label: "Status" },
+    { key: "channel", label: "Sales channel" },
     { key: "terms", label: "Payment" },
     { key: "agreed", label: "Agreed (£)" },
     { key: "deposit", label: "Deposit due (£)" },
@@ -85,6 +86,7 @@ export const ordersExport = (): ExportConfig => ({
     customer: personName(row.contacts as Named),
     product: text(row.product_summary),
     status: STATUS_LABEL[text(row.status)] ?? text(row.status),
+    channel: text(row.sales_channel),
     terms: TERMS_LABEL[text(row.payment_terms)] ?? "",
     agreed: pounds(row.agreed_price_pence),
     deposit: pounds(row.deposit_required_pence),
@@ -527,5 +529,43 @@ export const moneyLedgerExport = (): ExportConfig => ({
     order_note: text(row.order_note),
     void_reason: text(row.void_reason),
     receipt: row.receipt_path ? "Yes" : "No",
+  }),
+});
+
+// What is held, at the average price paid. Read from stock_levels, so the file matches the screen.
+export const stockExport = (): ExportConfig => ({
+  filename: "stock",
+  title: "Stock",
+  table: "stock_levels",
+  select:
+    "name, sku, unit, on_hand, average_cost_pence, reorder_level, last_moved_on, active, notes",
+  dateColumn: "last_moved_on",
+  dateKind: "date",
+  filters: [],
+  columns: [
+    { key: "name", label: "Item" },
+    { key: "sku", label: "Code" },
+    { key: "unit", label: "Unit" },
+    { key: "on_hand", label: "On hand" },
+    { key: "cost", label: "Average cost (£)" },
+    { key: "worth", label: "Worth (£)" },
+    { key: "reorder", label: "Warn at or below" },
+    { key: "last", label: "Last moved" },
+    { key: "active", label: "In use" },
+    { key: "notes", label: "Notes" },
+  ],
+  toRow: (row: Row) => ({
+    name: text(row.name),
+    sku: text(row.sku),
+    unit: text(row.unit),
+    on_hand: text(row.on_hand),
+    cost: pounds(Math.round(Number(row.average_cost_pence))),
+    worth: pounds(
+      Math.round(Number(row.on_hand) * Number(row.average_cost_pence)),
+    ),
+    reorder: text(row.reorder_level),
+    last: text(row.last_moved_on),
+    active: yesNo(row.active),
+    notes: text(row.notes),
   }),
 });
