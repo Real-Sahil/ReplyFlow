@@ -2,6 +2,9 @@ import Papa from "papaparse";
 
 import type { Spec } from "./engine";
 
+// A byte order mark makes Excel read the file as UTF-8, so a £ or an accent is not garbled.
+const BOM = String.fromCharCode(0xfeff);
+
 const headings = <T>(spec: Spec<T>) => spec.columns.map((c) => c.label);
 
 // The sample row. Its first cell is "Example", which the reader ignores, so a forgotten example never
@@ -10,7 +13,7 @@ const example = <T>(spec: Spec<T>) =>
   spec.columns.map((c, i) => (i === 0 ? "Example" : c.example));
 
 export const templateCsv = <T>(spec: Spec<T>) =>
-  `﻿${Papa.unparse([headings(spec), example(spec)])}\r\n`;
+  `${BOM}${Papa.unparse([headings(spec), example(spec)])}\r\n`;
 
 const save = (blob: Blob, filename: string) => {
   const url = URL.createObjectURL(blob);

@@ -45,7 +45,9 @@ export const readSheetFile = async (file: File): Promise<string[][]> => {
     throw new Error("Please choose a .csv or .xlsx file.");
   }
 
-  const text = (await file.text()).replace(/^﻿/, "");
+  const raw = await file.text();
+  // Excel saves CSV with a byte order mark at the start; it is not part of the first heading.
+  const text = raw.charCodeAt(0) === 0xfeff ? raw.slice(1) : raw;
   const parsed = Papa.parse<string[]>(text, { skipEmptyLines: "greedy" });
   if (parsed.data.length === 0) throw new Error("The file is empty.");
   return parsed.data.map((row) => row.map(cellText));
