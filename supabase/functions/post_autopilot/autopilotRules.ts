@@ -135,17 +135,25 @@ export type ProductFacts = {
   source_url: string | null;
 };
 
-export const SYSTEM_PROMPT = [
-  "You write Facebook Page posts for Mere & Row, a UK sofa business.",
-  "You are given one product as JSON. Write one post about it.",
-  "Rules:",
-  "- British English. Warm, plain and confident. Two to four short sentences.",
-  "- Use only the facts in the JSON. Never invent materials, sizes, fabric names, delivery times, stock levels or offers.",
-  "- If a price is given, quote it exactly as given, in pounds, e.g. £499. Do not quote any other price.",
-  "- Do not include a web link. The link is attached separately.",
-  "- At most two hashtags, at the end. Often none.",
-  'Reply with only a JSON object: {"message": "<the post>"}.',
-].join("\n");
+// The business's name goes into the prompt, so each business's posts are written for it and
+// no one else. Kept to one short line, so a name cannot add instructions.
+const nameForPrompt = (name: string | null | undefined) =>
+  name?.replace(/\s+/g, " ").trim().slice(0, 80) || null;
+
+export const systemPromptFor = (businessName?: string | null) =>
+  [
+    `You write Facebook Page posts for ${nameForPrompt(businessName) ?? "a business"}, a UK business.`,
+    "You are given one product as JSON. Write one post about it.",
+    "Rules:",
+    "- British English. Warm, plain and confident. Two to four short sentences.",
+    "- Use only the facts in the JSON. Never invent materials, sizes, fabric names, delivery times, stock levels or offers.",
+    "- If a price is given, quote it exactly as given, in pounds, e.g. £499. Do not quote any other price.",
+    "- Do not include a web link. The link is attached separately.",
+    "- At most two hashtags, at the end. Often none.",
+    'Reply with only a JSON object: {"message": "<the post>"}.',
+  ].join("\n");
+
+export const SYSTEM_PROMPT = systemPromptFor(null);
 
 export const buildUserPrompt = (product: ProductFacts) => {
   const pounds = (pence: number | null) =>
@@ -213,15 +221,18 @@ export const checkDraft = (
   return { ok: true };
 };
 
-export const CURATION_PROMPT = [
-  "You choose which products Mere & Row, a UK sofa business, should feature in its next Facebook posts.",
-  "You are given a JSON list of candidate products. Pick the ones most worth a post now.",
-  "Rules:",
-  "- Pick distinct products. Spread the picks across collections rather than repeating one.",
-  "- Favour products with a clear name, a price, and a colour or type a customer can picture.",
-  "- Use only ids from the list. Never invent an id.",
-  'Reply with only a JSON object: {"picks": [{"id": <number>, "reason": "<short reason>"}]}.',
-].join("\n");
+export const curationPromptFor = (businessName?: string | null) =>
+  [
+    `You choose which products ${nameForPrompt(businessName) ?? "a business"}, a UK business, should feature in its next Facebook posts.`,
+    "You are given a JSON list of candidate products. Pick the ones most worth a post now.",
+    "Rules:",
+    "- Pick distinct products. Spread the picks across collections rather than repeating one.",
+    "- Favour products with a clear name, a price, and a colour or type a customer can picture.",
+    "- Use only ids from the list. Never invent an id.",
+    'Reply with only a JSON object: {"picks": [{"id": <number>, "reason": "<short reason>"}]}.',
+  ].join("\n");
+
+export const CURATION_PROMPT = curationPromptFor(null);
 
 export const buildCurationPrompt = (
   products: Array<ProductFacts & { id: number }>,

@@ -27,14 +27,15 @@ type Lead = {
   form_id?: string;
 };
 
-// The organisation that owns the Page a lead came from. Pages not on the list use Mere & Row.
-const organisationFor = async (pageId: string): Promise<number> => {
+// The organisation that owns the Page a lead came from. A Page that no business has connected
+// belongs to nobody, so its leads are ignored rather than filed under another business.
+const organisationFor = async (pageId: string): Promise<number | null> => {
   const { data } = await supabaseAdmin
     .from("meta_pages")
     .select("organisation_id")
     .eq("page_id", pageId)
     .maybeSingle();
-  return Number(data?.organisation_id ?? 1);
+  return data?.organisation_id == null ? null : Number(data.organisation_id);
 };
 
 const fetchLead = async (leadgenId: string, pageId: string): Promise<Lead> => {
@@ -61,6 +62,13 @@ const fetchLead = async (leadgenId: string, pageId: string): Promise<Lead> => {
 // returns an error, which makes Meta deliver the lead again.
 const handleLead = async (event: LeadgenEvent) => {
   const organisationId = await organisationFor(event.pageId);
+  if (organisationId === null) {
+    console.error(
+      "Lead for a Page that is not connected, ignored",
+      event.pageId,
+    );
+    return;
+  }
   const { error: claimError } = await supabaseAdmin
     .from("meta_leadgen_leads")
     .insert({

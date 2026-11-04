@@ -14,6 +14,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { AuthMiddleware, UserMiddleware } from "../_shared/authentication.ts";
 import { corsHeaders, OptionsMiddleware } from "../_shared/cors.ts";
+import { businessNameOf } from "../_shared/businessName.ts";
 import { getUserSale } from "../_shared/getUserSale.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { createErrorResponse } from "../_shared/utils.ts";
@@ -21,14 +22,14 @@ import {
   buildCurationPrompt,
   buildUserPrompt,
   checkDraft,
-  CURATION_PROMPT,
+  curationPromptFor,
   isImageContentType,
   nextFreeSlots,
   parseDraft,
   parsePicks,
   parseSelection,
   type ProductFacts,
-  SYSTEM_PROMPT,
+  systemPromptFor,
   validSlotTimes,
 } from "./autopilotRules.ts";
 
@@ -105,9 +106,12 @@ const groqChat = async (
 };
 
 // One caption for one product, checked before anyone sees it.
-const draftFor = async (product: ProductFacts): Promise<string> => {
+const draftFor = async (
+  product: ProductFacts,
+  businessName: string | null,
+): Promise<string> => {
   const message = parseDraft(
-    await groqChat(SYSTEM_PROMPT, buildUserPrompt(product)),
+    await groqChat(systemPromptFor(businessName), buildUserPrompt(product)),
   );
   if (!message) {
     throw new DraftRejected("The AI writer did not return a usable caption.");
@@ -122,10 +126,11 @@ const draftFor = async (product: ProductFacts): Promise<string> => {
 const chooseProducts = async (
   pool: CandidateProduct[],
   count: number,
+  businessName: string | null,
 ): Promise<CandidateProduct[]> => {
   try {
     const raw = await groqChat(
-      CURATION_PROMPT,
+      curationPromptFor(businessName),
       buildCurationPrompt(pool, count),
       300,
     );
@@ -161,9 +166,6 @@ const photoOk = async (url: string) => {
     return false;
   }
 };
-
-// The scheduled job runs for Mere & Row until it is set up per organisation.
-const JOB_ORGANISATION = 1;
 
 const loadSettings = async (organisationId: number) => {
   const { data } = await supabaseAdmin
@@ -211,8 +213,31 @@ const plannedTimes = async (organisationId: number): Promise<Date[]> => {
     .map((t) => new Date(t));
 };
 
-const runAutopilot = async () => {
-  const organisationId = JOB_ORGANISATION;
+// The scheduled job runs once for every business that has switched the autopilot on, each
+// with its own settings, products and name. One business failing never stops the others.
+const runAllAutopilots = async () => {
+  const { data: enabled } = await supabaseAdmin
+    .from("post_autopilot_settings")
+    .select("organisation_id")
+    .eq("enabled", true);
+  const results: Record<string, unknown> = {};
+  for (const row of enabled ?? []) {
+    const organisationId = Number(row.organisation_id);
+    try {
+      results[String(organisationId)] = await runAutopilot(organisationId);
+    } catch (error) {
+      console.error(
+        `Autopilot failed for organisation ${organisationId}`,
+        (error as Error).message,
+      );
+      results[String(organisationId)] = { failed: true };
+    }
+  }
+  return results;
+};
+
+const runAutopilot = async (organisationId: number) => {
+  const businessName = await businessNameOf(organisationId);
   const settings = await loadSettings(organisationId);
   if (!settings?.enabled) return { skipped: "turned off" };
 
@@ -244,7 +269,7 @@ const runAutopilot = async () => {
 
   // Listings Groq picked come first; the rest of the pool backs them up when a
   // photo cannot be used or a caption is rejected.
-  const picked = await chooseProducts(pool, slots.length);
+  const picked = await chooseProducts(pool, slots.length, businessName);
   const order = [
     ...picked,
     ...pool.filter((p) => !picked.some((q) => q.id === p.id)),
@@ -260,7 +285,7 @@ const runAutopilot = async () => {
         skipped.push(`product ${product.id}: photo could not be used`);
         continue;
       }
-      const message = await draftFor(product);
+      const message = await draftFor(product, businessName);
       const now = new Date().toISOString();
       const { error } = await supabaseAdmin.from("page_posts").insert({
         organisation_id: organisationId,
@@ -333,7 +358,10 @@ const suggest = async (
   if (!product) return createErrorResponse(404, "Product not found");
 
   try {
-    return json({ data: { message: await draftFor(product as ProductFacts) } });
+    const businessName = await businessNameOf(Number(sale.organisation_id));
+    return json({
+      data: { message: await draftFor(product as ProductFacts, businessName) },
+    });
   } catch (error) {
     if (error instanceof NotConfigured) {
       return createErrorResponse(503, (error as Error).message, {
@@ -400,6 +428,7 @@ const draftSelected = async (
     timeZone: settings?.timezone ?? "Europe/London",
   });
 
+  const businessName = await businessNameOf(Number(sale.organisation_id));
   let created = 0;
   for (const product of products) {
     const slot = slots[created];
@@ -412,7 +441,7 @@ const draftSelected = async (
         skipped.push(`product ${product.id}: photo could not be used`);
         continue;
       }
-      const message = await draftFor(product);
+      const message = await draftFor(product, businessName);
       const now = new Date().toISOString();
       const { error } = await supabaseAdmin.from("page_posts").insert({
         organisation_id: sale.organisation_id,
@@ -450,7 +479,7 @@ Deno.serve((req: Request) =>
 
     if (await cronCall(req)) {
       try {
-        return json({ data: await runAutopilot() });
+        return json({ data: await runAllAutopilots() });
       } catch (error) {
         console.error("Autopilot run failed", (error as Error).message);
         return createErrorResponse(500, "The autopilot run failed");

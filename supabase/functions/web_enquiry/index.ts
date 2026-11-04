@@ -19,6 +19,9 @@ const received = () =>
     headers: { "Content-Type": "application/json", ...corsHeaders },
   });
 
+// The website form that has no key belongs to Mere & Row.
+const LEGACY_UNKEYED_FORM_ORGANISATION = 1;
+
 Deno.serve((req: Request) =>
   OptionsMiddleware(req, async (req) => {
     if (req.method !== "POST") {
@@ -59,10 +62,11 @@ Deno.serve((req: Request) =>
     }
     const v = parsed.value;
 
-    // A form that names its organisation (?key=...) records there. Without a key the enquiry
-    // goes to Mere & Row, as before.
+    // A form that names its business (?key=...) records there. A form with no key is the original
+    // Mere & Row website form, which predates keys, so it still goes to Mere & Row (organisation 1).
+    // Every other business uses its own key.
     const key = new URL(req.url).searchParams.get("key");
-    let organisationId = 1;
+    let organisationId = LEGACY_UNKEYED_FORM_ORGANISATION;
     if (key) {
       const { data: org } = await supabaseAdmin
         .from("organisations")
