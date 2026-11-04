@@ -203,3 +203,64 @@ describe("bills sheet", () => {
     expect(text).toMatch(/Paid on/);
   });
 });
+
+describe("the same entry twice in one sheet", () => {
+  it("is refused for the money book", () => {
+    const spec = moneySpec(
+      [
+        {
+          code: "rent",
+          label: "Rent and utilities",
+          direction: "out" as const,
+        },
+      ],
+      NOW,
+    );
+    const r = mapRows(
+      [
+        ["Date", "Type", "Amount", "Who", "Note"],
+        [
+          "04/11/2026",
+          "Rent and utilities",
+          "850",
+          "Reading Lettings",
+          "Nov rent",
+        ],
+        [
+          "04/11/2026",
+          "rent and utilities",
+          "850.00",
+          "reading lettings",
+          "nov rent",
+        ],
+        [
+          "04/11/2026",
+          "Rent and utilities",
+          "850",
+          "Reading Lettings",
+          "Nov rent, second unit",
+        ],
+      ],
+      spec,
+    );
+    expect(r.rows[1].errors[0]).toMatch(/same as row 2/);
+    expect(r.rows[2].errors).toHaveLength(0);
+  });
+  it("is refused for bills: same supplier and invoice number, or same details with none", () => {
+    const spec = billsSpec([{ code: "other", label: "Other" }], NOW);
+    const r = mapRows(
+      [
+        ["Bill date", "Supplier", "What for", "Amount before VAT", "Reference"],
+        ["04/11/2026", "Screwfix", "Paint", "100", "INV-1"],
+        ["05/11/2026", "SCREWFIX", "Other things", "55", "inv-1"],
+        ["04/11/2026", "Post Office", "Stamps", "10", ""],
+        ["04/11/2026", "Post Office", "stamps", "10.00", ""],
+        ["04/11/2026", "Post Office", "Parcel", "10", ""],
+      ],
+      spec,
+    );
+    expect(r.rows[1].errors[0]).toMatch(/same as row 2/);
+    expect(r.rows[3].errors[0]).toMatch(/same as row 4/);
+    expect(r.rows[4].errors).toHaveLength(0);
+  });
+});

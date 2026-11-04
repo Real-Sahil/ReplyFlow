@@ -219,6 +219,15 @@ export const moneySpec = (
     "A date inside a locked period is refused, and nothing is added.",
     "Sending the same sheet twice adds every entry twice.",
   ],
+  fingerprint: (v) =>
+    [
+      v.entry_date,
+      v.direction,
+      v.amount_pence,
+      (v.counterparty ?? "").toLowerCase(),
+      (v.reference ?? "").toLowerCase(),
+      v.note.toLowerCase(),
+    ].join("|"),
   previewHeadings: ["Date", "In or out", "Type", "Amount", "Who"],
   preview: (v) => [
     shortDate(v.entry_date),
@@ -385,6 +394,16 @@ export const billsSpec = (
     "Receipts cannot be sent in a sheet. Add them to each bill afterwards.",
     "Sending the same sheet twice adds every bill twice.",
   ],
+  fingerprint: (v) =>
+    v.reference
+      ? [v.supplier_name.toLowerCase(), v.reference.toLowerCase()].join("|")
+      : [
+          v.supplier_name.toLowerCase(),
+          v.bill_date,
+          v.net_pence,
+          v.vat_pence,
+          v.description.toLowerCase(),
+        ].join("|"),
   previewHeadings: [
     "Date",
     "Supplier",

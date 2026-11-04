@@ -53,7 +53,9 @@ export const ImportDialog = <T,>({
   onClose: () => void;
   // For each ready row, a sentence when it looks like something already recorded, otherwise null.
   // Those rows are left out unless the person ticks "Send these too".
-  checkDuplicates?: (values: T[]) => (string | null)[];
+  checkDuplicates?: (
+    values: T[],
+  ) => (string | null)[] | Promise<(string | null)[]>;
 }) => {
   const notify = useNotify();
   const input = useRef<HTMLInputElement>(null);
@@ -62,6 +64,8 @@ export const ImportDialog = <T,>({
   const [readError, setReadError] = useState<string | null>(null);
   const [reading, setReading] = useState(false);
   const [sendAnyway, setSendAnyway] = useState(false);
+  const [notes, setNotes] = useState<(string | null)[]>([]);
+  const [checkFailed, setCheckFailed] = useState(false);
 
   const choose = async (file: File | undefined) => {
     if (!file) return;
@@ -69,9 +73,24 @@ export const ImportDialog = <T,>({
     setResult(null);
     setReadError(null);
     setSendAnyway(false);
+    setNotes([]);
+    setCheckFailed(false);
     setReading(true);
     try {
-      setResult(mapRows(await readSheetFile(file), spec));
+      const mapped = mapRows(await readSheetFile(file), spec);
+      // Compare with what is already recorded, but only once the sheet itself is right.
+      if (
+        checkDuplicates &&
+        !mapped.problem &&
+        mapped.rows.every((r) => r.errors.length === 0)
+      ) {
+        try {
+          setNotes(await checkDuplicates(mapped.rows.map((r) => r.value as T)));
+        } catch {
+          setCheckFailed(true);
+        }
+      }
+      setResult(mapped);
     } catch (error) {
       setReadError((error as Error).message);
     } finally {
@@ -81,9 +100,6 @@ export const ImportDialog = <T,>({
 
   const ready = (result?.rows ?? []).filter((r) => r.value !== undefined);
   const wrong = (result?.rows ?? []).filter((r) => r.errors.length > 0);
-  const notes = checkDuplicates
-    ? checkDuplicates(ready.map((r) => r.value as T))
-    : [];
   const similar = ready.filter((_, i) => notes[i]);
   const toSend = sendAnyway ? ready : ready.filter((_, i) => !notes[i]);
   const canImport =
@@ -194,6 +210,12 @@ export const ImportDialog = <T,>({
                 </div>
               ) : null}
 
+              {checkFailed ? (
+                <p className="text-sm text-muted-foreground">
+                  Could not compare with what is already recorded, so repeats
+                  were not checked.
+                </p>
+              ) : null}
               {similar.length > 0 && wrong.length === 0 ? (
                 <div
                   role="status"
@@ -201,8 +223,8 @@ export const ImportDialog = <T,>({
                 >
                   <p className="mb-1 font-medium">
                     {similar.length === 1
-                      ? "1 row looks like something already sent:"
-                      : `${similar.length} rows look like things already sent:`}
+                      ? "1 row looks like something already recorded:"
+                      : `${similar.length} rows look like things already recorded:`}
                   </p>
                   <ul className="list-disc pl-5">
                     {ready.map((r, i) =>
@@ -219,7 +241,7 @@ export const ImportDialog = <T,>({
                       checked={sendAnyway}
                       onChange={(e) => setSendAnyway(e.target.checked)}
                     />
-                    Send these too (they are not repeats)
+                    Add these too (they are not repeats)
                   </label>
                 </div>
               ) : null}

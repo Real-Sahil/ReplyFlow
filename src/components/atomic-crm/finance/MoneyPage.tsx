@@ -18,6 +18,8 @@ import { openReceipt } from "./BillsPage";
 import { downloadCashBookPdf, type CashRow } from "./cashBookPdf";
 import { useIsAccountant } from "../misc/useIsAccountant";
 import { ImportDialog } from "../importer/ImportDialog";
+import { moneyDuplicate } from "../importer/duplicates";
+import { fetchExistingMoney } from "../importer/duplicatesFetch";
 import { moneySpec } from "../importer/specs";
 import { MileageDialog } from "./MileageDialog";
 import { useBusinessSettings } from "./useBusinessSettings";
@@ -470,6 +472,10 @@ export const MoneyPage = () => {
               })),
           )}
           onClose={() => setImporting(false)}
+          checkDuplicates={async (rows) => {
+            const existing = await fetchExistingMoney(rows);
+            return rows.map((row) => moneyDuplicate(existing, row));
+          }}
           onImport={async (rows) => {
             const { error } = await getSupabaseClient()
               .from("money_entries")

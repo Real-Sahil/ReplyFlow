@@ -20,6 +20,8 @@ import { useIsAccountant } from "../misc/useIsAccountant";
 import { useBusinessSettings } from "./useBusinessSettings";
 import { useBills, useExpenseCategories } from "./useBills";
 import { ImportDialog } from "../importer/ImportDialog";
+import { billDuplicate } from "../importer/duplicates";
+import { fetchExistingBills } from "../importer/duplicatesFetch";
 import { billsSpec } from "../importer/specs";
 
 const PRESETS: { value: PeriodPreset; label: string }[] = [
@@ -368,6 +370,10 @@ export const BillsPage = () => {
         <ImportDialog
           spec={billsSpec(expenseCategories)}
           onClose={() => setImporting(false)}
+          checkDuplicates={async (rows) => {
+            const existing = await fetchExistingBills(rows);
+            return rows.map((row) => billDuplicate(existing, row));
+          }}
           onImport={async (rows) => {
             const { error } = await getSupabaseClient()
               .from("bills")
