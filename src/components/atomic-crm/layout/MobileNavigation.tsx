@@ -26,6 +26,7 @@ import {
   Users,
   Wallet,
   HandCoins,
+  CalendarCheck,
 } from "lucide-react";
 import { CanAccess, useGetList, useTranslate } from "ra-core";
 import {
@@ -296,6 +297,15 @@ const MoreSheet = ({
           />
         </MoreGroup>
         <MoreGroup title="Money">
+          <CanAccess resource="configuration" action="edit">
+            <MoreRow
+              to="/summary"
+              label="Weekly summary"
+              detail="Your week in money, stock and orders"
+              Icon={CalendarCheck}
+              onPick={onOpenChange}
+            />
+          </CanAccess>
           <MoreRow
             to="/owed"
             label="Owed and owing"

@@ -222,3 +222,5 @@ verify_jwt = false
 
 [functions.push_subscribe]
 verify_jwt = false
+[functions.weekly_summary]
+verify_jwt = false
