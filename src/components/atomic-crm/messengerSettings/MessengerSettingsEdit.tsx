@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { EditBase, Form, required } from "ra-core";
 import { AutocompleteArrayInput } from "@/components/admin/autocomplete-array-input";
 import { BooleanInput } from "@/components/admin/boolean-input";
@@ -5,6 +6,7 @@ import { TextInput } from "@/components/admin/text-input";
 import { Card, CardContent } from "@/components/ui/card";
 
 import { FormToolbar } from "../layout/FormToolbar";
+import { getSupabaseClient } from "../providers/supabase/supabase";
 
 const weekdays = [
   { id: 1, name: "Monday" },
@@ -34,11 +36,32 @@ const Section = ({
   </div>
 );
 
-export const MessengerSettingsEdit = () => (
+// Each business has its own row, and its id is the organisation id. The database says which
+// organisation this person belongs to, so the address in the browser cannot choose another one.
+const useOwnSettingsId = () =>
+  useQuery({
+    queryKey: ["my_organisation_id"],
+    staleTime: Infinity,
+    queryFn: async () => {
+      const { data, error } =
+        await getSupabaseClient().rpc("my_organisation_id");
+      if (error || data == null)
+        throw new Error("Could not find your business");
+      return Number(data);
+    },
+  });
+
+export const MessengerSettingsEdit = () => {
+  const { data: settingsId } = useOwnSettingsId();
+  if (settingsId === undefined) return null;
+  return <MessengerSettingsForm id={settingsId} />;
+};
+
+const MessengerSettingsForm = ({ id }: { id: number }) => (
   <EditBase
     actions={false}
     resource="messenger_settings"
-    id={1}
+    id={id}
     redirect={false}
   >
     <div className="mt-2 flex">

@@ -26,12 +26,15 @@ const GRAPH = "https://graph.facebook.com/v21.0";
 class MetaError extends Error {}
 
 const graph = async (
+  organisationId: number | undefined,
   token: string,
   method: "POST" | "DELETE",
   path: string,
   body?: Record<string, unknown>,
 ) => {
-  await assertMetaOpen();
+  if (organisationId === undefined)
+    throw new MetaError("This post has no business");
+  await assertMetaOpen(organisationId);
   let response: Response;
   try {
     response = await fetch(`${GRAPH}/${path}`, {
@@ -48,7 +51,7 @@ const graph = async (
   }
   const json = await response.json().catch(() => ({}));
   if (!response.ok) {
-    await recordIfActionBlock(json);
+    await recordIfActionBlock(organisationId, json);
     console.error("Graph error", method, response.status, json?.error?.code);
     throw new MetaError(
       json?.error?.message ?? "Facebook rejected the request",
@@ -158,6 +161,10 @@ const publish = async (
     }
   }
 
+  const postOrganisation =
+    post.organisation_id !== undefined
+      ? Number(post.organisation_id)
+      : undefined;
   const chosen = await choosePage(
     post.page_id ? String(post.page_id) : null,
     post.organisation_id !== undefined
@@ -176,7 +183,7 @@ const publish = async (
       if (!post.fb_post_id) {
         return createErrorResponse(409, "This post is not on Facebook");
       }
-      await graph(token, "DELETE", post.fb_post_id);
+      await graph(postOrganisation, token, "DELETE", post.fb_post_id);
       await supabaseAdmin
         .from("page_posts")
         .update({ status: "draft", fb_post_id: null, published_at: null })
@@ -234,7 +241,13 @@ const publish = async (
     );
     let result;
     try {
-      result = await graph(token, "POST", request.path, request.body);
+      result = await graph(
+        postOrganisation,
+        token,
+        "POST",
+        request.path,
+        request.body,
+      );
     } catch (error) {
       // A block is not a failed post: leave the post as it was so it can be retried after clearing.
       if (!(error instanceof MetaBlockedError)) {

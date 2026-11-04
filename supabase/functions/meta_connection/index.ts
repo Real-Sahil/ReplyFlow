@@ -20,14 +20,14 @@ import {
 const GRAPH = "https://graph.facebook.com/v21.0";
 const APP_ID = Deno.env.get("META_APP_ID") ?? "1407701608185434";
 
-const get = async (path: string, token: string) => {
+const get = async (organisationId: number, path: string, token: string) => {
   try {
     const response = await fetch(`${GRAPH}/${path}`, {
       headers: { Authorization: `Bearer ${token}` },
       signal: AbortSignal.timeout(8000),
     });
     const json = await response.json().catch(() => ({}));
-    if (!response.ok) await recordIfActionBlock(json);
+    if (!response.ok) await recordIfActionBlock(organisationId, json);
     return { ok: response.ok, json };
   } catch {
     return {
@@ -44,7 +44,7 @@ const ok = (data: unknown) =>
 
 const checkConnection = async (organisationId: number) => {
   // While Meta has blocked the Page, send no Graph traffic at all: report the block only.
-  const circuit = await circuitState();
+  const circuit = await circuitState(organisationId);
   if (circuit.blocked) {
     return {
       source: "none",
@@ -99,6 +99,7 @@ const checkConnection = async (organisationId: number) => {
   // debug_token needs the app's own credentials, and reports the granted scopes.
   if (appSecret) {
     const debug = await get(
+      organisationId,
       `debug_token?input_token=${encodeURIComponent(token)}`,
       `${APP_ID}|${appSecret}`,
     );
@@ -118,7 +119,7 @@ const checkConnection = async (organisationId: number) => {
     problem = "META_APP_SECRET is not set, so permissions cannot be checked.";
   }
 
-  const me = await get("me?fields=id,name", token);
+  const me = await get(organisationId, "me?fields=id,name", token);
   const page = me.ok
     ? { id: String(me.json.id), name: String(me.json.name ?? "") }
     : null;
@@ -128,7 +129,7 @@ const checkConnection = async (organisationId: number) => {
 
   let subscribed: string[] | null = null;
   if (page) {
-    const subs = await get(`${page.id}/subscribed_apps`, token);
+    const subs = await get(organisationId, `${page.id}/subscribed_apps`, token);
     if (subs.ok && Array.isArray(subs.json?.data)) {
       const ours = subs.json.data.find(
         (app: { id?: string }) => String(app.id) === APP_ID,
@@ -185,7 +186,7 @@ Deno.serve((req: Request) =>
               cleared_by: sale.id,
               cleared_at: new Date().toISOString(),
             })
-            .eq("id", 1);
+            .eq("organisation_id", Number(sale.organisation_id));
           return ok(await checkConnection(Number(sale.organisation_id)));
         }
 
@@ -224,7 +225,11 @@ Deno.serve((req: Request) =>
               "That does not look like a Facebook token. Copy the whole value, without spaces.",
             );
           }
-          const me = await get("me?fields=id,name", token);
+          const me = await get(
+            Number(sale.organisation_id),
+            "me?fields=id,name",
+            token,
+          );
           if (!me.ok || !me.json?.id) {
             return createErrorResponse(
               400,
@@ -235,6 +240,7 @@ Deno.serve((req: Request) =>
           const appSecret = Deno.env.get("META_APP_SECRET");
           if (appSecret) {
             const debug = await get(
+              Number(sale.organisation_id),
               `debug_token?input_token=${encodeURIComponent(token)}`,
               `${APP_ID}|${appSecret}`,
             );

@@ -38,10 +38,14 @@ const organisationFor = async (pageId: string): Promise<number | null> => {
   return data?.organisation_id == null ? null : Number(data.organisation_id);
 };
 
-const fetchLead = async (leadgenId: string, pageId: string): Promise<Lead> => {
+const fetchLead = async (
+  organisationId: number,
+  leadgenId: string,
+  pageId: string,
+): Promise<Lead> => {
   const token = await getPageTokenFor(pageId);
   if (!token) throw new Error("No Page access token is set");
-  await assertMetaOpen();
+  await assertMetaOpen(organisationId);
   const response = await fetch(
     `https://graph.facebook.com/v21.0/${encodeURIComponent(leadgenId)}?fields=field_data,campaign_name,form_id`,
     {
@@ -51,7 +55,7 @@ const fetchLead = async (leadgenId: string, pageId: string): Promise<Lead> => {
   );
   const json = await response.json().catch(() => ({}));
   if (!response.ok) {
-    await recordIfActionBlock(json);
+    await recordIfActionBlock(organisationId, json);
     throw new Error(`Lead lookup failed with ${response.status}`);
   }
   return json as Lead;
@@ -81,7 +85,7 @@ const handleLead = async (event: LeadgenEvent) => {
   if (claimError) throw new Error(claimError.message);
 
   try {
-    const lead = await fetchLead(event.leadgenId, event.pageId);
+    const lead = await fetchLead(organisationId, event.leadgenId, event.pageId);
     const fields = mapLeadFields(
       lead.field_data ?? [],
       lead.campaign_name ?? null,

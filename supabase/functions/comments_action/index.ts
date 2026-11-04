@@ -21,11 +21,12 @@ const GRAPH = "https://graph.facebook.com/v21.0";
 class MetaError extends Error {}
 
 const graph = async (
+  organisationId: number,
   token: string,
   path: string,
   body: Record<string, unknown>,
 ) => {
-  await assertMetaOpen();
+  await assertMetaOpen(organisationId);
   let response: Response;
   try {
     response = await fetch(`${GRAPH}/${path}`, {
@@ -42,7 +43,7 @@ const graph = async (
   }
   const json = await response.json().catch(() => ({}));
   if (!response.ok) {
-    await recordIfActionBlock(json);
+    await recordIfActionBlock(organisationId, json);
     console.error(
       "Graph error",
       path.split("/").pop(),
@@ -118,12 +119,18 @@ Deno.serve((req: Request) =>
           });
         }
 
+        const organisationId = Number(sale.organisation_id);
         try {
           switch (input.action) {
             case "reply": {
-              await graph(token!, `${comment.comment_id}/comments`, {
-                message: text,
-              });
+              await graph(
+                organisationId,
+                token!,
+                `${comment.comment_id}/comments`,
+                {
+                  message: text,
+                },
+              );
               await supabaseAdmin
                 .from("page_comments")
                 .update({
@@ -137,7 +144,7 @@ Deno.serve((req: Request) =>
             }
             case "hide":
             case "unhide": {
-              await graph(token!, comment.comment_id, {
+              await graph(organisationId, token!, comment.comment_id, {
                 is_hidden: input.action === "hide",
               });
               await supabaseAdmin
@@ -157,6 +164,7 @@ Deno.serve((req: Request) =>
                 );
               }
               const result = await graph(
+                organisationId,
                 token!,
                 `${comment.page_id}/messages`,
                 {

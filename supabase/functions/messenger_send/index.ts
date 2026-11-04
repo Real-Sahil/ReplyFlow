@@ -48,12 +48,13 @@ class SendError extends Error {
 }
 
 const sendToMeta = async (
+  organisationId: number,
   token: string,
   psid: string,
   message: OutgoingMessage,
 ): Promise<string> => {
   try {
-    await assertMetaOpen();
+    await assertMetaOpen(organisationId);
   } catch (error) {
     if (error instanceof MetaBlockedError) {
       throw new SendError(503, error.message, "meta_blocked");
@@ -80,7 +81,7 @@ const sendToMeta = async (
   }
   const meta = await response.json().catch(() => ({}));
   if (!response.ok || !meta.message_id) {
-    await recordIfActionBlock(meta);
+    await recordIfActionBlock(organisationId, meta);
     console.error("Send API error", response.status, meta?.error?.code);
     throw new SendError(
       502,
@@ -145,7 +146,7 @@ Deno.serve((req: Request) =>
           const { data: hours } = await supabaseAdmin
             .from("messenger_settings")
             .select("*")
-            .eq("id", 1)
+            .eq("organisation_id", sale.organisation_id)
             .maybeSingle();
           if (!hours) {
             return createErrorResponse(
@@ -233,6 +234,7 @@ Deno.serve((req: Request) =>
         try {
           for (const item of outgoing) {
             const messageId = await sendToMeta(
+              Number(sale.organisation_id),
               replyToken,
               last.psid,
               item.message,

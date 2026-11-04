@@ -50,11 +50,12 @@ const dialogUrl = (state: string) =>
 
 // One Graph call. Throws with Facebook's message when the call fails.
 const graph = async (
+  organisationId: number,
   path: string,
   params: Record<string, string>,
   init: { method?: string; token?: string } = {},
 ) => {
-  await assertMetaOpen();
+  await assertMetaOpen(organisationId);
   const url = new URL(`${GRAPH}/${path}`);
   const headers: Record<string, string> = {};
   let body: string | undefined;
@@ -75,14 +76,14 @@ const graph = async (
   });
   const json = await response.json().catch(() => ({}));
   if (!response.ok) {
-    await recordIfActionBlock(json);
+    await recordIfActionBlock(organisationId, json);
     throw new Error(json?.error?.message ?? `Facebook ${response.status}`);
   }
   return json;
 };
 
 // Lists every Page the person approved, with its Page token.
-const listPages = async (userToken: string) => {
+const listPages = async (organisationId: number, userToken: string) => {
   const pages: { id: string; name: string; access_token: string }[] = [];
   let after: string | undefined;
   for (let i = 0; i < MAX_PAGE_LISTS; i++) {
@@ -92,7 +93,7 @@ const listPages = async (userToken: string) => {
       access_token: userToken,
     };
     if (after) params.after = after;
-    const json = await graph("me/accounts", params);
+    const json = await graph(organisationId, "me/accounts", params);
     for (const page of json.data ?? []) {
       if (page.id && page.access_token) {
         pages.push({
@@ -109,9 +110,14 @@ const listPages = async (userToken: string) => {
 };
 
 // Subscribes one Page to the webhook fields the app uses. Returns false on failure.
-const subscribePage = async (pageId: string, pageToken: string) => {
+const subscribePage = async (
+  organisationId: number,
+  pageId: string,
+  pageToken: string,
+) => {
   try {
     const json = await graph(
+      organisationId,
       `${pageId}/subscribed_apps`,
       {
         subscribed_fields: REQUIRED_SUBSCRIPTIONS.map((s) => s.name).join(","),
@@ -140,24 +146,6 @@ const callback = async (url: URL) => {
   if (!code) return back("connect=failed");
 
   try {
-    // Short-lived approval, exchanged for a long-lived user token. Page tokens made from a
-    // long-lived user token do not expire unless the person removes the app or changes password.
-    const shortLived = await graph("oauth/access_token", {
-      client_id: APP_ID,
-      client_secret: secret,
-      redirect_uri: REDIRECT_URI,
-      code,
-    });
-    const longLived = await graph("oauth/access_token", {
-      grant_type: "fb_exchange_token",
-      client_id: APP_ID,
-      client_secret: secret,
-      fb_exchange_token: String(shortLived.access_token),
-    });
-
-    const pages = await listPages(String(longLived.access_token));
-    if (pages.length === 0) return back("connect=no_pages");
-
     // The Pages belong to the organisation of the administrator who made the link.
     const { data: sale } = await supabaseAdmin
       .from("sales")
@@ -165,6 +153,28 @@ const callback = async (url: URL) => {
       .eq("id", Number(saleId))
       .maybeSingle();
     if (!sale?.organisation_id) return back("connect=failed");
+    const organisationId = Number(sale.organisation_id);
+
+    // Short-lived approval, exchanged for a long-lived user token. Page tokens made from a
+    // long-lived user token do not expire unless the person removes the app or changes password.
+    const shortLived = await graph(organisationId, "oauth/access_token", {
+      client_id: APP_ID,
+      client_secret: secret,
+      redirect_uri: REDIRECT_URI,
+      code,
+    });
+    const longLived = await graph(organisationId, "oauth/access_token", {
+      grant_type: "fb_exchange_token",
+      client_id: APP_ID,
+      client_secret: secret,
+      fb_exchange_token: String(shortLived.access_token),
+    });
+
+    const pages = await listPages(
+      organisationId,
+      String(longLived.access_token),
+    );
+    if (pages.length === 0) return back("connect=no_pages");
 
     let saved = 0;
     let taken = 0;
@@ -174,7 +184,7 @@ const callback = async (url: URL) => {
         p_page_id: page.id,
         p_name: page.name,
         p_token: page.access_token,
-        p_organisation_id: Number(sale.organisation_id),
+        p_organisation_id: organisationId,
       });
       if (error) {
         // A Page already connected to another business cannot be taken over. Skip it and
@@ -186,11 +196,13 @@ const callback = async (url: URL) => {
         throw new Error(error.message);
       }
       saved++;
-      if (!(await subscribePage(page.id, page.access_token))) subscribeFailed++;
+      if (!(await subscribePage(organisationId, page.id, page.access_token)))
+        subscribeFailed++;
     }
     if (saved === 0) return back("connect=page_taken");
 
-    // A token pasted by hand would otherwise keep winning over the connected Pages.
+    // A token pasted by hand would otherwise keep winning over the connected Pages. Only this
+    // organisation's own pasted token is cleared, never another business's.
     await supabaseAdmin
       .from("meta_connection")
       .update({
@@ -200,7 +212,7 @@ const callback = async (url: URL) => {
         saved_by: Number(saleId),
         saved_at: new Date().toISOString(),
       })
-      .eq("id", 1);
+      .eq("organisation_id", organisationId);
 
     const params = [`connected=${saved}`];
     if (taken) params.push(`taken=${taken}`);

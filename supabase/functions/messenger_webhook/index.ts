@@ -27,25 +27,35 @@ import type { InboundMessage } from "./webhook.ts";
 const text = (body: string, status = 200) =>
   new Response(body, { status, headers: { "Content-Type": "text/plain" } });
 
-// The Pages this webhook accepts: every Page on the list, plus META_PAGE_ID if set. Null means
-// nothing is configured yet, so every Page is accepted, as before.
-const allowedPages = async (): Promise<Set<string> | null> => {
-  const ids = new Set<string>();
+// The Pages this webhook accepts, each with the organisation that owns it: every Page a business
+// has connected, plus META_PAGE_ID (the original Page, which belongs to organisation 1). A Page
+// that is not on this list is ignored: nothing is stored and nothing is sent for it.
+const LEGACY_PAGE_ORGANISATION = 1;
+const acceptedPages = async (): Promise<Map<string, number>> => {
+  const pages = new Map<string, number>();
   const fromEnv = Deno.env.get("META_PAGE_ID");
-  if (fromEnv) ids.add(fromEnv);
-  const { data } = await supabaseAdmin.from("meta_pages").select("page_id");
-  for (const row of data ?? []) ids.add(String(row.page_id));
-  return ids.size ? ids : null;
+  if (fromEnv) pages.set(fromEnv, LEGACY_PAGE_ORGANISATION);
+  const { data } = await supabaseAdmin
+    .from("meta_pages")
+    .select("page_id, organisation_id");
+  for (const row of data ?? []) {
+    pages.set(String(row.page_id), Number(row.organisation_id));
+  }
+  return pages;
 };
 
 // The token of the Page a message arrived on. Never another Page's token.
 const tokenFor = async (pageId: string) => getPageTokenFor(pageId);
 
-const fetchProfile = async (psid: string, pageId: string) => {
+const fetchProfile = async (
+  organisationId: number,
+  psid: string,
+  pageId: string,
+) => {
   const token = await tokenFor(pageId);
   if (!token) return {};
   try {
-    await assertMetaOpen();
+    await assertMetaOpen(organisationId);
     const response = await fetch(
       `https://graph.facebook.com/v21.0/${encodeURIComponent(psid)}?fields=first_name,last_name`,
       {
@@ -72,8 +82,13 @@ const fetchProfile = async (psid: string, pageId: string) => {
   }
 };
 
-const sendText = async (token: string, psid: string, text: string) => {
-  await assertMetaOpen();
+const sendText = async (
+  organisationId: number,
+  token: string,
+  psid: string,
+  text: string,
+) => {
+  await assertMetaOpen(organisationId);
   const response = await fetch("https://graph.facebook.com/v21.0/me/messages", {
     method: "POST",
     headers: {
@@ -89,7 +104,7 @@ const sendText = async (token: string, psid: string, text: string) => {
   });
   const meta = await response.json().catch(() => ({}));
   if (!response.ok || !meta.message_id) {
-    await recordIfActionBlock(meta);
+    await recordIfActionBlock(organisationId, meta);
     throw new Error(`Send API ${response.status} ${meta?.error?.code ?? ""}`);
   }
   return meta.message_id as string;
@@ -98,14 +113,18 @@ const sendText = async (token: string, psid: string, text: string) => {
 // Greeting, away message and quick questions, as configured by an admin. Any
 // failure here is logged and swallowed: the customer's message is already saved,
 // and answering Meta with an error would only make it redeliver.
-const runAutoReply = async (message: InboundMessage, messageRowId: number) => {
+const runAutoReply = async (
+  message: InboundMessage,
+  messageRowId: number,
+  organisationId: number,
+) => {
   try {
     const token = await tokenFor(message.pageId);
     if (!token) return;
     const { data: settings } = await supabaseAdmin
       .from("messenger_settings")
       .select("*")
-      .eq("id", 1)
+      .eq("organisation_id", organisationId)
       .maybeSingle();
     if (!settings?.auto_replies_enabled) return;
 
@@ -114,7 +133,8 @@ const runAutoReply = async (message: InboundMessage, messageRowId: number) => {
       .select("contact_id, deal_id, organisation_id")
       .eq("id", messageRowId)
       .single();
-    if (!row?.contact_id) return;
+    if (!row?.contact_id || Number(row.organisation_id) !== organisationId)
+      return;
     const contactId = row.contact_id as number;
 
     const { data: existing } = await supabaseAdmin
@@ -148,7 +168,12 @@ const runAutoReply = async (message: InboundMessage, messageRowId: number) => {
     });
 
     for (const text of result.send) {
-      const messageId = await sendText(token, message.psid, text);
+      const messageId = await sendText(
+        organisationId,
+        token,
+        message.psid,
+        text,
+      );
       await supabaseAdmin.from("messenger_messages").insert({
         mid: messageId,
         page_id: message.pageId,
@@ -252,8 +277,8 @@ Deno.serve(async (req) => {
     return text("Bad request", 400);
   }
 
-  const allowed = await allowedPages();
-  const accept = (pageId: string) => !allowed || allowed.has(pageId);
+  const pages = await acceptedPages();
+  const accept = (pageId: string) => pages.has(pageId);
 
   const messages = parseInboundMessages(payload).filter((m) =>
     accept(m.pageId),
@@ -289,7 +314,12 @@ Deno.serve(async (req) => {
   }
 
   for (const message of messages) {
-    const profile = await fetchProfile(message.psid, message.pageId);
+    const organisationId = pages.get(message.pageId)!;
+    const profile = await fetchProfile(
+      organisationId,
+      message.psid,
+      message.pageId,
+    );
     const { data: rowId, error } = await supabaseAdmin.rpc(
       "record_messenger_message",
       {
@@ -311,7 +341,7 @@ Deno.serve(async (req) => {
     // null means Meta redelivered a message we already stored: do not answer twice.
     if (rowId) {
       await notifyStaff(message, rowId as number);
-      await runAutoReply(message, rowId as number);
+      await runAutoReply(message, rowId as number, organisationId);
     }
   }
 
