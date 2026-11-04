@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Building2 } from "lucide-react";
 import { useGetIdentity, useGetOne, useNotify } from "ra-core";
 
@@ -17,6 +17,7 @@ import {
 import { isValidUkVatNumber, normaliseVatNumber } from "./vatMath";
 
 type Form = {
+  organisation_name: string;
   legal_name: string;
   trading_name: string;
   address: string;
@@ -30,6 +31,7 @@ type Form = {
 };
 
 const empty: Form = {
+  organisation_name: "",
   legal_name: "",
   trading_name: "",
   address: "",
@@ -42,9 +44,13 @@ const empty: Form = {
   invoice_prefix: "INV-",
 };
 
-const fromSettings = (s: BusinessSettings | null | undefined): Form =>
+const fromSettings = (
+  s: BusinessSettings | null | undefined,
+  organisationName: string,
+): Form =>
   s
     ? {
+        organisation_name: organisationName,
         legal_name: s.legal_name ?? "",
         trading_name: s.trading_name ?? "",
         address: s.address ?? "",
@@ -57,7 +63,7 @@ const fromSettings = (s: BusinessSettings | null | undefined): Form =>
         prices_include_vat: s.prices_include_vat,
         invoice_prefix: s.invoice_prefix,
       }
-    : empty;
+    : { ...empty, organisation_name: organisationName };
 
 // Problems with what was typed, in plain words. Empty means it can be saved.
 const problems = (form: Form): string[] => {
@@ -91,12 +97,23 @@ export const BusinessSettingsPage = () => {
     { enabled: !!identity?.id },
   );
   const { data: settings, isPending } = useBusinessSettings();
+  const { data: organisationName, isPending: namePending } = useQuery({
+    queryKey: ["organisation_name"],
+    queryFn: async () => {
+      const { data } = await getSupabaseClient()
+        .from("organisations")
+        .select("name")
+        .maybeSingle();
+      return (data?.name as string | undefined) ?? "";
+    },
+  });
   const [form, setForm] = useState<Form>(empty);
   const [touched, setTouched] = useState(false);
 
   useEffect(() => {
-    if (!isPending) setForm(fromSettings(settings));
-  }, [isPending, settings]);
+    if (!isPending && !namePending)
+      setForm(fromSettings(settings, organisationName ?? ""));
+  }, [isPending, namePending, settings, organisationName]);
 
   const set = <K extends keyof Form>(key: K, value: Form[K]) => {
     setTouched(true);
@@ -128,13 +145,22 @@ export const BusinessSettingsPage = () => {
         invoice_prefix: form.invoice_prefix.trim() || "INV-",
         updated_at: new Date().toISOString(),
       };
-      const { error } = await getSupabaseClient()
+      const client = getSupabaseClient();
+      const { error } = await client
         .from("business_settings")
         .upsert(row, { onConflict: "organisation_id" });
       if (error) throw error;
+      if (form.organisation_name.trim()) {
+        const { error: nameError } = await client
+          .from("organisations")
+          .update({ name: form.organisation_name.trim() })
+          .eq("id", row.organisation_id);
+        if (nameError) throw nameError;
+      }
     },
     onSuccess: () => {
       notify("Business details saved", { type: "success" });
+      queryClient.invalidateQueries({ queryKey: ["organisation_name"] });
       setTouched(false);
       queryClient.invalidateQueries({ queryKey: BUSINESS_SETTINGS_KEY });
     },
@@ -160,6 +186,13 @@ export const BusinessSettingsPage = () => {
             These appear on invoices and credit notes.
           </p>
         </div>
+        <Field id="org-name" label="Business name (shown in the app)">
+          <Input
+            id="org-name"
+            value={form.organisation_name}
+            onChange={(e) => set("organisation_name", e.target.value)}
+          />
+        </Field>
         <Field id="legal-name" label="Registered or legal name">
           <Input
             id="legal-name"

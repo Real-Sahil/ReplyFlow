@@ -267,19 +267,43 @@ const getDataProviderWithCustomMethods = () => {
 
       return data;
     },
+    // Each business has its own settings row (id = its organisation id). The database only ever
+    // returns the signed-in person's own row, so no id is named here.
     async getConfiguration(): Promise<ConfigurationContextValue> {
-      const { data } = await baseDataProvider.getOne("configuration", {
-        id: 1,
+      const { data } = await baseDataProvider.getList("configuration", {
+        pagination: { page: 1, perPage: 1 },
+        sort: { field: "id", order: "ASC" },
+        filter: {},
       });
-      return (data?.config as ConfigurationContextValue) ?? {};
+      return (data?.[0]?.config as ConfigurationContextValue) ?? {};
     },
     async updateConfiguration(
       config: ConfigurationContextValue,
     ): Promise<ConfigurationContextValue> {
-      const { data } = await baseDataProvider.update("configuration", {
-        id: 1,
-        data: { config },
-        previousData: { id: 1 },
+      const { data: organisationId, error } =
+        await getSupabaseClient().rpc("my_organisation_id");
+      if (error || organisationId == null) {
+        throw new Error("Could not find your business to save the settings");
+      }
+      const { data: existing } = await baseDataProvider.getList(
+        "configuration",
+        {
+          pagination: { page: 1, perPage: 1 },
+          sort: { field: "id", order: "ASC" },
+          filter: {},
+        },
+      );
+      if (existing?.length) {
+        const { data } = await baseDataProvider.update("configuration", {
+          id: organisationId,
+          data: { config },
+          previousData: { id: organisationId },
+        });
+        return data.config as ConfigurationContextValue;
+      }
+      // A new business has no row yet: the first save creates it.
+      const { data } = await baseDataProvider.create("configuration", {
+        data: { id: organisationId, organisation_id: organisationId, config },
       });
       return data.config as ConfigurationContextValue;
     },
