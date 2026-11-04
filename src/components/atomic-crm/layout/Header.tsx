@@ -17,6 +17,7 @@ import {
   User,
   Users,
   Wallet,
+  HandCoins,
 } from "lucide-react";
 import { CanAccess, useGetList, useTranslate, useUserMenu } from "ra-core";
 import { Link, matchPath, useLocation } from "react-router";
@@ -248,6 +249,7 @@ const MoreMenu = () => (
         <MoreLink to={ImportPage.path} label="Import data" Icon={Import} />
       </MoreGroup>
       <MoreGroup title="Money">
+        <MoreLink to="/owed" label="Owed and owing" Icon={HandCoins} />
         <MoreLink to="/invoices" label="Invoices" Icon={Receipt} />
         <MoreLink to="/bills" label="Bills and expenses" Icon={Wallet} />
         <MoreLink to="/money" label="Money book" Icon={BookOpen} />

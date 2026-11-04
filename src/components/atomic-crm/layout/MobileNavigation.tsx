@@ -25,6 +25,7 @@ import {
   User,
   Users,
   Wallet,
+  HandCoins,
 } from "lucide-react";
 import { CanAccess, useGetList, useTranslate } from "ra-core";
 import {
@@ -295,6 +296,13 @@ const MoreSheet = ({
           />
         </MoreGroup>
         <MoreGroup title="Money">
+          <MoreRow
+            to="/owed"
+            label="Owed and owing"
+            detail="Who owes you, and who you owe"
+            Icon={HandCoins}
+            onPick={onOpenChange}
+          />
           <MoreRow
             to="/invoices"
             label="Invoices"

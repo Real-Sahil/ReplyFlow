@@ -9,6 +9,9 @@ import { formatPrice } from "../products/formatPrice";
 import { orderStatusLabel } from "../orders/statuses";
 import { useConfigurationContext } from "../root/ConfigurationContext";
 import type { Deal, Task } from "../types";
+import { overdue, total } from "../finance/owed";
+import { useOwedByCustomers, useOwedToSuppliers } from "../finance/useOwed";
+import { formatPence } from "../quotes/quoteMath";
 import { DashboardActivityLog } from "./DashboardActivityLog";
 import { TasksList } from "./TasksList";
 
@@ -148,6 +151,8 @@ const Empty = ({ children }: { children: React.ReactNode }) => (
 
 export const TodayDashboard = () => {
   const { identity } = useGetIdentity();
+  const { data: owedCustomers = [] } = useOwedByCustomers();
+  const { data: owedSuppliers = [] } = useOwedToSuppliers();
   const { currency, dealStages } = useConfigurationContext();
   const now = Date.now();
   const endOfToday = new Date();
@@ -354,6 +359,37 @@ export const TodayDashboard = () => {
               />
             ))}
           </Group>
+
+          {owedCustomers.length > 0 || owedSuppliers.length > 0 ? (
+            <Group title="Money" to="/owed" action="See all">
+              {owedCustomers.length > 0 ? (
+                <Row
+                  to="/owed"
+                  title="Owed to you"
+                  detail={
+                    overdue(owedCustomers, new Date()).length > 0
+                      ? `${overdue(owedCustomers, new Date()).length} late, ${owedCustomers.length} unpaid in all`
+                      : `${owedCustomers.length} unpaid`
+                  }
+                  trailing={formatPence(total(owedCustomers))}
+                  urgent={overdue(owedCustomers, new Date()).length > 0}
+                />
+              ) : null}
+              {owedSuppliers.length > 0 ? (
+                <Row
+                  to="/owed"
+                  title="You owe suppliers"
+                  detail={
+                    overdue(owedSuppliers, new Date()).length > 0
+                      ? `${overdue(owedSuppliers, new Date()).length} late, ${owedSuppliers.length} unpaid in all`
+                      : `${owedSuppliers.length} unpaid`
+                  }
+                  trailing={formatPence(total(owedSuppliers))}
+                  urgent={overdue(owedSuppliers, new Date()).length > 0}
+                />
+              ) : null}
+            </Group>
+          ) : null}
 
           <Group
             title="Enquiries in the pipeline"
