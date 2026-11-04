@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 
 import { getSupabaseClient } from "../providers/supabase/supabase";
+import { useExpenseCategories } from "./useBills";
 import {
   BUSINESS_SETTINGS_KEY,
   useBusinessSettings,
@@ -28,6 +29,8 @@ type Form = {
   flat_rate_percent: string;
   prices_include_vat: boolean;
   invoice_prefix: string;
+  code_sales: string;
+  code_bills: Record<string, string>;
 };
 
 const empty: Form = {
@@ -42,6 +45,8 @@ const empty: Form = {
   flat_rate_percent: "",
   prices_include_vat: true,
   invoice_prefix: "INV-",
+  code_sales: "",
+  code_bills: {},
 };
 
 const fromSettings = (
@@ -62,6 +67,8 @@ const fromSettings = (
           s.flat_rate_percent == null ? "" : String(s.flat_rate_percent),
         prices_include_vat: s.prices_include_vat,
         invoice_prefix: s.invoice_prefix,
+        code_sales: s.accounting_codes?.sales ?? "",
+        code_bills: s.accounting_codes?.bills ?? {},
       }
     : { ...empty, organisation_name: organisationName };
 
@@ -97,6 +104,7 @@ export const BusinessSettingsPage = () => {
     { enabled: !!identity?.id },
   );
   const { data: settings, isPending } = useBusinessSettings();
+  const { data: categories = [] } = useExpenseCategories();
   const { data: organisationName, isPending: namePending } = useQuery({
     queryKey: ["organisation_name"],
     queryFn: async () => {
@@ -143,6 +151,14 @@ export const BusinessSettingsPage = () => {
             : null,
         prices_include_vat: form.prices_include_vat,
         invoice_prefix: form.invoice_prefix.trim() || "INV-",
+        accounting_codes: {
+          ...(form.code_sales.trim() ? { sales: form.code_sales.trim() } : {}),
+          bills: Object.fromEntries(
+            Object.entries(form.code_bills)
+              .map(([k, v]) => [k, v.trim()])
+              .filter(([, v]) => v),
+          ),
+        },
         updated_at: new Date().toISOString(),
       };
       const client = getSupabaseClient();
@@ -304,6 +320,44 @@ export const BusinessSettingsPage = () => {
             </div>
           </>
         )}
+      </section>
+
+      <section className="flex flex-col gap-4 rounded-2xl bg-card p-5 shadow-[var(--shadow-card)]">
+        <div>
+          <h2 className="text-base font-semibold">
+            Accountant codes (optional)
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Your accountant gives you these. They go into the files for Xero,
+            QuickBooks and Sage so each line lands in the right account. Leave
+            blank if you do not have them.
+          </p>
+        </div>
+        <Field id="code-sales" label="Sales account code">
+          <Input
+            id="code-sales"
+            className="w-40"
+            value={form.code_sales}
+            onChange={(e) => set("code_sales", e.target.value)}
+          />
+        </Field>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {categories.map((c) => (
+            <Field key={c.code} id={`code-${c.code}`} label={c.label}>
+              <Input
+                id={`code-${c.code}`}
+                className="w-40"
+                value={form.code_bills[c.code] ?? ""}
+                onChange={(e) =>
+                  set("code_bills", {
+                    ...form.code_bills,
+                    [c.code]: e.target.value,
+                  })
+                }
+              />
+            </Field>
+          ))}
+        </div>
       </section>
 
       {touched && issues.length > 0 && (

@@ -7,6 +7,7 @@ import {
   Import,
   Landmark,
   MessageCircle,
+  PackageCheck,
   Plug,
   Receipt,
   Settings,
@@ -242,6 +243,11 @@ const MoreMenu = () => (
         <MoreLink to={ImportPage.path} label="Import data" Icon={Import} />
         <MoreLink to="/invoices" label="Invoices" Icon={Receipt} />
         <MoreLink to="/bills" label="Bills and expenses" Icon={Wallet} />
+        <MoreLink
+          to="/accountant"
+          label="Accountant's pack"
+          Icon={PackageCheck}
+        />
         <CanAccess resource="configuration" action="edit">
           <MoreLink to="/business" label="Business and VAT" Icon={Landmark} />
         </CanAccess>

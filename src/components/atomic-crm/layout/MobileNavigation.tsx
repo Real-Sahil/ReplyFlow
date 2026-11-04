@@ -12,6 +12,7 @@ import {
   MessageCircle,
   MoreHorizontal,
   Package,
+  PackageCheck,
   Plug,
   Receipt,
   Plus,
@@ -247,6 +248,13 @@ const MoreSheet = ({
             label="Import data"
             detail="Bring in contacts and deals"
             Icon={Import}
+            onPick={onOpenChange}
+          />
+          <MoreRow
+            to="/accountant"
+            label="Accountant's pack"
+            detail="Files for Xero, QuickBooks and Sage, and VAT workings"
+            Icon={PackageCheck}
             onPick={onOpenChange}
           />
           <MoreRow

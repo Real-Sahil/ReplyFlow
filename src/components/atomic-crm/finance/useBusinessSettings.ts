@@ -15,6 +15,7 @@ export type BusinessSettings = {
   prices_include_vat: boolean;
   invoice_prefix: string;
   next_invoice_number: number;
+  accounting_codes: { sales?: string; bills?: Record<string, string> };
 };
 
 export const BUSINESS_SETTINGS_KEY = ["business_settings"];
