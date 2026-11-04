@@ -41,4 +41,5 @@ jobs:
           version: latest
       - name: Deploy every function
         if: steps.token.outputs.present == 'true'
-        run: supabase functions deploy --project-ref "$PROJECT_REF"
+        # --yes: the CLI asks "Deploy N functions?" and cannot be answered in a pipeline.
+        run: supabase functions deploy --project-ref "$PROJECT_REF" --yes
