@@ -19,6 +19,7 @@ import {
   Wallet,
   HandCoins,
   CalendarCheck,
+  Store,
 } from "lucide-react";
 import { CanAccess, useGetList, useTranslate, useUserMenu } from "ra-core";
 import { Link, matchPath, useLocation } from "react-router";
@@ -322,6 +323,7 @@ const MoreMenu = () => (
         <MoreLink to="/bills" label="Bills and expenses" Icon={Wallet} />
         <MoreLink to="/money" label="Money book" Icon={BookOpen} />
         <MoreLink to="/stock" label="Stock" Icon={Boxes} />
+        <MoreLink to="/suppliers" label="Suppliers and shopping" Icon={Store} />
         <MoreLink to="/reports" label="Reports" Icon={ChartColumn} />
         <MoreLink
           to="/accountant"

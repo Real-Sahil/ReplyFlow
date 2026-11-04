@@ -21,6 +21,7 @@ import {
   type StockLevel,
   type StockMovement,
 } from "./stockTypes";
+import { SUPPLIERS_KEY, useItemExtras, useSuppliers } from "./useSuppliers";
 
 const today = () => new Date().toLocaleDateString("en-CA");
 
@@ -57,6 +58,18 @@ export const ItemDialog = ({
   );
   const [notes, setNotes] = useState(item?.notes ?? "");
   const [active, setActive] = useState(item?.active ?? true);
+  const { data: suppliers = [] } = useSuppliers();
+  const { data: extras = [] } = useItemExtras();
+  const saved = item ? extras.find((e) => e.id === item.id) : undefined;
+  // Picked by the person, or else what is saved on the item.
+  const [supplierPick, setSupplierPick] = useState<string | null>(null);
+  const [buyPick, setBuyPick] = useState<string | null>(null);
+  const supplier =
+    supplierPick ??
+    (saved?.supplier_id != null ? String(saved.supplier_id) : "");
+  const buy =
+    buyPick ??
+    (saved?.reorder_quantity != null ? String(saved.reorder_quantity) : "");
 
   const save = useMutation({
     mutationFn: async () => {
@@ -67,6 +80,8 @@ export const ItemDialog = ({
         reorder_level: reorder.trim() === "" ? null : Number(reorder),
         notes: notes.trim() || null,
         active,
+        supplier_id: supplier === "" ? null : Number(supplier),
+        reorder_quantity: buy.trim() === "" ? null : Number(buy),
       };
       const client = getSupabaseClient();
       const { error } = item
@@ -82,13 +97,16 @@ export const ItemDialog = ({
     onSuccess: () => {
       notify(item ? "Item updated" : "Item added", { type: "success" });
       queryClient.invalidateQueries({ queryKey: STOCK_KEY });
+      queryClient.invalidateQueries({ queryKey: SUPPLIERS_KEY });
       onClose();
     },
     onError: (e: Error) => notify(e.message, { type: "error" }),
   });
 
   const valid =
-    name.trim().length > 0 && (reorder.trim() === "" || Number(reorder) >= 0);
+    name.trim().length > 0 &&
+    (reorder.trim() === "" || Number(reorder) >= 0) &&
+    (buy.trim() === "" || Number(buy) > 0);
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
@@ -131,6 +149,31 @@ export const ItemDialog = ({
               value={reorder}
               onChange={(e) => setReorder(e.target.value)}
             />
+          </Field>
+          <Field id="s-buy" label="Buy this much when low (optional)">
+            <Input
+              id="s-buy"
+              inputMode="decimal"
+              value={buy}
+              onChange={(e) => setBuyPick(e.target.value)}
+            />
+          </Field>
+          <Field id="s-supplier" label="Usual supplier (optional)">
+            <select
+              id="s-supplier"
+              className="h-9 rounded-md border bg-transparent px-3 text-sm"
+              value={supplier}
+              onChange={(e) => setSupplierPick(e.target.value)}
+            >
+              <option value="">None set</option>
+              {suppliers
+                .filter((s) => s.active || String(s.id) === supplier)
+                .map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+            </select>
           </Field>
           <label className="flex items-center gap-2 self-end text-sm">
             <input

@@ -27,6 +27,7 @@ import {
   Wallet,
   HandCoins,
   CalendarCheck,
+  Store,
 } from "lucide-react";
 import { CanAccess, useGetList, useTranslate } from "ra-core";
 import {
@@ -332,6 +333,13 @@ const MoreSheet = ({
             label="Bills and expenses"
             detail="Supplier bills, receipts and VAT"
             Icon={Wallet}
+            onPick={onOpenChange}
+          />
+          <MoreRow
+            to="/suppliers"
+            label="Suppliers and shopping"
+            detail="Who you buy from, and what to reorder"
+            Icon={Store}
             onPick={onOpenChange}
           />
           <MoreRow
