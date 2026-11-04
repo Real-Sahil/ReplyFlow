@@ -17,7 +17,9 @@ import { ATTACHMENTS_BUCKET } from "../providers/commons/attachments";
 import { storagePath } from "../providers/supabase/organisationFolder";
 import { getSupabaseClient } from "../providers/supabase/supabase";
 import { CHANNEL_LABEL, MONEY_KEY, type MoneyEntry } from "./moneyTypes";
+import { useBusinessSettings } from "./useBusinessSettings";
 import { useMoneyCategories } from "./useMoney";
+import { VAT_RATES, type VatCode } from "./vatMath";
 
 const toPence = (pounds: string) => Math.round(Number(pounds || 0) * 100);
 const today = () => new Date().toLocaleDateString("en-CA");
@@ -41,6 +43,8 @@ export const MoneyDialog = ({
     action: "edit",
   });
   const { data: categories = [] } = useMoneyCategories();
+  const { data: settings } = useBusinessSettings();
+  const vatOn = !!settings?.vat_registered;
   const { data: orders = [] } = useGetList("orders", {
     pagination: { page: 1, perPage: 200 },
     sort: { field: "id", order: "DESC" },
@@ -67,6 +71,12 @@ export const MoneyDialog = ({
   const [channel, setChannel] = useState<string>(entry?.channel ?? "");
   const [order, setOrder] = useState(String(entry?.order_id ?? ""));
   const [regulated, setRegulated] = useState(entry?.regulated ?? false);
+  const [vatCode, setVatCode] = useState<VatCode>(
+    (entry?.vat_code as VatCode) ?? "S",
+  );
+  const [vat, setVat] = useState(
+    entry && entry.vat_pence ? (entry.vat_pence / 100).toFixed(2) : "",
+  );
   const [note, setNote] = useState(entry?.note ?? "");
   const [file, setFile] = useState<File | null>(null);
 
@@ -91,6 +101,13 @@ export const MoneyDialog = ({
   };
 
   const pence = toPence(amount);
+  // VAT applies to ordinary sales and costs, not to wages, tax, pensions or owner and finance moves.
+  const vatApplies =
+    vatOn &&
+    !!chosen &&
+    !chosen.regulated &&
+    !["People", "Owner and finance"].includes(chosen.grp);
+  const vatPence = vatApplies ? toPence(vat) : 0;
   const issues: string[] = [];
   if (!(pence > 0)) issues.push("Enter the amount.");
   if (note.trim().length < 3)
@@ -100,6 +117,7 @@ export const MoneyDialog = ({
   if (periodFrom && periodTo && periodTo < periodFrom)
     issues.push("The period ends before it starts.");
   if (!category) issues.push("Choose a category.");
+  if (vatPence > pence) issues.push("The VAT cannot be more than the amount.");
 
   const save = useMutation({
     mutationFn: async () => {
@@ -130,6 +148,8 @@ export const MoneyDialog = ({
         channel: direction === "in" && channel ? channel : null,
         order_id: order ? Number(order) : null,
         regulated,
+        vat_code: vatApplies && vatPence > 0 ? vatCode : "O",
+        vat_pence: vatPence,
         receipt_path,
         note: note.trim(),
       };
@@ -318,6 +338,33 @@ export const MoneyDialog = ({
               ))}
             </select>
           </Field>
+
+          {vatApplies && (
+            <>
+              <Field id="m-vat" label="Of which VAT (£)">
+                <Input
+                  id="m-vat"
+                  inputMode="decimal"
+                  value={vat}
+                  onChange={(e) => setVat(e.target.value)}
+                />
+              </Field>
+              <Field id="m-vatcode" label="VAT rate">
+                <select
+                  id="m-vatcode"
+                  className="h-9 rounded-md border bg-transparent px-2 text-sm"
+                  value={vatCode}
+                  onChange={(e) => setVatCode(e.target.value as VatCode)}
+                >
+                  {(Object.keys(VAT_RATES) as VatCode[]).map((code) => (
+                    <option key={code} value={code}>
+                      {VAT_RATES[code].label}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </>
+          )}
 
           <label className="flex items-center gap-2 text-sm sm:col-span-2">
             <input

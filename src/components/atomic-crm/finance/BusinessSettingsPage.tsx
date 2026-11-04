@@ -30,6 +30,7 @@ type Form = {
   prices_include_vat: boolean;
   invoice_prefix: string;
   code_sales: string;
+  code_bank: string;
   code_bills: Record<string, string>;
 };
 
@@ -46,6 +47,7 @@ const empty: Form = {
   prices_include_vat: true,
   invoice_prefix: "INV-",
   code_sales: "",
+  code_bank: "",
   code_bills: {},
 };
 
@@ -68,6 +70,7 @@ const fromSettings = (
         prices_include_vat: s.prices_include_vat,
         invoice_prefix: s.invoice_prefix,
         code_sales: s.accounting_codes?.sales ?? "",
+        code_bank: s.accounting_codes?.bank ?? "",
         code_bills: s.accounting_codes?.bills ?? {},
       }
     : { ...empty, organisation_name: organisationName };
@@ -153,6 +156,7 @@ export const BusinessSettingsPage = () => {
         invoice_prefix: form.invoice_prefix.trim() || "INV-",
         accounting_codes: {
           ...(form.code_sales.trim() ? { sales: form.code_sales.trim() } : {}),
+          ...(form.code_bank.trim() ? { bank: form.code_bank.trim() } : {}),
           bills: Object.fromEntries(
             Object.entries(form.code_bills)
               .map(([k, v]) => [k, v.trim()])
@@ -339,6 +343,17 @@ export const BusinessSettingsPage = () => {
             className="w-40"
             value={form.code_sales}
             onChange={(e) => set("code_sales", e.target.value)}
+          />
+        </Field>
+        <Field
+          id="code-bank"
+          label="Bank account code (for the bank-style files)"
+        >
+          <Input
+            id="code-bank"
+            className="w-40"
+            value={form.code_bank}
+            onChange={(e) => set("code_bank", e.target.value)}
           />
         </Field>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

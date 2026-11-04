@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router";
 import { BookOpen, Plus } from "lucide-react";
-import { useNotify } from "ra-core";
+import { useCanAccess, useNotify } from "ra-core";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,10 +10,13 @@ import { Label } from "@/components/ui/label";
 
 import { ExportDialogButton } from "../exports/ExportDialog";
 import { moneyLedgerExport } from "../exports/exportConfigs";
+import { fetchAllRows } from "../exports/exportPaging";
 import { periodBounds, type PeriodPreset } from "../exports/periods";
 import { getSupabaseClient } from "../providers/supabase/supabase";
 import { formatPence } from "../quotes/quoteMath";
 import { openReceipt } from "./BillsPage";
+import { downloadCashBookPdf, type CashRow } from "./cashBookPdf";
+import { useBusinessSettings } from "./useBusinessSettings";
 import { MoneyDialog } from "./MoneyDialog";
 import {
   CHANNEL_LABEL,
@@ -58,6 +61,48 @@ export const MoneyPage = () => {
     error,
   } = useMoney({ ...range, direction, state, category });
   const { data: categories = [] } = useMoneyCategories();
+  const { data: settings } = useBusinessSettings();
+  const { canAccess: isAdmin } = useCanAccess({
+    resource: "configuration",
+    action: "edit",
+  });
+  const [making, setMaking] = useState(false);
+
+  // The PDF covers everything that moved in the period: customer payments, supplier bills and
+  // money-book entries, not just the rows on this screen.
+  const makePdf = async () => {
+    setMaking(true);
+    try {
+      const rows = await fetchAllRows<CashRow>(async (start, end) => {
+        let query = getSupabaseClient().from("cash_book").select("*");
+        if (range.from) query = query.gte("entry_date", range.from);
+        if (range.to) query = query.lte("entry_date", range.to);
+        const response = await query
+          .order("entry_date", { ascending: true })
+          .range(start, end);
+        return {
+          data: (response.data ?? null) as unknown as CashRow[] | null,
+          error: response.error,
+        };
+      });
+      if (rows.length === 0) {
+        notify("Nothing in this period.", { type: "warning" });
+        return;
+      }
+      await downloadCashBookPdf({
+        businessName: settings?.trading_name || settings?.legal_name || "",
+        periodLabel: range.from
+          ? `${range.from} to ${range.to ?? range.from}`
+          : "All dates",
+        rows,
+        includesPrivate: !!isAdmin,
+      });
+    } catch (e) {
+      notify((e as Error).message, { type: "error" });
+    } finally {
+      setMaking(false);
+    }
+  };
 
   const live = entries.filter((e) => e.state !== "void");
   const sum = (xs: MoneyEntry[]) => xs.reduce((a, e) => a + e.amount_pence, 0);
@@ -95,6 +140,9 @@ export const MoneyPage = () => {
         <h1 className="flex min-w-0 flex-1 items-center gap-2 text-2xl font-semibold tracking-tight">
           <BookOpen className="size-6 text-muted-foreground" /> Money book
         </h1>
+        <Button size="sm" variant="outline" disabled={making} onClick={makePdf}>
+          {making ? "Making the PDF…" : "PDF report"}
+        </Button>
         <ExportDialogButton config={moneyLedgerExport()} />
         <Button size="sm" variant="outline" onClick={() => setEditing("out")}>
           <Plus /> Money out

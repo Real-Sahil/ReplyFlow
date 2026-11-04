@@ -32,6 +32,8 @@ export type MoneyEntry = {
   note: string;
   voided_at: string | null;
   void_reason: string | null;
+  vat_code: string;
+  vat_pence: number;
 };
 
 export type MoneyCategory = {

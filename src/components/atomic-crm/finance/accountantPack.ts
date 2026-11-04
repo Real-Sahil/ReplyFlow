@@ -6,6 +6,7 @@
 // differ between accountants' setups, so the account codes come from the business's own settings
 // and are left empty when not given; the readiness checks say so before anything is downloaded.
 
+import type { CashRow } from "./cashBookPdf";
 import { flatRateVatOwed } from "./vatMath";
 
 export type SalesRow = {
@@ -56,9 +57,30 @@ export type BillRow = {
   receipt_path: string | null;
 };
 
+// A row of the money book (money_ledger), for the VAT workings. Only entries that are done and
+// not voided count.
+export type EntryRow = {
+  id: number;
+  entry_date: string;
+  direction: "in" | "out";
+  category: string;
+  category_label: string;
+  state: "planned" | "done" | "void";
+  amount_pence: number;
+  counterparty: string | null;
+  order_reference: string | null;
+  order_note: string | null;
+  note: string;
+  vat_code: string;
+  vat_pence: number;
+  regulated: boolean;
+};
+
 export type AccountingCodes = {
   sales?: string;
   bills?: Record<string, string>;
+  // The bank account's code, for the bank-style files.
+  bank?: string;
 };
 
 export type Settings = {
@@ -387,21 +409,31 @@ export const vatWorkings = (
   bills: BillRow[],
   settings: Settings,
   periodLabel: string,
+  entries: EntryRow[] = [],
 ): VatWorkings => {
   const notes: string[] = [];
   const liveBills = bills.filter((b) => b.status !== "void");
+  // Money-book entries count only when they have happened and are not voided.
+  const liveEntries = entries.filter((e) => e.state === "done");
+  const entriesIn = liveEntries.filter(
+    (e) => e.direction === "in" && e.vat_code !== "O",
+  );
+  const entriesOut = liveEntries.filter(
+    (e) => e.direction === "out" && e.vat_code !== "O",
+  );
   const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0);
 
-  let box1 = sum(sales.map((s) => s.vat_pence));
-  let box4 = sum(
-    liveBills.filter((b) => b.vat_reclaimable).map((b) => b.vat_pence),
-  );
-  const box6 = sum(
-    sales.filter((s) => s.vat_code !== "O").map((s) => s.net_pence),
-  );
-  const box7 = sum(
-    liveBills.filter((b) => b.vat_code !== "O").map((b) => b.net_pence),
-  );
+  let box1 =
+    sum(sales.map((s) => s.vat_pence)) + sum(entriesIn.map((e) => e.vat_pence));
+  let box4 =
+    sum(liveBills.filter((b) => b.vat_reclaimable).map((b) => b.vat_pence)) +
+    sum(entriesOut.map((e) => e.vat_pence));
+  const box6 =
+    sum(sales.filter((s) => s.vat_code !== "O").map((s) => s.net_pence)) +
+    sum(entriesIn.map((e) => e.amount_pence - e.vat_pence));
+  const box7 =
+    sum(liveBills.filter((b) => b.vat_code !== "O").map((b) => b.net_pence)) +
+    sum(entriesOut.map((e) => e.amount_pence - e.vat_pence));
 
   if (!settings.vatRegistered) {
     notes.push(
@@ -413,7 +445,13 @@ export const vatWorkings = (
     settings.vatScheme === "flat_rate" &&
     settings.flatRatePercent != null
   ) {
-    const gross = sum(sales.map((s) => s.gross_pence));
+    const gross =
+      sum(sales.map((s) => s.gross_pence)) +
+      sum(
+        liveEntries
+          .filter((e) => e.direction === "in" && e.category === "sales_other")
+          .map((e) => e.amount_pence),
+      );
     box1 = flatRateVatOwed(gross, settings.flatRatePercent);
     box4 = 0;
     notes.push(
@@ -529,6 +567,25 @@ export const vatWorkings = (
     if (b.vat_reclaimable && b.vat_pence !== 0)
       rows.push({ Box: "Box 4", ...base });
   }
+  for (const e of liveEntries.filter((x) => x.vat_code !== "O")) {
+    const base = {
+      Date: ukDate(e.entry_date),
+      Document: e.category_label,
+      Order: e.order_reference ?? "",
+      "Customer or supplier": e.counterparty ?? "",
+      Description: e.note,
+      "Net (£)": pounds(e.amount_pence - e.vat_pence),
+      "VAT (£)": pounds(e.vat_pence),
+      "Order note": e.order_note ?? "",
+    };
+    if (e.direction === "in") {
+      rows.push({ Box: "Box 6", ...base });
+      if (e.vat_pence !== 0) rows.push({ Box: "Box 1", ...base });
+    } else {
+      rows.push({ Box: "Box 7", ...base });
+      if (e.vat_pence !== 0) rows.push({ Box: "Box 4", ...base });
+    }
+  }
   rows.push({}, ...notes.map((n) => ({ Box: "Note", Description: n })));
 
   return {
@@ -618,4 +675,94 @@ export const readiness = (
       text: `${voided} voided ${voided === 1 ? "bill is" : "bills are"} left out of the files and the VAT.`,
     });
   return out;
+};
+
+// ---- Bank-style files for the money book --------------------------------------------------
+//
+// One line per movement of money, signed, with the note as the description. Every accounting
+// product imports a file like this as bank transactions, so it works for any entry: wages, tax,
+// drawings, sales outside invoices. "entries" is only what was typed into the money book, which
+// is what the sales and bills files do not already cover; "all" adds customer payments and
+// supplier bills as well, for an accountant who works from the bank. Do not import both the
+// invoice and bill files and "all" for the same period, or the same sale is counted twice.
+
+export type BankScope = "entries" | "all";
+
+export const bankRows = (rows: CashRow[], scope: BankScope) =>
+  rows
+    .filter(
+      (r) => r.state === "done" && (scope === "all" || r.source === "entry"),
+    )
+    .sort(
+      (a, b) =>
+        a.entry_date.localeCompare(b.entry_date) ||
+        a.source.localeCompare(b.source),
+    );
+
+const describe = (r: CashRow) =>
+  lineText(
+    `${r.category_label}: ${r.note}`,
+    orderTrace(r.order_reference, r.order_summary, r.order_note),
+    r.regulated ? "Regulated payment" : null,
+  );
+
+export const bankFile = (
+  software: Software,
+  rows: CashRow[],
+  codes: AccountingCodes,
+  scope: BankScope,
+): Csv => {
+  const picked = bankRows(rows, scope);
+  const sign = (r: CashRow) => (r.direction === "in" ? 1 : -1);
+  if (software === "xero") {
+    return {
+      filename: "xero-bank-transactions",
+      columns: col("*Date", "*Amount", "Payee", "Description", "Reference"),
+      rows: picked.map((r) => ({
+        "*Date": ukDate(r.entry_date),
+        "*Amount": pounds(sign(r) * r.amount_pence),
+        Payee: r.counterparty ?? "",
+        Description: describe(r),
+        Reference: r.reference ?? r.order_reference ?? "",
+      })),
+    };
+  }
+  if (software === "quickbooks") {
+    return {
+      filename: "quickbooks-bank-transactions",
+      columns: col("Date", "Description", "Amount"),
+      rows: picked.map((r) => ({
+        Date: ukDate(r.entry_date),
+        Description: describe(r),
+        Amount: pounds(sign(r) * r.amount_pence),
+      })),
+    };
+  }
+  return {
+    filename: "sage50-bank-transactions",
+    columns: col(
+      "Type",
+      "Account Reference",
+      "Nominal A/C Ref",
+      "Department",
+      "Date",
+      "Reference",
+      "Details",
+      "Net Amount",
+      "Tax Code",
+      "Tax Amount",
+    ),
+    rows: picked.map((r) => ({
+      Type: r.direction === "in" ? "BR" : "BP",
+      "Account Reference": codes.bank ?? "",
+      "Nominal A/C Ref": "",
+      Department: "",
+      Date: ukDate(r.entry_date),
+      Reference: r.reference ?? r.order_reference ?? "",
+      Details: describe(r),
+      "Net Amount": pounds(r.amount_pence - (r.vat_pence ?? 0)),
+      "Tax Code": (r.vat_pence ?? 0) > 0 ? "T1" : "T9",
+      "Tax Amount": pounds(r.vat_pence ?? 0),
+    })),
+  };
 };

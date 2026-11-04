@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { PackageCheck } from "lucide-react";
+import { useCanAccess } from "ra-core";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +12,11 @@ import { fetchAllRows } from "../exports/exportPaging";
 import { periodBounds, type PeriodPreset } from "../exports/periods";
 import { getSupabaseClient } from "../providers/supabase/supabase";
 import { formatPence } from "../quotes/quoteMath";
+import { downloadCashBookPdf, type CashRow } from "./cashBookPdf";
 import {
+  bankFile,
+  type BankScope,
+  type EntryRow,
   quickbooksBills,
   quickbooksSales,
   readiness,
@@ -69,17 +74,24 @@ export const AccountantPackPage = () => {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [software, setSoftware] = useState<Software>("xero");
+  const [scope, setScope] = useState<BankScope>("entries");
+  const { canAccess: isAdmin } = useCanAccess({
+    resource: "configuration",
+    action: "edit",
+  });
   const range = periodBounds(preset, { from, to });
   const { data: settings } = useBusinessSettings();
 
   const { data, isPending, error } = useQuery({
     queryKey: ["accountant_pack", range],
     queryFn: async () => {
-      const [sales, bills] = await Promise.all([
+      const [sales, bills, entries, cash] = await Promise.all([
         fetchRows<SalesRow>("invoice_ledger", "tax_point", range, "number"),
         fetchRows<BillRow>("bill_ledger", "bill_date", range, "id"),
+        fetchRows<EntryRow>("money_ledger", "entry_date", range, "id"),
+        fetchRows<CashRow>("cash_book", "entry_date", range, "source_id"),
       ]);
-      return { sales, bills };
+      return { sales, bills, entries, cash };
     },
   });
 
@@ -121,12 +133,20 @@ export const AccountantPackPage = () => {
         csv: sage50(data.sales, live, codes, registered),
       });
     }
-    const workings = vatWorkings(data.sales, data.bills, opts, label);
+    const workings = vatWorkings(
+      data.sales,
+      data.bills,
+      opts,
+      label,
+      data.entries,
+    );
+    const bank = bankFile(software, data.cash, codes, scope);
     if (registered)
       files.push({ name: "VAT return workings", csv: workings.csv });
     return {
       label,
       files,
+      bank,
       workings,
       checks: readiness(data.sales, data.bills, codes, {
         ...opts,
@@ -134,7 +154,7 @@ export const AccountantPackPage = () => {
         vatNumber: settings.vat_number,
       }),
     };
-  }, [data, settings, software, range.from, range.to]);
+  }, [data, settings, software, scope, range.from, range.to]);
 
   const download = (csv: Csv, label: string) =>
     downloadCsv(
@@ -317,6 +337,82 @@ export const AccountantPackPage = () => {
               usual UK setup for each product; if your accountant's differ, they
               can change them in the file before importing.
             </p>
+          </section>
+
+          <section className="flex flex-col gap-3 rounded-2xl bg-card p-5 shadow-[var(--shadow-card)]">
+            <h2 className="text-base font-semibold">
+              Everything else: the money book
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Wages, tax, owner drawings, sales taken outside invoices and every
+              other entry, as bank-style lines your accountant's software
+              imports, each with its note. The PDF is a readable report of the
+              same period.
+            </p>
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="pack-scope">What to include</Label>
+              <select
+                id="pack-scope"
+                className="h-9 rounded-md border bg-transparent px-3 text-sm"
+                value={scope}
+                onChange={(e) => setScope(e.target.value as BankScope)}
+              >
+                <option value="entries">
+                  Only money-book entries (the sales and bills files cover the
+                  rest)
+                </option>
+                <option value="all">
+                  Everything that moved, including customer payments and paid
+                  bills
+                </option>
+              </select>
+              {scope === "all" && (
+                <p className="text-xs text-warning">
+                  Do not import this together with the sales and bills files for
+                  the same period. The same sale or bill would be counted twice.
+                </p>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
+              <span>
+                Bank-style file
+                <span className="ml-2 text-muted-foreground">
+                  {view.bank.rows.length} rows
+                </span>
+              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={view.bank.rows.length === 0}
+                onClick={() => download(view.bank, view.label)}
+              >
+                Download
+              </Button>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
+              <span>
+                PDF report
+                <span className="ml-2 text-muted-foreground">
+                  {data.cash.length} lines
+                </span>
+              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={data.cash.length === 0}
+                onClick={() =>
+                  downloadCashBookPdf({
+                    businessName:
+                      settings?.trading_name || settings?.legal_name || "",
+                    periodLabel: view.label,
+                    rows: data.cash,
+                    includesPrivate: !!isAdmin,
+                  })
+                }
+              >
+                Download
+              </Button>
+            </div>
           </section>
         </>
       )}

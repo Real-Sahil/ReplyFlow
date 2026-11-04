@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
+import type { CashRow } from "./cashBookPdf";
 import {
+  bankFile,
   orderTrace,
   readiness,
   sage50,
@@ -8,6 +10,7 @@ import {
   xeroBills,
   xeroSales,
   type BillRow,
+  type EntryRow,
   type SalesRow,
 } from "./accountantPack";
 
@@ -188,5 +191,118 @@ describe("helpers", () => {
     expect(ukDate("2026-11-02")).toBe("02/11/2026");
     expect(orderTrace("ORD-1", "Sofa", null)).toBe("ORD-1: Sofa");
     expect(orderTrace(null, "Sofa", "x")).toBe("");
+  });
+});
+
+describe("money-book entries in the VAT workings", () => {
+  const entry = (o: Partial<EntryRow> = {}): EntryRow => ({
+    id: 1,
+    entry_date: "2026-11-05",
+    direction: "in",
+    category: "sales_other",
+    category_label: "Sales taken outside invoices",
+    state: "done",
+    amount_pence: 12000,
+    counterparty: "Facebook buyer",
+    order_reference: null,
+    order_note: null,
+    note: "Facebook sale, cushion set",
+    vat_code: "S",
+    vat_pence: 2000,
+    regulated: false,
+    ...o,
+  });
+  const entries = [
+    entry(),
+    entry({
+      id: 2,
+      direction: "out",
+      category: "software_out",
+      category_label: "Software",
+      amount_pence: 6000,
+      vat_pence: 1000,
+      note: "Design tool",
+    }),
+    entry({
+      id: 3,
+      direction: "out",
+      category: "wages",
+      category_label: "Wages",
+      amount_pence: 90000,
+      vat_code: "O",
+      vat_pence: 0,
+      note: "Pay",
+      regulated: true,
+    }),
+    entry({ id: 4, state: "planned", amount_pence: 99999, vat_pence: 9999 }),
+    entry({ id: 5, state: "void", amount_pence: 77777, vat_pence: 7777 }),
+  ];
+  it("counts done entries only, and leaves wages out of the VAT boxes", () => {
+    const { boxes } = vatWorkings([], [], standard, "Nov", entries);
+    expect(boxes.box1).toBe(2000);
+    expect(boxes.box4).toBe(1000);
+    expect(boxes.box6).toBe(10000);
+    expect(boxes.box7).toBe(5000);
+  });
+});
+
+describe("bank-style files", () => {
+  const cash = (o: Partial<CashRow> = {}): CashRow => ({
+    source: "entry",
+    source_id: 1,
+    entry_date: "2026-11-05",
+    direction: "out",
+    category_group: "People",
+    category_label: "Wages and salaries",
+    state: "done",
+    amount_pence: 90000,
+    counterparty: "A. Worker",
+    payment_method: "bank_transfer",
+    reference: null,
+    channel: null,
+    order_reference: null,
+    order_summary: null,
+    order_note: null,
+    regulated: true,
+    receipt_path: null,
+    note: "Pay for the week",
+    void_reason: null,
+    vat_pence: 0,
+    ...o,
+  });
+  const rows = [
+    cash(),
+    cash({
+      direction: "in",
+      category_label: "Sales taken outside invoices",
+      amount_pence: 12000,
+      vat_pence: 2000,
+      regulated: false,
+      note: "Facebook sale",
+      order_reference: "ORD-00005",
+      order_summary: "Oak table",
+      order_note: "Delivery by van",
+      counterparty: null,
+    }),
+    cash({ source: "bill", note: "Boards" }),
+    cash({ state: "planned" }),
+    cash({ state: "void" }),
+  ];
+  it("signs amounts, carries the note and order, and skips planned, voided and bills", () => {
+    const x = bankFile("xero", rows, {}, "entries");
+    expect(x.rows).toHaveLength(2);
+    expect(x.rows[0]["*Amount"]).toBe("-900.00");
+    expect(x.rows[1]["*Amount"]).toBe("120.00");
+    expect(String(x.rows[0].Description)).toContain("Regulated payment");
+    expect(String(x.rows[1].Description)).toContain(
+      "ORD-00005: Oak table. Order note: Delivery by van",
+    );
+    expect(bankFile("xero", rows, {}, "all").rows).toHaveLength(3);
+  });
+  it("uses the receipts and payments types for Sage and the bank code from settings", () => {
+    const s = bankFile("sage50", rows, { bank: "1200" }, "entries");
+    expect(s.rows.map((r) => r.Type)).toEqual(["BP", "BR"]);
+    expect(s.rows[1]["Tax Code"]).toBe("T1");
+    expect(s.rows[0]["Account Reference"]).toBe("1200");
   });
 });
