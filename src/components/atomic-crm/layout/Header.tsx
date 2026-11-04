@@ -246,11 +246,13 @@ const MoreMenu = () => (
         </CanAccess>
         <MoreLink to="/companies" label="Companies" Icon={Building2} />
         <MoreLink to={ImportPage.path} label="Import data" Icon={Import} />
+      </MoreGroup>
+      <MoreGroup title="Money">
         <MoreLink to="/invoices" label="Invoices" Icon={Receipt} />
-        <MoreLink to="/reports" label="Reports" Icon={ChartColumn} />
-        <MoreLink to="/stock" label="Stock" Icon={Boxes} />
-        <MoreLink to="/money" label="Money book" Icon={BookOpen} />
         <MoreLink to="/bills" label="Bills and expenses" Icon={Wallet} />
+        <MoreLink to="/money" label="Money book" Icon={BookOpen} />
+        <MoreLink to="/stock" label="Stock" Icon={Boxes} />
+        <MoreLink to="/reports" label="Reports" Icon={ChartColumn} />
         <MoreLink
           to="/accountant"
           label="Accountant's pack"

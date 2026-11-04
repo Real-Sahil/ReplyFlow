@@ -1,7 +1,4 @@
-import { TransactionsPage } from "../orders/TransactionsPage";
-import { TrackedLinksPage } from "../links/TrackedLinksPage";
 import { PostImport } from "../posts/PostImport";
-import { AccountsPage } from "../accounts/AccountsPage";
 import type {
   CoreAdminProps,
   AuthProvider,
@@ -43,17 +40,9 @@ import {
 import sales from "../sales";
 import { SettingsPageMobile } from "../settings/SettingsPageMobile";
 import { ProfilePage } from "../settings/ProfilePage";
-import { BusinessSettingsPage } from "../finance/BusinessSettingsPage";
-import { InvoicesPage } from "../finance/InvoicesPage";
-import { BillsPage } from "../finance/BillsPage";
-import { MoneyPage } from "../finance/MoneyPage";
-import { StockPage } from "../stock/StockPage";
-import { ReportsPage } from "../finance/ReportsPage";
-import { AccountantPackPage } from "../finance/AccountantPackPage";
 import { asMobileScreen } from "../layout/MobileScreen";
+import { lazyScreen } from "./lazyScreen";
 import { SettingsPage } from "../settings/SettingsPage";
-import { ErrorLogPage } from "../errors/ErrorLogPage";
-import { FacebookConnectionPage } from "../facebook/FacebookConnectionPage";
 import {
   CONFIGURATION_STORE_KEY,
   type ConfigurationContextValue,
@@ -79,6 +68,47 @@ import { ContactListMobile } from "../contacts/ContactList.tsx";
 import { ContactShow } from "../contacts/ContactShow.tsx";
 import { CompanyShow } from "../companies/CompanyShow.tsx";
 import { NoteShowPage } from "../notes/NoteShowPage.tsx";
+
+// Screens that are only opened now and then load on demand.
+const BusinessSettingsPage = lazyScreen(
+  () => import("../finance/BusinessSettingsPage"),
+  "BusinessSettingsPage",
+);
+const InvoicesPage = lazyScreen(
+  () => import("../finance/InvoicesPage"),
+  "InvoicesPage",
+);
+const BillsPage = lazyScreen(() => import("../finance/BillsPage"), "BillsPage");
+const MoneyPage = lazyScreen(() => import("../finance/MoneyPage"), "MoneyPage");
+const StockPage = lazyScreen(() => import("../stock/StockPage"), "StockPage");
+const ReportsPage = lazyScreen(
+  () => import("../finance/ReportsPage"),
+  "ReportsPage",
+);
+const AccountantPackPage = lazyScreen(
+  () => import("../finance/AccountantPackPage"),
+  "AccountantPackPage",
+);
+const ErrorLogPage = lazyScreen(
+  () => import("../errors/ErrorLogPage"),
+  "ErrorLogPage",
+);
+const FacebookConnectionPage = lazyScreen(
+  () => import("../facebook/FacebookConnectionPage"),
+  "FacebookConnectionPage",
+);
+const TransactionsPage = lazyScreen(
+  () => import("../orders/TransactionsPage"),
+  "TransactionsPage",
+);
+const TrackedLinksPage = lazyScreen(
+  () => import("../links/TrackedLinksPage"),
+  "TrackedLinksPage",
+);
+const AccountsPage = lazyScreen(
+  () => import("../accounts/AccountsPage"),
+  "AccountsPage",
+);
 
 const defaultStore = localStorageStore(undefined, "CRM");
 

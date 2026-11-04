@@ -1,9 +1,7 @@
-import { ProductCreate } from "./ProductCreate";
-import { ProductEdit } from "./ProductEdit";
-import { ProductList } from "./ProductList";
+import { lazyScreen } from "../root/lazyScreen";
 
 export default {
-  list: ProductList,
-  create: ProductCreate,
-  edit: ProductEdit,
+  list: lazyScreen(() => import("./ProductList"), "ProductList"),
+  create: lazyScreen(() => import("./ProductCreate"), "ProductCreate"),
+  edit: lazyScreen(() => import("./ProductEdit"), "ProductEdit"),
 };

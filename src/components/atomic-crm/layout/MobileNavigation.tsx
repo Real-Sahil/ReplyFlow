@@ -256,32 +256,13 @@ const MoreSheet = ({
             Icon={Import}
             onPick={onOpenChange}
           />
+        </MoreGroup>
+        <MoreGroup title="Money">
           <MoreRow
-            to="/accountant"
-            label="Accountant's pack"
-            detail="Files for Xero, QuickBooks and Sage, and VAT workings"
-            Icon={PackageCheck}
-            onPick={onOpenChange}
-          />
-          <MoreRow
-            to="/reports"
-            label="Reports"
-            detail="Profit and loss, sales channels, cash forecast"
-            Icon={ChartColumn}
-            onPick={onOpenChange}
-          />
-          <MoreRow
-            to="/stock"
-            label="Stock"
-            detail="What you hold, buy and use in production"
-            Icon={Boxes}
-            onPick={onOpenChange}
-          />
-          <MoreRow
-            to="/money"
-            label="Money book"
-            detail="Everything in and out, wages and tax included"
-            Icon={BookOpen}
+            to="/invoices"
+            label="Invoices"
+            detail="Invoices and credit notes, by order"
+            Icon={Receipt}
             onPick={onOpenChange}
           />
           <MoreRow
@@ -292,10 +273,31 @@ const MoreSheet = ({
             onPick={onOpenChange}
           />
           <MoreRow
-            to="/invoices"
-            label="Invoices"
-            detail="Invoices and credit notes, by order"
-            Icon={Receipt}
+            to="/money"
+            label="Money book"
+            detail="Everything in and out, wages and tax included"
+            Icon={BookOpen}
+            onPick={onOpenChange}
+          />
+          <MoreRow
+            to="/stock"
+            label="Stock"
+            detail="What you hold, buy and use in production"
+            Icon={Boxes}
+            onPick={onOpenChange}
+          />
+          <MoreRow
+            to="/reports"
+            label="Reports"
+            detail="Profit and loss, sales channels, cash forecast"
+            Icon={ChartColumn}
+            onPick={onOpenChange}
+          />
+          <MoreRow
+            to="/accountant"
+            label="Accountant's pack"
+            detail="Files for Xero, QuickBooks and Sage, and VAT workings"
+            Icon={PackageCheck}
             onPick={onOpenChange}
           />
           <CanAccess resource="configuration" action="edit">

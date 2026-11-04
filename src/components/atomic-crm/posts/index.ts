@@ -1,3 +1,9 @@
-import { PostCreate, PostEdit, PostList } from "./PostScreens";
+import { lazyScreen } from "../root/lazyScreen";
 
-export default { list: PostList, create: PostCreate, edit: PostEdit };
+const screens = () => import("./PostScreens");
+
+export default {
+  list: lazyScreen(screens, "PostList"),
+  create: lazyScreen(screens, "PostCreate"),
+  edit: lazyScreen(screens, "PostEdit"),
+};

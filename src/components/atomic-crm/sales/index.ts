@@ -1,12 +1,10 @@
 import type { Sale } from "../types";
-import { SalesCreate } from "./SalesCreate";
-import { SalesEdit } from "./SalesEdit";
-import { SalesList } from "./SalesList";
+import { lazyScreen } from "../root/lazyScreen";
 
 export default {
-  list: SalesList,
-  create: SalesCreate,
-  edit: SalesEdit,
+  list: lazyScreen(() => import("./SalesList"), "SalesList"),
+  create: lazyScreen(() => import("./SalesCreate"), "SalesCreate"),
+  edit: lazyScreen(() => import("./SalesEdit"), "SalesEdit"),
   recordRepresentation: (record: Sale) =>
     `${record.first_name} ${record.last_name}`,
 };

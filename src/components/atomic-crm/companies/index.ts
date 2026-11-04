@@ -1,11 +1,8 @@
-import { CompanyList } from "./CompanyList";
-import { CompanyCreate } from "./CompanyCreate";
-import { CompanyShow } from "./CompanyShow";
-import { CompanyEdit } from "./CompanyEdit";
+import { lazyScreen } from "../root/lazyScreen";
 
 export default {
-  list: CompanyList,
-  create: CompanyCreate,
-  edit: CompanyEdit,
-  show: CompanyShow,
+  list: lazyScreen(() => import("./CompanyList"), "CompanyList"),
+  create: lazyScreen(() => import("./CompanyCreate"), "CompanyCreate"),
+  edit: lazyScreen(() => import("./CompanyEdit"), "CompanyEdit"),
+  show: lazyScreen(() => import("./CompanyShow"), "CompanyShow"),
 };

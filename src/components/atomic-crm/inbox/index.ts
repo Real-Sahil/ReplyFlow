@@ -1,3 +1,3 @@
-import { InboxList } from "./InboxList";
+import { lazyScreen } from "../root/lazyScreen";
 
-export default { list: InboxList };
+export default { list: lazyScreen(() => import("./InboxList"), "InboxList") };
