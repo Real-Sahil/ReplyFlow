@@ -115,7 +115,7 @@ alter table public.business_settings add column books_locked_until date;
 grant insert (books_locked_until), update (books_locked_until) on public.business_settings to authenticated;
 
 -- TG_ARGV[0]: the dates that decide whether a record is in a locked period (comma separated).
--- TG_ARGV[1]: columns that may still be changed on a record in a locked period (optional).
+-- TG_ARGV[1] is no longer used: what may still change on a locked record is listed in the function.
 create or replace function private.enforce_books_lock()
 returns trigger
 language plpgsql
@@ -126,7 +126,7 @@ declare
   v_lock date;
   v_org bigint;
   v_dates text[] := string_to_array(tg_argv[0], ',');
-  v_free text[] := case when tg_argv[1] is null then array[]::text[] else string_to_array(tg_argv[1], ',') end;
+  v_protected text[];
   v_row jsonb;
   v_col text;
   v_day date;
@@ -141,11 +141,24 @@ begin
     return new;
   end if;
 
-  -- Changing only the free columns of an existing record (for example marking an old bill as paid
-  -- today) is not changing the period that was locked.
-  if tg_op = 'UPDATE'
-     and (to_jsonb(new) - v_free) = (to_jsonb(old) - v_free) then
-    return new;
+  -- A record already in a locked period may still have its payment details filled in (for example an
+  -- October bill marked as paid in November). Changing any of the fields below counts as changing the
+  -- period, so is refused. Fields the database keeps up to date itself are not on the list.
+  v_protected := case tg_table_name
+    when 'bills' then array['bill_date', 'supplier_name', 'supplier_vat_number', 'reference', 'category',
+      'description', 'order_id', 'vat_code', 'net_pence', 'vat_pence', 'vat_reclaimable', 'voided_at', 'void_reason']
+    when 'money_entries' then array['direction', 'category', 'status', 'entry_date', 'period_from', 'period_to',
+      'amount_pence', 'counterparty', 'payment_method', 'reference', 'channel', 'order_id', 'regulated',
+      'vat_code', 'vat_pence', 'note', 'voided_at', 'void_reason']
+    else null
+  end;
+  if tg_op = 'UPDATE' and v_protected is not null then
+    if not exists (
+      select 1 from unnest(v_protected) as k
+      where (to_jsonb(new) -> k) is distinct from (to_jsonb(old) -> k)
+    ) then
+      return new;
+    end if;
   end if;
 
   for v_i in 1..2 loop
