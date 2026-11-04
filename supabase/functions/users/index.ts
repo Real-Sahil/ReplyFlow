@@ -10,7 +10,8 @@ import {
   normalizeSecondaryEmails,
 } from "./secondaryEmails.ts";
 
-// A new person joins the organisation of the administrator who invites them.
+// A new person joins the organisation of the administrator who invites them. No email is sent at any
+// point: the administrator hands over a one-time password (see generatePassword and reset_password).
 async function updateSaleDisabled(
   user_id: string,
   disabled: boolean,
