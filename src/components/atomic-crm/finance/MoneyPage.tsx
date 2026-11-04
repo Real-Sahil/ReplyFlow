@@ -17,6 +17,7 @@ import { formatPence } from "../quotes/quoteMath";
 import { openReceipt } from "./BillsPage";
 import { downloadCashBookPdf, type CashRow } from "./cashBookPdf";
 import { useIsAccountant } from "../misc/useIsAccountant";
+import { MileageDialog } from "./MileageDialog";
 import { useBusinessSettings } from "./useBusinessSettings";
 import { MoneyDialog } from "./MoneyDialog";
 import {
@@ -44,6 +45,7 @@ const day = (value: string) =>
 export const MoneyPage = () => {
   const notify = useNotify();
   const readOnly = useIsAccountant();
+  const [mileage, setMileage] = useState(false);
   const queryClient = useQueryClient();
   const [preset, setPreset] = useState<PeriodPreset>("this_month");
   const [from, setFrom] = useState("");
@@ -154,6 +156,13 @@ export const MoneyPage = () => {
               onClick={() => setEditing("out")}
             >
               <Plus /> Money out
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setMileage(true)}
+            >
+              Mileage
             </Button>
             <Button size="sm" onClick={() => setEditing("in")}>
               <Plus /> Money in
@@ -437,6 +446,7 @@ export const MoneyPage = () => {
           </div>
         </div>
       )}
+      {mileage ? <MileageDialog onClose={() => setMileage(false)} /> : null}
     </div>
   );
 };

@@ -15,6 +15,7 @@ import { usePeople, usePersonDocuments } from "../people/usePeople";
 import { useOwedByCustomers, useOwedToSuppliers } from "../finance/useOwed";
 import { formatPence } from "../quotes/quoteMath";
 import { DashboardActivityLog } from "./DashboardActivityLog";
+import { SetupChecklist } from "./SetupChecklist";
 import { TasksList } from "./TasksList";
 
 type InboxRow = {
@@ -272,6 +273,8 @@ export const TodayDashboard = () => {
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
         <div className="flex min-w-0 flex-col gap-8">
+          {isAdmin ? <SetupChecklist /> : null}
+
           <Group
             title="Needs attention"
             to="/messenger_inbox"
