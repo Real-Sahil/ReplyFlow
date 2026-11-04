@@ -81,6 +81,9 @@ export function Markdown({ children, className }: MarkdownProps) {
         "[&_hr]:border-t [&_hr]:border-border [&_hr]:my-4",
         className,
       )}
+      // html is produced above by marked and then cleaned with DOMPurify (postprocess), so it is
+      // safe to insert.
+      // nosemgrep: typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml
       dangerouslySetInnerHTML={{ __html: html }}
     />
   );
