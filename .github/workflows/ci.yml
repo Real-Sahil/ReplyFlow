@@ -36,3 +36,52 @@ jobs:
       - run: npm run test:unit:app
         env:
           CI: true
+
+  database-tests:
+    name: Two-organisation isolation (database)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      # Starts a local Supabase and applies every migration to a fresh database.
+      - run: supabase start
+      - name: Two-organisation isolation test
+        run: psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -v ON_ERROR_STOP=1 -f supabase/tests/two_organisations.test.sql
+
+  dependency-audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # Fails on a new critical advisory. High ones that only come through the react-admin
+      # packages have no upstream fix yet and are tracked in docs/audit/SECURITY_AUDIT.md.
+      - run: npm audit --omit=dev --audit-level=critical
+
+  secret-scan:
+    name: Secret scan (history)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  static-analysis:
+    name: Static analysis (Semgrep)
+    runs-on: ubuntu-latest
+    # Reports findings without blocking until the first run has been reviewed.
+    continue-on-error: true
+    container:
+      image: semgrep/semgrep
+    steps:
+      - uses: actions/checkout@v4
+      - run: semgrep scan --config p/typescript --config p/owasp-top-ten --metrics=off --error --exclude node_modules --exclude dist

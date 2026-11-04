@@ -2,6 +2,11 @@
 // page with campaign tags added. Targets come only from the tracked_links table, so this
 // cannot be used to send people anywhere else.
 
+import { checkRateLimit, tooManyRequests } from "../_shared/rateLimit.ts";
+import {
+  clientAddress,
+  TRACKED_LINK_LIMIT,
+} from "../_shared/rateLimitRules.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { buildRedirect, CODE_PATTERN } from "./goRules.ts";
 
@@ -13,6 +18,12 @@ const plain = (status: number, message: string) =>
 
 Deno.serve(async (req: Request) => {
   if (req.method !== "GET") return plain(405, "Method Not Allowed");
+
+  const rate = await checkRateLimit(
+    `go:${clientAddress(req.headers)}`,
+    TRACKED_LINK_LIMIT,
+  );
+  if (!rate.allowed) return tooManyRequests(rate.retryAfter);
 
   const code = new URL(req.url).searchParams.get("c") ?? "";
   if (!CODE_PATTERN.test(code)) return plain(404, "This link is not valid.");

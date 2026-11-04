@@ -41,7 +41,7 @@ The real isolation problems are in the **Edge Functions**, which use the service
 | S-04 | Medium | Confirmed | Organisation 1 is hard-coded in several functions |
 | S-05 | High | Confirmed (npm audit) | 15 dependency advisories including a critical in `dompurify` |
 | S-06 | Medium | Confirmed (absence) | No security headers or CSP defined in the repo |
-| S-07 | Medium | Confirmed | Rate limiting covers 2 of 22 functions and fails open |
+| S-07 | Low | Confirmed (corrected) | Signed-in functions are rate limited per user; limiter fails open; public `go` was unlimited (now limited) |
 | S-08 | Low | Confirmed | Storage buckets have no size or type limits; one is public |
 | S-09 | Medium | Confirmed | Isolation SQL tests and browser tests do not run in CI |
 | S-10 | Low | Confirmed | Insert policies on three tables rely on a trigger for tenant scoping |
@@ -122,13 +122,17 @@ I read the severity and ranges from `npm audit`; I did not read each advisory's 
 
 **Acceptance.** `curl -I` shows the headers; the app works with the CSP enforced; Lighthouse "Best practices" passes the CSP audit.
 
-### S-07 — Rate limiting is thin and fails open (Medium, Confirmed)
+### S-07 — Rate limiting: mostly present; two gaps (Low, Confirmed) — CORRECTED
 
-**Evidence.** `checkRateLimit` is used only in `onboard` and `web_enquiry`. `messenger_send`, `comments_action`, `post_publish`, `meta_connect`, `meta_connection`, `meta_pages`, `users`, `update_password`, `merge_contacts` have none. The limiter returns `allowed: true` on any error (`_shared/rateLimit.ts`).
+**Correction.** The first version of this finding said only `onboard` and `web_enquiry` were rate limited. That was wrong. `_shared/authentication.ts` (`UserMiddleware`, line 91) applies a per-user, per-function limit to every signed-in function, using the table in `_shared/rateLimitRules.ts` (for example `messenger_send` 60/minute, `post_publish` 20/minute, `update_password` 5/minute). I had only searched the function entry files, not the shared middleware.
 
-**Impact.** A signed-in (or compromised) account can send unlimited Messenger replies and publishes, burning Meta's quota and risking an action block (which S-02 then spreads to every tenant). Failing open is a defensible choice for availability; it should be a conscious one.
+**What remains.**
+- The limiter fails open if the counter cannot be reached (a deliberate availability choice, but unmonitored).
+- Limits are per user, not per organisation, so several users in one business can together exceed what one person could.
+- The public `go` (tracked links) function wrote a click row per request with no limit. **Fixed in Phase 1**: 120 requests per minute per address.
+- `order_tracking` is public but guarded by a random UUID token, so enumeration is not realistic.
 
-**Remediation.** Add per-organisation and per-user limits to the send/publish/comment paths; alert when the limiter itself errors.
+**Remediation still open.** Alert when the limiter errors; consider an organisation-level cap on sends.
 
 ### S-08 — Storage bucket hardening (Low, Confirmed)
 
@@ -200,6 +204,6 @@ CSRF (the app uses bearer tokens, so classic cookie CSRF does not apply, but I d
 | P1 | S-06 security headers / CSP | S–M | none |
 | P1 | S-09 CI job for SQL isolation tests | M | Supabase local stack in CI |
 | P1 | S-03 fail-closed Page allowlist | S | none |
-| P1 | S-07 rate limits on send/publish/comment | M | S-02 |
+| P1 | S-07 limiter alerting and organisation cap | S | none |
 | P2 | S-04 retire org-1 special cases | M | S-01, S-02 |
 | P2 | S-08, S-10, S-11 hardening | S | none |

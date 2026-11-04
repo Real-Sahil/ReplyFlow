@@ -25,6 +25,8 @@ export const FUNCTION_LIMITS: Record<string, Limit> = {
 // Public endpoints are limited per client address instead.
 export const SIGNUP_LIMIT: Limit = { limit: 5, windowSeconds: HOUR };
 export const ENQUIRY_LIMIT: Limit = { limit: 60, windowSeconds: HOUR };
+// Tracked links are public and each click writes a row, so one address cannot loop on them.
+export const TRACKED_LINK_LIMIT: Limit = { limit: 120, windowSeconds: MINUTE };
 
 export const limitFor = (functionName: string): Limit =>
   FUNCTION_LIMITS[functionName] ?? DEFAULT_LIMIT;

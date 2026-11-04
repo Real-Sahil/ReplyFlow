@@ -49,7 +49,7 @@ Three things stand between it and "genuinely isolated, enterprise-grade":
 | Policies that rely on triggers | `bills`, `stock_items`, `stock_movements` inserts (S-10) | Fragile if a trigger changes |
 | Large entry script | 2.25 MB | See Performance |
 | Migrations are manual | Applied via MCP/SQL editor, not CI | No automatic drift detection |
-| Rate limiter fails open | `_shared/rateLimit.ts` | Intentional, but unmonitored |
+| Rate limiter fails open | `_shared/rateLimit.ts` | Intentional, but unmonitored. Signed-in functions are limited per user by the shared middleware |
 
 ## Performance findings
 
@@ -94,7 +94,7 @@ Order matters: fix isolation first, then guard it, then improve the experience o
 | 1.1 | CI job: local Supabase, apply migrations, run `supabase/tests/*.sql` | M | none | Weakening a policy fails CI |
 | 1.2 | Two-organisation isolation test (reads, writes, deletes, storage, each RPC, webhook routing) | M | 1.1 | Org A cannot read, change, delete or send using org B's data or Page |
 | 1.3 | Security headers and CSP (`vercel.json`), report-only first | S–M | none | `curl -I` shows headers; no CSP violations on core screens before enforcing |
-| 1.4 | Rate limits on send, publish, comment and Page-connect paths | M | 0.3 | Excess calls return 429; limiter errors are logged and alerted |
+| 1.4 | Limiter alerting; limit on public `go` (done); optional organisation-level cap | S | 0.3 | Public tracked links return 429 when looped; limiter errors are visible |
 | 1.5 | Gitleaks over full history; Semgrep and OSV in CI | S | none | CI fails on new findings; any historical secret rotated |
 | 1.6 | Playwright core-journey suite plus axe in CI | M | a test login | Five journeys at 390 px and 1280 px; zero serious/critical axe violations |
 
