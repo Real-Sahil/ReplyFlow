@@ -28,6 +28,7 @@ import {
   HandCoins,
   CalendarCheck,
   Store,
+  UserRound,
 } from "lucide-react";
 import { CanAccess, useGetList, useTranslate } from "ra-core";
 import {
@@ -289,6 +290,15 @@ const MoreSheet = ({
             Icon={Building2}
             onPick={onOpenChange}
           />
+          <CanAccess resource="configuration" action="edit">
+            <MoreRow
+              to="/people"
+              label="People"
+              detail="Staff, holiday and documents"
+              Icon={UserRound}
+              onPick={onOpenChange}
+            />
+          </CanAccess>
           <MoreRow
             to={ImportPage.path}
             label="Import data"

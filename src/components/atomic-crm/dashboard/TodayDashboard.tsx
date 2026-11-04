@@ -10,6 +10,8 @@ import { orderStatusLabel } from "../orders/statuses";
 import { useConfigurationContext } from "../root/ConfigurationContext";
 import type { Deal, Task } from "../types";
 import { overdue, total } from "../finance/owed";
+import { expiryLabel, expiryState, needingAttention } from "../people/people";
+import { usePeople, usePersonDocuments } from "../people/usePeople";
 import { useOwedByCustomers, useOwedToSuppliers } from "../finance/useOwed";
 import { formatPence } from "../quotes/quoteMath";
 import { DashboardActivityLog } from "./DashboardActivityLog";
@@ -153,6 +155,11 @@ export const TodayDashboard = () => {
   const { identity } = useGetIdentity();
   const { data: owedCustomers = [] } = useOwedByCustomers();
   const { data: owedSuppliers = [] } = useOwedToSuppliers();
+  // Documents running out are for administrators only.
+  const isAdmin = !!identity?.administrator;
+  const { data: people = [] } = usePeople(isAdmin);
+  const { data: personDocuments = [] } = usePersonDocuments(isAdmin);
+  const expiring = needingAttention(personDocuments, people, new Date());
   const { currency, dealStages } = useConfigurationContext();
   const now = Date.now();
   const endOfToday = new Date();
@@ -388,6 +395,25 @@ export const TodayDashboard = () => {
                   urgent={overdue(owedSuppliers, new Date()).length > 0}
                 />
               ) : null}
+            </Group>
+          ) : null}
+
+          {isAdmin && expiring.length > 0 ? (
+            <Group title="People" to="/people" action="See all">
+              {expiring.slice(0, 4).map((d) => (
+                <Row
+                  key={d.id}
+                  to="/people"
+                  title={`${people.find((p) => p.id === d.person_id)?.full_name ?? "Someone"}: ${d.title}`}
+                  detail={expiryLabel(d.expires_on, new Date())}
+                  trailing={
+                    expiryState(d.expires_on, new Date()) === "expired"
+                      ? "Expired"
+                      : "Soon"
+                  }
+                  urgent
+                />
+              ))}
             </Group>
           ) : null}
 

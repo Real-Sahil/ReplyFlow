@@ -20,6 +20,7 @@ import {
   HandCoins,
   CalendarCheck,
   Store,
+  UserRound,
 } from "lucide-react";
 import { CanAccess, useGetList, useTranslate, useUserMenu } from "ra-core";
 import { Link, matchPath, useLocation } from "react-router";
@@ -311,6 +312,9 @@ const MoreMenu = () => (
           <MoreLink to="/sales" label="Team" Icon={Users} />
         </CanAccess>
         <MoreLink to="/companies" label="Companies" Icon={Building2} />
+        <CanAccess resource="configuration" action="edit">
+          <MoreLink to="/people" label="People" Icon={UserRound} />
+        </CanAccess>
         <MoreLink to={ImportPage.path} label="Import data" Icon={Import} />
       </MoreGroup>
       <MoreGroup title="Money">
