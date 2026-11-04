@@ -39,8 +39,13 @@ const typing = () => {
   );
 };
 
+let lastCheck = 0;
+
 const check = async () => {
   if (!import.meta.env.PROD || current() === "dev") return;
+  // Several things can ask at once (opening the tab, coming online, moving between screens).
+  if (Date.now() - lastCheck < 20_000) return;
+  lastCheck = Date.now();
   try {
     const response = await fetch(
       new URL(`version.json?t=${Date.now()}`, document.baseURI),
@@ -64,10 +69,16 @@ const check = async () => {
   }
 };
 
+// A new build reaches every open app within a minute, and at once when someone comes back to it.
 export const startUpdateCheck = () => {
-  window.setTimeout(() => void check(), 4000);
+  window.setTimeout(() => void check(), 3000);
+  window.setInterval(() => void check(), 60_000);
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") void check();
   });
-  window.setInterval(() => void check(), 10 * 60 * 1000);
+  // A page restored from memory, a phone reconnecting, and a move to another screen.
+  window.addEventListener("pageshow", () => void check());
+  window.addEventListener("online", () => void check());
+  window.addEventListener("focus", () => void check());
+  window.addEventListener("hashchange", () => void check());
 };
