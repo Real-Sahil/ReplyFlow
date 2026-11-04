@@ -8,12 +8,10 @@ export const MobileBackButton = (props: { resource?: string; to?: string }) => {
   const navigate = useNavigate();
   const createPath = useCreatePath();
   const { to } = props;
+  // A screen that is not a list (Owed, Bills, People, ...) has no list page to go back to, so it goes
+  // back to wherever the person came from.
   const finalTo =
-    to ??
-    createPath({
-      resource,
-      type: "list",
-    });
+    to ?? (resource ? createPath({ resource, type: "list" }) : undefined);
 
   return (
     <Button
@@ -23,7 +21,9 @@ export const MobileBackButton = (props: { resource?: string; to?: string }) => {
       className="rounded-full size-5 pr-2"
       onClick={(e) => {
         e.preventDefault();
-        navigate(finalTo);
+        if (finalTo) navigate(finalTo);
+        else if (window.history.length > 1) navigate(-1);
+        else navigate("/");
       }}
     >
       <ChevronLeft className="size-6" />
