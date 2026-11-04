@@ -322,3 +322,66 @@ export const accountExport = (): ExportConfig => ({
     };
   },
 });
+
+// Invoices and credit notes, one row per line. Each row names the order it belongs to, what the
+// order was for and the order's own note as it stood when the document was issued, so nobody has
+// to chase where a figure came from. Credit notes are negative. Read from invoice_ledger.
+export const invoiceLedgerExport = (): ExportConfig => ({
+  filename: "invoices",
+  title: "Invoices and credit notes",
+  table: "invoice_ledger",
+  select:
+    "number, kind, issue_date, tax_point, due_date, order_reference, order_summary, order_note, document_note, customer_name, credit_for_number, supplier_vat_number, vat_registered, position, description, quantity, vat_code, vat_percent, net_pence, vat_pence, gross_pence",
+  dateColumn: "tax_point",
+  dateKind: "date",
+  filters: [
+    {
+      label: "Type",
+      column: "kind",
+      options: [
+        { value: "invoice", label: "Invoices" },
+        { value: "credit_note", label: "Credit notes" },
+      ],
+    },
+  ],
+  columns: [
+    { key: "date", label: "Date" },
+    { key: "number", label: "Number" },
+    { key: "type", label: "Type" },
+    { key: "credits", label: "Credits invoice" },
+    { key: "order", label: "Order" },
+    { key: "order_for", label: "Order is for" },
+    { key: "customer", label: "Customer" },
+    { key: "line", label: "Line" },
+    { key: "description", label: "Description" },
+    { key: "quantity", label: "Quantity" },
+    { key: "vat_code", label: "VAT code" },
+    { key: "vat_rate", label: "VAT rate (%)" },
+    { key: "net", label: "Net (£)" },
+    { key: "vat", label: "VAT (£)" },
+    { key: "gross", label: "Gross (£)" },
+    { key: "order_note", label: "Order note" },
+    { key: "document_note", label: "Note on document" },
+    { key: "supplier_vat", label: "Supplier VAT number" },
+  ],
+  toRow: (row: Row) => ({
+    date: text(row.tax_point),
+    number: text(row.number),
+    type: row.kind === "credit_note" ? "Credit note" : "Invoice",
+    credits: text(row.credit_for_number),
+    order: text(row.order_reference),
+    order_for: text(row.order_summary),
+    customer: text(row.customer_name),
+    line: text(row.position),
+    description: text(row.description),
+    quantity: text(row.quantity),
+    vat_code: row.vat_registered ? text(row.vat_code) : "",
+    vat_rate: row.vat_registered ? text(row.vat_percent) : "",
+    net: pounds(row.net_pence),
+    vat: pounds(row.vat_pence),
+    gross: pounds(row.gross_pence),
+    order_note: text(row.order_note),
+    document_note: text(row.document_note),
+    supplier_vat: text(row.supplier_vat_number),
+  }),
+});

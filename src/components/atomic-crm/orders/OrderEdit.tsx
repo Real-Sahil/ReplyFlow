@@ -6,6 +6,7 @@ import { FormToolbar } from "../layout/FormToolbar";
 import { CustomerPage } from "./CustomerPage";
 import { OrderInputs } from "./OrderInputs";
 import { OrderPayments } from "./OrderPayments";
+import { OrderInvoices } from "../finance/OrderInvoices";
 
 const OrderHistory = () => {
   const record = useRecordContext();
@@ -45,6 +46,7 @@ export const OrderEdit = () => (
             <OrderInputs />
             <CustomerPage />
             <OrderPayments />
+            <OrderInvoices />
             <FormToolbar />
           </CardContent>
         </Card>

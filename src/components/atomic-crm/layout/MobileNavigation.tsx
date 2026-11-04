@@ -13,6 +13,7 @@ import {
   MoreHorizontal,
   Package,
   Plug,
+  Receipt,
   Plus,
   Settings,
   Sofa,
@@ -245,6 +246,13 @@ const MoreSheet = ({
             label="Import data"
             detail="Bring in contacts and deals"
             Icon={Import}
+            onPick={onOpenChange}
+          />
+          <MoreRow
+            to="/invoices"
+            label="Invoices"
+            detail="Invoices and credit notes, by order"
+            Icon={Receipt}
             onPick={onOpenChange}
           />
           <CanAccess resource="configuration" action="edit">
