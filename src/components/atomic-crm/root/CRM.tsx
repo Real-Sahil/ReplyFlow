@@ -85,6 +85,10 @@ const ReportsPage = lazyScreen(
   () => import("../finance/ReportsPage"),
   "ReportsPage",
 );
+const BankMatchPage = lazyScreen(
+  () => import("../finance/BankMatchPage"),
+  "BankMatchPage",
+);
 const SummaryPage = lazyScreen(
   () => import("../finance/SummaryPage"),
   "SummaryPage",
@@ -319,6 +323,7 @@ const DesktopAdmin = (
         <Route path="/business" element={<BusinessSettingsPage />} />
         <Route path="/owed" element={<OwedPage />} />
         <Route path="/summary" element={<SummaryPage />} />
+        <Route path="/bank" element={<BankMatchPage />} />
         <Route path="/invoices" element={<InvoicesPage />} />
         <Route path="/bills" element={<BillsPage />} />
         <Route path="/money" element={<MoneyPage />} />
@@ -376,6 +381,7 @@ const MobileBills = asMobileScreen("Bills and expenses", BillsPage);
 const MobileInvoices = asMobileScreen("Invoices", InvoicesPage);
 const MobileOwed = asMobileScreen("Owed and owing", OwedPage);
 const MobileSummary = asMobileScreen("Weekly summary", SummaryPage);
+const MobileBank = asMobileScreen("Bank match", BankMatchPage);
 const MobileBusiness = asMobileScreen("Business and VAT", BusinessSettingsPage);
 
 const MobileAdmin = (
@@ -446,6 +452,7 @@ const MobileAdmin = (
           <Route path="/business" element={<MobileBusiness />} />
           <Route path="/owed" element={<MobileOwed />} />
           <Route path="/summary" element={<MobileSummary />} />
+          <Route path="/bank" element={<MobileBank />} />
           <Route path="/invoices" element={<MobileInvoices />} />
           <Route path="/bills" element={<MobileBills />} />
           <Route path="/money" element={<MobileMoney />} />

@@ -314,6 +314,13 @@ const MoreSheet = ({
             onPick={onOpenChange}
           />
           <MoreRow
+            to="/bank"
+            label="Bank match"
+            detail="Match a bank statement to invoices and bills"
+            Icon={Landmark}
+            onPick={onOpenChange}
+          />
+          <MoreRow
             to="/invoices"
             label="Invoices"
             detail="Invoices and credit notes, by order"

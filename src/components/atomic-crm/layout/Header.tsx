@@ -317,6 +317,7 @@ const MoreMenu = () => (
           <MoreLink to="/summary" label="Weekly summary" Icon={CalendarCheck} />
         </CanAccess>
         <MoreLink to="/owed" label="Owed and owing" Icon={HandCoins} />
+        <MoreLink to="/bank" label="Bank match" Icon={Landmark} />
         <MoreLink to="/invoices" label="Invoices" Icon={Receipt} />
         <MoreLink to="/bills" label="Bills and expenses" Icon={Wallet} />
         <MoreLink to="/money" label="Money book" Icon={BookOpen} />
