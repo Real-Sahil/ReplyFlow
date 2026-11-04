@@ -4,9 +4,11 @@ import "./index.css";
 import App from "./App.tsx";
 import { installErrorReporting } from "./lib/errorReporting";
 import { installScreenTransitions } from "./lib/screenTransitions";
+import { startUpdateCheck } from "./lib/appUpdate";
 
 installErrorReporting();
 installScreenTransitions();
+startUpdateCheck();
 
 // After a new deploy, the service worker may replace its pre-cache while
 // the page still holds old chunk references. A reload picks up the new

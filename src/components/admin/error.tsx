@@ -8,7 +8,9 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
-import type { HtmlHTMLAttributes, ErrorInfo } from "react";
+import { useEffect, type HtmlHTMLAttributes, type ErrorInfo } from "react";
+import { hardReload, isChunkError } from "@/lib/appUpdate";
+import { reportError } from "@/lib/errorReporting";
 
 /**
  * App-wide error component for displaying error boundaries.
@@ -32,6 +34,19 @@ export const Error = (props: InternalErrorProps & {}) => {
       : typeof error === "string"
         ? error
         : String(error ?? "Unknown error");
+
+  // Tell the error log what broke (a caught error never reaches the window handlers), and when the
+  // cause is an older copy of the app than the server's, load the new one once.
+  useEffect(() => {
+    reportError(error);
+    if (
+      isChunkError(error) &&
+      !sessionStorage.getItem("replyflow.chunkRetry")
+    ) {
+      sessionStorage.setItem("replyflow.chunkRetry", "1");
+      void hardReload();
+    }
+  }, [error]);
 
   return (
     <div className="flex flex-col items-center md:p-16 gap-5" {...rest}>
@@ -95,10 +110,18 @@ export const Error = (props: InternalErrorProps & {}) => {
           </div>
         </>
       )}
-      <div className="mt-8">
+      {process.env.NODE_ENV === "production" && errorMessage ? (
+        <p className="max-w-md break-words text-center text-xs text-muted-foreground">
+          Details: {errorMessage.slice(0, 160)}
+        </p>
+      ) : null}
+      <div className="mt-8 flex flex-wrap justify-center gap-3">
         <Button onClick={goBack}>
           <History />
           <Translate i18nKey="ra.action.back" />
+        </Button>
+        <Button variant="outline" onClick={() => void hardReload()}>
+          Update the app
         </Button>
       </div>
     </div>

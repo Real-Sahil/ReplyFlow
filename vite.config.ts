@@ -6,6 +6,10 @@ import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 import createHtmlPlugin from "vite-plugin-simple-html";
 
+// Shown at the bottom of the More sheet, so it is easy to tell which build a device is running. The
+// same text is published as version.json, which an open app polls to notice that a newer build exists.
+const APP_VERSION = `${(process.env.VERCEL_GIT_COMMIT_SHA ?? "dev").slice(0, 7)} · ${new Date().toISOString().slice(0, 16).replace("T", " ")}`;
+
 // https://vitejs.dev/config/
 export default defineConfig({
   server: {
@@ -27,6 +31,16 @@ export default defineConfig({
         },
       },
     }),
+    {
+      name: "publish-version",
+      generateBundle() {
+        this.emitFile({
+          type: "asset",
+          fileName: "version.json",
+          source: JSON.stringify({ version: APP_VERSION }),
+        });
+      },
+    },
     VitePWA({
       registerType: "autoUpdate",
       workbox: {
@@ -35,17 +49,19 @@ export default defineConfig({
         importScripts: ["push-sw.js"],
         skipWaiting: true,
         clientsClaim: true,
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff,woff2}"],
-        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MiB
+        // The service worker is kept for notifications, not for offline use. It used to download
+        // every screen of the app (about 150 files) before an update could take over; on a phone
+        // that can fail quietly and leave the old version in place. Now only the icons are cached,
+        // and the page itself always comes from the network, so a new build is shown at once.
+        globPatterns: ["appIcon/*.png", "favicon.ico", "logos/*.svg"],
+        navigateFallback: null,
+        cleanupOutdatedCaches: true,
       },
       manifest: false, // Use existing manifest.json from public/
     }),
   ],
   define: {
-    // Shown at the bottom of the More sheet, so it is easy to tell which build a device is running.
-    __APP_VERSION__: JSON.stringify(
-      `${(process.env.VERCEL_GIT_COMMIT_SHA ?? "dev").slice(0, 7)} · ${new Date().toISOString().slice(0, 16).replace("T", " ")}`,
-    ),
+    __APP_VERSION__: JSON.stringify(APP_VERSION),
     ...(process.env.NODE_ENV === "production" && process.env.VITE_SUPABASE_URL
       ? {
           "import.meta.env.VITE_IS_DEMO": JSON.stringify(
