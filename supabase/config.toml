@@ -224,3 +224,5 @@ verify_jwt = false
 verify_jwt = false
 [functions.weekly_summary]
 verify_jwt = false
+[functions.claims_notify]
+verify_jwt = false

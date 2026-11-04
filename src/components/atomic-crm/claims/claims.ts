@@ -16,6 +16,9 @@ export type Claim = {
   decided_at: string | null;
   paid_at: string | null;
   created_at: string;
+  receipt_hash?: string | null;
+  duplicate_of?: number | null;
+  duplicate_reason?: "same_receipt" | "same_person_amount" | null;
   claimant?: { first_name: string; last_name: string } | null;
 };
 
@@ -76,3 +79,47 @@ export const byAttention = (claims: Claim[]) =>
 
 export const claimantName = (c: Claim) =>
   c.claimant ? `${c.claimant.first_name} ${c.claimant.last_name}`.trim() : "";
+
+// ---- Duplicates ------------------------------------------------------------------------------
+
+// The same test the database applies when a claim is saved: another claim from the same person for the
+// same amount within three days (a rejected claim does not count). Used to warn before sending.
+export const DUPLICATE_DAYS = 3;
+
+const dayNumber = (iso: string) =>
+  Math.round(new Date(`${iso.slice(0, 10)}T00:00:00Z`).getTime() / 86400000);
+
+export const findSimilar = (
+  existing: Claim[],
+  candidate: { amount_pence: number; claim_date: string },
+): Claim | null =>
+  existing.find(
+    (c) =>
+      c.status !== "rejected" &&
+      c.amount_pence === candidate.amount_pence &&
+      Math.abs(dayNumber(c.claim_date) - dayNumber(candidate.claim_date)) <=
+        DUPLICATE_DAYS,
+  ) ?? null;
+
+// What the administrator reads beside a flagged claim.
+export const duplicateNote = (c: Claim): string | null => {
+  if (!c.duplicate_of) return null;
+  return c.duplicate_reason === "same_receipt"
+    ? `Possible duplicate: the same receipt photo as claim #${c.duplicate_of}.`
+    : `Possible duplicate: the same person claimed the same amount within ${DUPLICATE_DAYS} days (claim #${c.duplicate_of}).`;
+};
+
+export const flaggedCount = (claims: Claim[]) =>
+  claims.filter((c) => c.status === "pending" && c.duplicate_of).length;
+
+// A fingerprint of a photo, so the same file sent twice is noticed. A re-saved or cropped photo is a
+// different file and will not match; this catches the careless repeat, not a determined one.
+export const sha256Hex = async (file: Blob): Promise<string> => {
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    await file.arrayBuffer(),
+  );
+  return Array.from(new Uint8Array(digest), (b) =>
+    b.toString(16).padStart(2, "0"),
+  ).join("");
+};

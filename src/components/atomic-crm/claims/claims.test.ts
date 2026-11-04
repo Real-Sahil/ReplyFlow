@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import {
   byAttention,
+  duplicateNote,
+  findSimilar,
+  flaggedCount,
   owedToStaff,
   parsePounds,
   waiting,
@@ -68,5 +71,53 @@ describe("byAttention", () => {
       claim({ id: 5, status: "rejected", created_at: "2026-11-04T00:00:00Z" }),
     ]).map((c) => c.id);
     expect(sorted).toEqual([3, 2, 4, 5, 1]);
+  });
+});
+
+describe("duplicates", () => {
+  const sent = [
+    claim({
+      id: 1,
+      amount_pence: 1250,
+      claim_date: "2026-11-03",
+      status: "pending",
+    }),
+    claim({
+      id: 2,
+      amount_pence: 900,
+      claim_date: "2026-11-03",
+      status: "rejected",
+    }),
+  ];
+  it("finds the same amount within three days", () => {
+    expect(
+      findSimilar(sent, { amount_pence: 1250, claim_date: "2026-11-06" })?.id,
+    ).toBe(1);
+    expect(
+      findSimilar(sent, { amount_pence: 1250, claim_date: "2026-11-07" }),
+    ).toBeNull();
+    expect(
+      findSimilar(sent, { amount_pence: 1251, claim_date: "2026-11-03" }),
+    ).toBeNull();
+  });
+  it("ignores a rejected claim", () => {
+    expect(
+      findSimilar(sent, { amount_pence: 900, claim_date: "2026-11-03" }),
+    ).toBeNull();
+  });
+  it("words the flag for the administrator and counts waiting flags", () => {
+    const flagged = claim({
+      id: 5,
+      duplicate_of: 1,
+      duplicate_reason: "same_receipt",
+    });
+    expect(duplicateNote(flagged)).toMatch(/same receipt photo as claim #1/);
+    expect(duplicateNote(claim({ id: 6 }))).toBeNull();
+    expect(
+      flaggedCount([
+        flagged,
+        claim({ id: 7, status: "paid", duplicate_of: 1 }),
+      ]),
+    ).toBe(1);
   });
 });

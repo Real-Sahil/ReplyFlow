@@ -12,7 +12,12 @@ import type { Deal, Task } from "../types";
 import { overdue, total } from "../finance/owed";
 import { expiryLabel, expiryState, needingAttention } from "../people/people";
 import { usePeople, usePersonDocuments } from "../people/usePeople";
-import { owedToStaff, waiting, waitingTotal } from "../claims/claims";
+import {
+  flaggedCount,
+  owedToStaff,
+  waiting,
+  waitingTotal,
+} from "../claims/claims";
 import { useClaims } from "../claims/useClaims";
 import { useOwedByCustomers, useOwedToSuppliers } from "../finance/useOwed";
 import { formatPence } from "../quotes/quoteMath";
@@ -411,7 +416,7 @@ export const TodayDashboard = () => {
                 <Row
                   to="/claims"
                   title="Claims waiting for you"
-                  detail={`${waiting(claims).length} to approve`}
+                  detail={`${waiting(claims).length} to approve${flaggedCount(claims) > 0 ? `, ${flaggedCount(claims)} may be duplicates` : ""}`}
                   trailing={formatPence(waitingTotal(claims))}
                   urgent
                 />

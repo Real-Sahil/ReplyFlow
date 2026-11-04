@@ -89,6 +89,10 @@ export const claimsSpec = (now = new Date()): Spec<ClaimRow> => {
       "Photos of receipts cannot be sent in a sheet. Keep them, in case you are asked.",
       "Sending the same sheet twice sends every claim twice.",
     ],
+    fingerprint: (v) =>
+      [v.claim_date, v.amount_pence, v.description.trim().toLowerCase()].join(
+        "|",
+      ),
     previewHeadings: ["Date", "Amount", "What for", "Type"],
     preview: (v) => [
       shortDate(v.claim_date),

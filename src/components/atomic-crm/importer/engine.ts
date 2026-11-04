@@ -25,6 +25,8 @@ export type Spec<T> = {
   // Plain-English rules shown beside the template.
   notes: string[];
   validate: (cells: Record<string, string>) => Validated<T>;
+  // Rows with the same fingerprint are the same entry sent twice in one sheet.
+  fingerprint?: (value: T) => string;
   // The few cells shown in the preview for a row that is ready.
   preview: (value: T) => string[];
   previewHeadings: string[];
@@ -105,6 +107,23 @@ export const mapRows = <T>(table: string[][], spec: Spec<T>): MapResult<T> => {
       errors: result.errors,
     });
   });
+
+  if (spec.fingerprint) {
+    const first = new Map<string, number>();
+    for (const outcome of rows) {
+      if (outcome.value === undefined) continue;
+      const key = spec.fingerprint(outcome.value);
+      const earlier = first.get(key);
+      if (earlier === undefined) {
+        first.set(key, outcome.row);
+      } else {
+        outcome.errors.push(
+          `This is the same as row ${earlier}. If both are real, change the wording of one.`,
+        );
+        outcome.value = undefined;
+      }
+    }
+  }
 
   if (rows.length === 0)
     return { ...empty("There are no rows to import."), examples };

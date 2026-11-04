@@ -46,10 +46,14 @@ export const ImportDialog = <T,>({
   spec,
   onImport,
   onClose,
+  checkDuplicates,
 }: {
   spec: Spec<T>;
   onImport: (values: T[]) => Promise<void>;
   onClose: () => void;
+  // For each ready row, a sentence when it looks like something already recorded, otherwise null.
+  // Those rows are left out unless the person ticks "Send these too".
+  checkDuplicates?: (values: T[]) => (string | null)[];
 }) => {
   const notify = useNotify();
   const input = useRef<HTMLInputElement>(null);
@@ -57,12 +61,14 @@ export const ImportDialog = <T,>({
   const [result, setResult] = useState<MapResult<T> | null>(null);
   const [readError, setReadError] = useState<string | null>(null);
   const [reading, setReading] = useState(false);
+  const [sendAnyway, setSendAnyway] = useState(false);
 
   const choose = async (file: File | undefined) => {
     if (!file) return;
     setFileName(file.name);
     setResult(null);
     setReadError(null);
+    setSendAnyway(false);
     setReading(true);
     try {
       setResult(mapRows(await readSheetFile(file), spec));
@@ -75,13 +81,18 @@ export const ImportDialog = <T,>({
 
   const ready = (result?.rows ?? []).filter((r) => r.value !== undefined);
   const wrong = (result?.rows ?? []).filter((r) => r.errors.length > 0);
+  const notes = checkDuplicates
+    ? checkDuplicates(ready.map((r) => r.value as T))
+    : [];
+  const similar = ready.filter((_, i) => notes[i]);
+  const toSend = sendAnyway ? ready : ready.filter((_, i) => !notes[i]);
   const canImport =
-    !!result && !result.problem && wrong.length === 0 && ready.length > 0;
+    !!result && !result.problem && wrong.length === 0 && toSend.length > 0;
 
   const run = useMutation({
-    mutationFn: async () => onImport(ready.map((r) => r.value as T)),
+    mutationFn: async () => onImport(toSend.map((r) => r.value as T)),
     onSuccess: () => {
-      notify(`${ready.length} added.`);
+      notify(`${toSend.length} added.`);
       onClose();
     },
     onError: (error: Error) =>
@@ -183,6 +194,36 @@ export const ImportDialog = <T,>({
                 </div>
               ) : null}
 
+              {similar.length > 0 && wrong.length === 0 ? (
+                <div
+                  role="status"
+                  className="rounded-lg border border-warning/50 bg-warning-soft p-3 text-sm"
+                >
+                  <p className="mb-1 font-medium">
+                    {similar.length === 1
+                      ? "1 row looks like something already sent:"
+                      : `${similar.length} rows look like things already sent:`}
+                  </p>
+                  <ul className="list-disc pl-5">
+                    {ready.map((r, i) =>
+                      notes[i] ? (
+                        <li key={r.row}>
+                          <strong>Row {r.row}:</strong> {notes[i]}
+                        </li>
+                      ) : null,
+                    )}
+                  </ul>
+                  <label className="mt-2 flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={sendAnyway}
+                      onChange={(e) => setSendAnyway(e.target.checked)}
+                    />
+                    Send these too (they are not repeats)
+                  </label>
+                </div>
+              ) : null}
+
               {ready.length > 0 ? (
                 <div className="overflow-x-auto rounded-lg border">
                   <table className="w-full text-left text-sm">
@@ -252,7 +293,7 @@ export const ImportDialog = <T,>({
           >
             {run.isPending
               ? "Adding…"
-              : `Add ${ready.length || ""} ${ready.length === 1 ? "row" : "rows"}`}
+              : `Add ${toSend.length || ""} ${toSend.length === 1 ? "row" : "rows"}`}
           </Button>
         </div>
       </DialogContent>

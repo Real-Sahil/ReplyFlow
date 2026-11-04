@@ -25,8 +25,12 @@ import {
   categoryLabel,
   CLAIM_CATEGORIES,
   claimantName,
+  duplicateNote,
+  findSimilar,
+  flaggedCount,
   owedToStaff,
   parsePounds,
+  sha256Hex,
   STATUS_LABEL,
   waiting,
   waitingTotal,
@@ -92,16 +96,29 @@ const NewClaimDialog = ({ onClose }: { onClose: () => void }) => {
   const [description, setDescription] = useState("");
   const [date, setDate] = useState(today());
   const [photo, setPhoto] = useState<File | null>(null);
+  const [confirmed, setConfirmed] = useState(false);
   const camera = useRef<HTMLInputElement>(null);
+  const { data: mine = [] } = useClaims();
 
   const pence = parsePounds(amount);
-  const ready = pence !== null && description.trim().length > 0 && !!identity;
+  // Warn before sending something that looks like a claim already sent. Sending anyway is allowed.
+  const similar =
+    pence !== null && date
+      ? findSimilar(mine, { amount_pence: pence, claim_date: date })
+      : null;
+  const ready =
+    pence !== null &&
+    description.trim().length > 0 &&
+    !!identity &&
+    (!similar || confirmed);
 
   const send = useMutation({
     mutationFn: async () => {
       const client = getSupabaseClient();
       let receipt_path: string | null = null;
+      let receipt_hash: string | null = null;
       if (photo) {
+        receipt_hash = await sha256Hex(photo);
         const { data: org, error: orgError } =
           await client.rpc("my_organisation_id");
         if (orgError || org == null) throw new Error("Please sign in again.");
@@ -124,6 +141,7 @@ const NewClaimDialog = ({ onClose }: { onClose: () => void }) => {
         category,
         description: description.trim(),
         receipt_path,
+        receipt_hash,
       });
       if (error) throw error;
     },
@@ -200,6 +218,29 @@ const NewClaimDialog = ({ onClose }: { onClose: () => void }) => {
               />
             </div>
           </div>
+          {similar && (
+            <div
+              role="status"
+              className="rounded-lg border border-warning/50 bg-warning-soft p-3 text-sm"
+            >
+              <p className="font-medium">
+                This looks like one you already sent
+              </p>
+              <p className="text-muted-foreground">
+                {formatPence(similar.amount_pence)} for “{similar.description}”
+                on {day(similar.claim_date)} (
+                {STATUS_LABEL[similar.status].toLowerCase()}).
+              </p>
+              <label className="mt-2 flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={confirmed}
+                  onChange={(e) => setConfirmed(e.target.checked)}
+                />
+                It is a different spend, send it
+              </label>
+            </div>
+          )}
           <div>
             <input
               ref={camera}
@@ -296,6 +337,14 @@ const MyClaims = ({ claims }: { claims: Claim[] }) => {
         <ImportDialog
           spec={claimsSpec()}
           onClose={() => setSheet(false)}
+          checkDuplicates={(rows) =>
+            rows.map((row) => {
+              const same = findSimilar(claims, row);
+              return same
+                ? `${formatPence(row.amount_pence)} on ${day(row.claim_date)} is close to “${same.description}” (${formatPence(same.amount_pence)} on ${day(same.claim_date)}) that you sent already.`
+                : null;
+            })
+          }
           onImport={async (rows) => {
             const { error } = await getSupabaseClient()
               .from("expense_claims")
@@ -476,6 +525,15 @@ const ClaimRow = ({ claim }: { claim: Claim }) => {
           {formatPence(claim.amount_pence)}
         </p>
       </div>
+      {duplicateNote(claim) &&
+      (claim.status === "pending" || claim.status === "approved") ? (
+        <p
+          role="status"
+          className="rounded-md bg-warning-soft px-2 py-1 text-xs text-warning"
+        >
+          {duplicateNote(claim)}
+        </p>
+      ) : null}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-3">
           <StatusChip status={claim.status} />
@@ -496,7 +554,8 @@ const ClaimRow = ({ claim }: { claim: Claim }) => {
                 disabled={approve.isPending}
                 onClick={() => approve.mutate()}
               >
-                <Check className="size-4" /> Approve
+                <Check className="size-4" />
+                {claim.duplicate_of ? "Approve anyway" : "Approve"}
               </Button>
             </>
           ) : null}
@@ -537,7 +596,7 @@ const AllClaims = ({ claims }: { claims: Claim[] }) => (
       <h1 className="text-2xl font-semibold tracking-tight">Staff expenses</h1>
       <p className="text-sm text-muted-foreground">
         {waiting(claims).length > 0
-          ? `${waiting(claims).length} waiting (${formatPence(waitingTotal(claims))}). `
+          ? `${waiting(claims).length} waiting (${formatPence(waitingTotal(claims))}${flaggedCount(claims) > 0 ? `, ${flaggedCount(claims)} may be duplicates` : ""}). `
           : "Nothing waiting. "}
         {owedToStaff(claims) > 0
           ? `You owe staff ${formatPence(owedToStaff(claims))} for approved claims.`

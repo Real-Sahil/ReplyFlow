@@ -58,6 +58,19 @@ describe("mapRows with the claims sheet", () => {
     for (let i = 0; i < 101; i += 1) many.push(["04/11/2026", "1", "x"]);
     expect(mapRows(many, spec).problem).toMatch(/at most 100/);
   });
+  it("refuses the same claim written twice in one sheet", () => {
+    const r = mapRows(
+      [
+        ["Date", "Amount", "What for"],
+        ["04/11/2026", "12.50", "Parking"],
+        ["04/11/2026", "£12.5", "parking "],
+        ["04/11/2026", "12.50", "Parking, second visit"],
+      ],
+      spec,
+    );
+    expect(r.rows[1].errors[0]).toMatch(/same as row 2/);
+    expect(r.rows[2].errors).toHaveLength(0);
+  });
   it("refuses a date a year ago and amounts over £5,000", () => {
     const r = mapRows(
       [

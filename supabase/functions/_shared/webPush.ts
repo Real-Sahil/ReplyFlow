@@ -74,12 +74,26 @@ export type PushPayload = {
 export const sendPushToOrganisation = async (
   organisationId: number,
   payload: PushPayload,
+  // For a notification that carries money or other private detail: only the administrators get it.
+  options: { administratorsOnly?: boolean } = {},
 ) => {
   try {
-    const { data: subs } = await supabaseAdmin
+    let query = supabaseAdmin
       .from("push_subscriptions")
       .select("id, endpoint, p256dh, auth")
       .eq("organisation_id", organisationId);
+    if (options.administratorsOnly) {
+      const { data: admins } = await supabaseAdmin
+        .from("sales")
+        .select("user_id")
+        .eq("organisation_id", organisationId)
+        .eq("administrator", true)
+        .eq("disabled", false);
+      const ids = (admins ?? []).map((a) => a.user_id as string);
+      if (ids.length === 0) return;
+      query = query.in("user_id", ids);
+    }
+    const { data: subs } = await query;
     if (!subs?.length) return;
 
     // Loaded here, not at the top, so a problem with the library cannot stop the function
