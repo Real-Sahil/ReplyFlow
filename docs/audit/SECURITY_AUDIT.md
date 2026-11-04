@@ -160,6 +160,11 @@ Supabase advisor warning. Dashboard setting: Authentication → Sign In / Provid
 
 The committed JWTs decode with `iss: supabase-demo`, the published local-development keys. They grant nothing on the hosted project. No other secret patterns were found in `HEAD`. History was not scanned.
 
+### S-13 — Migrations did not reproduce production (Low, Confirmed in CI)
+
+Found when the new two-organisation test first ran against a fresh database built only from `supabase/migrations/`: no staff row was created for a new account. A migration dropped the template's sign-up trigger, and ReplyFlow's replacement triggers (`replyflow_on_auth_user_created` and `_updated` on `auth.users`) existed only on the hosted project, created by hand. A rebuild from migrations would have no sign-up trigger. Production is unaffected. Fixed by `20261207100100_replyflow_signup_triggers.sql`, which creates them only if missing. The same CI job also needed `pg_cron`/`pg_net` and a working seed, which were hosted-only as well. Keeping this job green is what prevents the repository and production drifting apart again.
+
+
 ## Tenant isolation assessment
 
 **Live probe (read-only, rolled back).** Signed in as the Organisation 6 admin, with all work inside a transaction that was aborted:
