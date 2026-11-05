@@ -34,6 +34,16 @@ Reads comments on the Page's posts so staff can reply to them, and reads post pe
 - **Steps:** open Posts, then a published post. Its comments appear under the post. Staff can
   reply from the Comments screen.
 
+### pages_manage_posts
+Publishes, schedules and deletes posts on the Page from the app's Posts screen.
+- **Steps:** open Posts, choose New post, write a short post, choose the Page and publish. The
+  post appears on the Page. Open it in Facebook to show it is there, then delete it from the app.
+
+### pages_manage_engagement
+Lets staff reply to and hide comments on the Page's posts, from the Comments screen.
+- **Steps:** open Comments, choose a comment from the test user, type a reply and send. The reply
+  shows under the comment on Facebook. Hide a comment and show it is hidden on the Page.
+
 ### pages_manage_metadata
 Subscribes the Page to lead-ad and comment events, so new leads arrive without manual entry.
 - **Steps:** open Facebook connection and look at **Page subscriptions**. It lists the events
@@ -47,9 +57,43 @@ Fetches the answers a person gave on a Facebook lead form, to create a contact a
 
 ## Screen recording guide
 
-Record one short video per permission (under 3 minutes each), with no real customer data on
-screen. Narrate what the feature does and why the app needs the permission. Show each step
-in the "Steps" list above.
+**Record the real app, signed in as the Meta test user, on a real phone or a real browser window.** Meta
+checks the recording against the live app, so it must show real Facebook responses. Do not use the demo
+build, mocked data or edited footage, and do not add captions: Meta's reviewers expect a plain screen
+recording, with the narration (if any) spoken over it.
+
+### Set up once
+- Use the test user and test Page from the app dashboard (Roles > Test Users). No real customer
+  names, messages, phone numbers or money figures may appear on screen.
+- Turn on Do Not Disturb so no notification covers the screen. Close other tabs and apps.
+- Start from the signed-out app so the first thing on screen is the login and the Facebook
+  permission dialog. On iPhone: Control Centre screen record. In a browser: any screen recorder.
+- One video per permission, under 3 minutes each. Hold each result on screen for 2 to 3 seconds.
+
+### Shot list (what to do, in order)
+1. **pages_show_list**: Facebook connection > Connect Facebook Pages. Show the Facebook dialog
+   listing the permissions being granted, tick the test Page, continue. Back in the app, show the
+   list of Pages and the chosen Page marked as connected.
+2. **pages_manage_metadata**: stay on Facebook connection. Show Page subscriptions listing
+   `messages`, `feed` and `leadgen` as active.
+3. **pages_messaging**: on a second device or window, send the Page a message as the test user.
+   In the app open Inbox, open that conversation, type a reply and send. Show the reply arriving
+   in Messenger on the test user's side. Keep it inside the 24-hour window.
+4. **pages_read_engagement**: as the test user, comment on a post on the Page. In the app open
+   Posts, open that post and show the comment under it. Show the post's reach and engagement.
+5. **pages_manage_engagement**: open Comments, reply to that comment, then show the reply on the
+   Facebook post. Hide another comment and show it is hidden.
+6. **pages_manage_posts**: Posts > New post, write a short post, publish, then show it on the Page
+   in Facebook. Delete it from the app and show it gone.
+7. **leads_retrieval** (only if requested): in Meta's Lead Ads Testing Tool, create a test lead on
+   the Page's lead form. In the app show the new contact and deal appearing within a minute.
+
+### Before you upload
+- Watch each video once with the sound off: the permission dialog, the app action and the
+  Facebook-side result must all be visible.
+- Check no personal data is visible, including the Facebook sidebar, notifications and
+  browser bookmarks.
+- Make sure each permission's video matches the "Steps" in this file and the wording in the form.
 
 ## Data handling statement (for the form)
 
