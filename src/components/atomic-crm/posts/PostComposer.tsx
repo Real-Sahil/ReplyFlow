@@ -482,7 +482,7 @@ export const PostComposer = () => {
 
       <div className="flex flex-col gap-4">
         <Card className="gap-0 overflow-hidden py-0">
-          <div className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <div className="px-4 py-3 text-xs font-medium text-muted-foreground">
             Preview in the feed
           </div>
           <div className="mx-4 mb-3 overflow-hidden rounded-lg border bg-card">

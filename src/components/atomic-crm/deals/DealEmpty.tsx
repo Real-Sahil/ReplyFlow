@@ -39,7 +39,7 @@ export const DealEmpty = ({ children }: { children?: ReactNode }) => {
       {contacts && contacts.length > 0 ? (
         <>
           <div className="flex flex-col items-center gap-0">
-            <h3 className="text-lg font-bold">
+            <h3 className="text-lg font-semibold">
               {translate("resources.deals.empty.title")}
             </h3>
             <p className="text-sm text-center text-muted-foreground mb-4">
@@ -55,7 +55,7 @@ export const DealEmpty = ({ children }: { children?: ReactNode }) => {
         </>
       ) : (
         <div className="flex flex-col items-center gap-0">
-          <h3 className="text-lg font-bold">
+          <h3 className="text-lg font-semibold">
             {translate("resources.deals.empty.title")}
           </h3>
           <p className="text-sm text-center text-muted-foreground mb-4">

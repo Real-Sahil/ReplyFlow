@@ -50,14 +50,14 @@ export const DashboardStepper = ({
           <CardContent className="px-6">
             <div className="flex flex-wrap items-center justify-between gap-y-4 mb-8">
               <div className="flex items-center gap-4">
-                <h3 className="text-lg font-bold">
+                <h3 className="text-lg font-semibold">
                   {translate("crm.dashboard.stepper.whats_next", {
                     _: "What's next?",
                   })}
                 </h3>
                 <DataImportButton />
               </div>
-              <div className="w-[150px]">
+              <div className="w-36">
                 <Progress value={(step / 3) * 100} className="mb-2" />
                 <div className="text-right text-sm">
                   {translate("crm.dashboard.stepper.progress", {
@@ -70,7 +70,7 @@ export const DashboardStepper = ({
             <div className="flex flex-col gap-12">
               <div className="flex gap-8 items-center">
                 <CheckCircle className="text-green-600 w-5 h-5 shrink-0" />
-                <h4 className="font-bold">
+                <h4 className="font-semibold">
                   {translate("crm.dashboard.stepper.install", {
                     _: "Install ReplyFlow",
                   })}
@@ -84,7 +84,7 @@ export const DashboardStepper = ({
                 )}
 
                 <div className="flex flex-col gap-4">
-                  <h4 className="font-bold">
+                  <h4 className="font-semibold">
                     {translate("resources.contacts.action.add_first", {
                       _: "Add your first contact",
                     })}
@@ -117,7 +117,7 @@ export const DashboardStepper = ({
               <div className="flex gap-8 items-start">
                 <Circle className="text-muted-foreground w-5 h-5 mt-1 shrink-0" />
                 <div className="flex flex-col gap-4">
-                  <h4 className="font-bold">
+                  <h4 className="font-semibold">
                     {translate("resources.notes.action.add_first", {
                       _: "Add your first note",
                     })}

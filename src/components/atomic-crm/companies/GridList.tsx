@@ -9,10 +9,7 @@ const times = (nbChildren: number, fn: (key: number) => any) =>
 const LoadingGridList = () => (
   <div className="flex flex-wrap w-[1008px] gap-1">
     {times(15, (key) => (
-      <div
-        className="h-[200px] w-[194px] flex flex-col bg-gray-200"
-        key={key}
-      />
+      <div className="h-[200px] w-48 flex flex-col bg-gray-200" key={key} />
     ))}
   </div>
 );

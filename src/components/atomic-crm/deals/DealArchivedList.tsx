@@ -69,7 +69,7 @@ export const DealArchivedList = () => {
           <div className="flex flex-col gap-8">
             {Object.entries(archivedListsByDate).map(([date, deals]) => (
               <div key={date} className="flex flex-col gap-4">
-                <h4 className="font-bold">
+                <h4 className="font-semibold">
                   {getRelativeTimeString(date, locale)}
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">

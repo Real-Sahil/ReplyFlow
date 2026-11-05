@@ -131,7 +131,7 @@ export const OwedPage = () => {
                   to={`/orders/${r.order_id}`}
                   className="min-w-0 flex-1 basis-48"
                 >
-                  <div className="truncate text-[15px] font-medium">
+                  <div className="truncate text-sm font-medium">
                     {r.customer_name ?? "Customer"}
                   </div>
                   <div className="truncate text-sm text-muted-foreground">
@@ -143,7 +143,7 @@ export const OwedPage = () => {
                   </div>
                 </Link>
                 <LateChip due={r.due_date} today={today} />
-                <span className="w-24 text-right text-[15px] font-semibold tabular-nums">
+                <span className="w-24 text-right text-sm font-semibold tabular-nums">
                   {formatPence(r.owed_pence)}
                 </span>
                 <CopyReminder
@@ -195,7 +195,7 @@ export const OwedPage = () => {
                 className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 hover:bg-muted/50"
               >
                 <div className="min-w-0 flex-1 basis-48">
-                  <div className="truncate text-[15px] font-medium">
+                  <div className="truncate text-sm font-medium">
                     {b.supplier_name}
                   </div>
                   <div className="truncate text-sm text-muted-foreground">
@@ -203,7 +203,7 @@ export const OwedPage = () => {
                   </div>
                 </div>
                 <LateChip due={b.due_date} today={today} />
-                <span className="w-24 text-right text-[15px] font-semibold tabular-nums">
+                <span className="w-24 text-right text-sm font-semibold tabular-nums">
                   {formatPence(b.owed_pence)}
                 </span>
               </Link>

@@ -70,7 +70,7 @@ export const CompanyInfo = ({ record }: { record: Company }) => {
       title={translate("resources.companies.field_categories.contact")}
     >
       {record.website && (
-        <div className="flex flex-row items-center gap-1 min-h-[24px]">
+        <div className="flex flex-row items-center gap-1 min-h-6">
           <Globe className="w-4 h-4" />
           <UrlField
             source="website"
@@ -83,7 +83,7 @@ export const CompanyInfo = ({ record }: { record: Company }) => {
         </div>
       )}
       {record.linkedin_url && (
-        <div className="flex flex-row items-center gap-1 min-h-[24px]">
+        <div className="flex flex-row items-center gap-1 min-h-6">
           <Linkedin className="w-4 h-4" />
           <a
             className="underline hover:no-underline"
@@ -97,7 +97,7 @@ export const CompanyInfo = ({ record }: { record: Company }) => {
         </div>
       )}
       {record.phone_number && (
-        <div className="flex flex-row items-center gap-1 min-h-[24px]">
+        <div className="flex flex-row items-center gap-1 min-h-6">
           <Phone className="w-4 h-4" />
           <TextField source="phone_number" />
         </div>

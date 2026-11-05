@@ -90,7 +90,7 @@ const DealShowContent = () => {
 
           <div className="flex gap-8 m-4">
             <div className="flex flex-col mr-10">
-              <span className="text-xs text-muted-foreground tracking-wide">
+              <span className="text-xs text-muted-foreground">
                 {translate("resources.deals.fields.expected_closing_date")}
               </span>
               <div className="flex items-center gap-2">
@@ -108,7 +108,7 @@ const DealShowContent = () => {
             </div>
 
             <div className="flex flex-col mr-10">
-              <span className="text-xs text-muted-foreground tracking-wide">
+              <span className="text-xs text-muted-foreground">
                 {translate("resources.deals.fields.amount")}
               </span>
               <span className="text-sm">
@@ -124,7 +124,7 @@ const DealShowContent = () => {
 
             {record.category && (
               <div className="flex flex-col mr-10">
-                <span className="text-xs text-muted-foreground tracking-wide">
+                <span className="text-xs text-muted-foreground">
                   {translate("resources.deals.fields.category")}
                 </span>
                 <span className="text-sm">
@@ -135,7 +135,7 @@ const DealShowContent = () => {
             )}
 
             <div className="flex flex-col mr-10">
-              <span className="text-xs text-muted-foreground tracking-wide">
+              <span className="text-xs text-muted-foreground">
                 {translate("resources.deals.fields.stage")}
               </span>
               <span className="text-sm">
@@ -155,7 +155,7 @@ const DealShowContent = () => {
           {!!record.contact_ids?.length && (
             <div className="m-4">
               <div className="flex flex-col min-h-12 mr-10">
-                <span className="text-xs text-muted-foreground tracking-wide">
+                <span className="text-xs text-muted-foreground">
                   {translate("resources.deals.fields.contact_ids")}
                 </span>
                 <ReferenceArrayField
@@ -170,7 +170,7 @@ const DealShowContent = () => {
 
           {record.description && (
             <div className="m-4 whitespace-pre-line">
-              <span className="text-xs text-muted-foreground tracking-wide">
+              <span className="text-xs text-muted-foreground">
                 {translate("resources.deals.fields.description")}
               </span>
               <p className="text-sm leading-6">{record.description}</p>
@@ -206,7 +206,7 @@ const ArchivedTitle = () => {
   const translate = useTranslate();
   return (
     <div className="bg-orange-500 px-6 py-4">
-      <h3 className="text-lg font-bold text-white">
+      <h3 className="text-lg font-semibold text-white">
         {translate("resources.deals.archived.title")}
       </h3>
     </div>

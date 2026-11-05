@@ -109,7 +109,7 @@ const ContactShowContentMobile = () => {
           <div className="flex items-center mb-4">
             <Avatar />
             <div className="mx-3 flex-1">
-              <h2 className="text-2xl font-bold">
+              <h2 className="text-2xl font-semibold">
                 <RecordRepresentation />
               </h2>
               <div className="text-sm text-muted-foreground">

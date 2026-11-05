@@ -33,9 +33,7 @@ export const TaskListFilter = ({
 
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium mb-2">
-        {title}
-      </p>
+      <p className="text-xs text-muted-foreground font-medium mb-2">{title}</p>
       <ResourceContextProvider value="tasks">
         <ListContextProvider value={listContext}>
           <TasksIterator showContact={showContact} />

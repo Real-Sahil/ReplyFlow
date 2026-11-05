@@ -6,7 +6,7 @@ export const LoginSkeleton = () => {
       <div className="h-full">
         <div className="max-w-sm mx-auto h-full flex flex-col justify-center gap-8">
           <Skeleton className="w-full h-[100px]" />
-          <Skeleton className="w-4/5 h-[50px]" />
+          <Skeleton className="w-4/5 h-12" />
           <Skeleton className="w-full h-9" />
           <Skeleton className="w-full h-9" />
           <Skeleton className="w-full h-9" />

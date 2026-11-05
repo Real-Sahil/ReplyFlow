@@ -115,7 +115,7 @@ export const SetupChecklist = () => {
               <span className="min-w-0">
                 <span
                   className={cn(
-                    "block text-[15px] font-medium",
+                    "block text-sm font-medium",
                     s.done && "line-through",
                   )}
                 >

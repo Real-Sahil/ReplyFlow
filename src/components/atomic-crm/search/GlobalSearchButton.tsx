@@ -112,7 +112,7 @@ export const GlobalSearchButton = ({
           <span className="hidden flex-1 text-left md:inline">
             {translate("crm.search.title")}
           </span>
-          <kbd className="pointer-events-none hidden rounded border bg-card px-1.5 font-mono text-[10px] font-medium lg:inline">
+          <kbd className="pointer-events-none hidden rounded border bg-card px-1.5 font-mono text-xs font-medium lg:inline">
             {SHORTCUT_LABEL}
           </kbd>
         </Button>

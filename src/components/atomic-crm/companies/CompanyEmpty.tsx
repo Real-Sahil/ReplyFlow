@@ -21,7 +21,7 @@ export const CompanyEmpty = () => {
         })}
       />
       <div className="flex flex-col gap-0 items-center">
-        <h6 className="text-lg font-bold">
+        <h6 className="text-lg font-semibold">
           {translate("resources.companies.empty.title", {
             _: "No companies found",
           })}

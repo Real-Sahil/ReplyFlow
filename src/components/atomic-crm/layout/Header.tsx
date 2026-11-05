@@ -95,7 +95,7 @@ export const Toolbar = () => {
         <Link
           to="/"
           aria-label={title}
-          className="flex shrink-0 items-center gap-2 rounded-lg py-1 text-[15px] font-semibold tracking-tight"
+          className="flex shrink-0 items-center gap-2 rounded-lg py-1 text-sm font-semibold tracking-tight"
         >
           <BrandLogo />
         </Link>
@@ -211,7 +211,7 @@ export const AccountantToolbar = () => {
         <Link
           to="/accountant"
           aria-label={title}
-          className="flex shrink-0 items-center gap-2 rounded-lg py-1 text-[15px] font-semibold tracking-tight"
+          className="flex shrink-0 items-center gap-2 rounded-lg py-1 text-sm font-semibold tracking-tight"
         >
           <BrandLogo />
         </Link>

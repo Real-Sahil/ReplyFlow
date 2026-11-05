@@ -22,16 +22,12 @@ export const Avatar = (props: {
 
   const size = props.width || props.height;
   const sizeClass =
-    props.width === 20
-      ? `w-[20px] h-[20px]`
-      : props.width === 25
-        ? "w-[25px] h-[25px]"
-        : "w-10 h-10";
+    props.width === 20 ? `size-5` : props.width === 25 ? "size-6" : "w-10 h-10";
 
   return (
     <ShadcnAvatar className={sizeClass} title={props.title}>
       <AvatarImage src={record.avatar?.src ?? undefined} />
-      <AvatarFallback className={size && size < 40 ? "text-[10px]" : "text-sm"}>
+      <AvatarFallback className={size && size < 40 ? "text-xs" : "text-sm"}>
         {record.first_name?.charAt(0).toUpperCase()}
         {record.last_name?.charAt(0).toUpperCase()}
       </AvatarFallback>

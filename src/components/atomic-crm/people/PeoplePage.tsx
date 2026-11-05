@@ -573,7 +573,7 @@ const PersonCard = ({
         className="press flex w-full flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 text-left"
       >
         <span className="min-w-0 flex-1 basis-48">
-          <span className="block text-[15px] font-medium">
+          <span className="block text-sm font-medium">
             {person.full_name}
             {!person.active ? (
               <span className="ml-2 text-xs text-muted-foreground">(left)</span>

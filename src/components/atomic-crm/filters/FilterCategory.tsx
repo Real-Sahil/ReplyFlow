@@ -11,7 +11,7 @@ export const FilterCategory = ({
   children?: ReactNode;
 }) => (
   <div className="flex flex-col gap-2">
-    <h3 className="flex flex-row items-center gap-2 font-bold text-sm">
+    <h3 className="flex flex-row items-center gap-2 font-semibold text-sm">
       {icon}
       <Translate i18nKey={label} />
     </h3>

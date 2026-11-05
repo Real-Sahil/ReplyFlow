@@ -322,12 +322,12 @@ export const BankMatchPage = () => {
                   <span className="w-24 shrink-0 text-sm text-muted-foreground">
                     {day(line.line_date)}
                   </span>
-                  <span className="min-w-0 flex-1 basis-48 break-words text-[15px]">
+                  <span className="min-w-0 flex-1 basis-48 break-words text-sm">
                     {line.description}
                   </span>
                   <span
                     className={cn(
-                      "w-28 text-right text-[15px] font-semibold tabular-nums",
+                      "w-28 text-right text-sm font-semibold tabular-nums",
                       isIn ? "text-success" : "text-foreground",
                     )}
                   >

@@ -301,13 +301,13 @@ export const SuppliersPage = () => {
                     key={l.item_id}
                     className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3"
                   >
-                    <span className="min-w-0 flex-1 basis-40 text-[15px] font-medium">
+                    <span className="min-w-0 flex-1 basis-40 text-sm font-medium">
                       {l.name}
                     </span>
                     <span className="text-sm text-muted-foreground tabular-nums">
                       {qty(l.on_hand)} left, warn at {qty(l.reorder_level)}
                     </span>
-                    <span className="w-28 text-right text-[15px] font-semibold tabular-nums">
+                    <span className="w-28 text-right text-sm font-semibold tabular-nums">
                       Buy {qty(l.quantity)} {l.unit}
                     </span>
                   </div>
@@ -339,7 +339,7 @@ export const SuppliersPage = () => {
                 className="press flex w-full flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 text-left hover:bg-muted/50"
               >
                 <span className="min-w-0 flex-1 basis-40">
-                  <span className="block text-[15px] font-medium">
+                  <span className="block text-sm font-medium">
                     {s.name}
                     {!s.active ? (
                       <span className="ml-2 text-xs text-muted-foreground">

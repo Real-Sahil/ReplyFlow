@@ -75,7 +75,7 @@ const CompanyShowContentMobile = () => {
           <div className="flex items-center mb-4">
             <CompanyAvatar />
             <div className="mx-3 flex-1">
-              <h2 className="text-2xl font-bold">{record.name}</h2>
+              <h2 className="text-2xl font-semibold">{record.name}</h2>
             </div>
           </div>
         </div>

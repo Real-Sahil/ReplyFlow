@@ -80,9 +80,7 @@ export const CustomFieldValues = ({
     <>
       {filled.map((def) => (
         <div key={def.id} className="mr-10 flex flex-col">
-          <span className="text-xs tracking-wide text-muted-foreground">
-            {def.label}
-          </span>
+          <span className="text-xs text-muted-foreground">{def.label}</span>
           <span className="text-sm">{String(values?.[def.field_key])}</span>
         </div>
       ))}

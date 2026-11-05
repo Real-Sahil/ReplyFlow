@@ -135,7 +135,7 @@ const Row = ({
   >
     {lead}
     <div className="min-w-0 flex-1">
-      <div className="truncate text-[15px] font-medium">{title}</div>
+      <div className="truncate text-sm font-medium">{title}</div>
       {detail ? (
         <div className="truncate text-sm text-muted-foreground">{detail}</div>
       ) : null}
@@ -316,7 +316,7 @@ export const TodayDashboard = () => {
                       <span className="block text-xs text-muted-foreground">
                         Reply first
                       </span>
-                      <span className="block truncate text-[15px] font-medium">
+                      <span className="block truncate text-sm font-medium">
                         {`${needsReply[0].first_name} ${needsReply[0].last_name ?? ""}`.trim()}
                         <span className="ml-2 font-mono text-xs text-warning tabular-nums">
                           {windowLeft(needsReply[0].last_sent_at, now).label}
