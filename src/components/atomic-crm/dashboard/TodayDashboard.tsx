@@ -20,6 +20,7 @@ import {
 } from "../claims/claims";
 import { useClaims } from "../claims/useClaims";
 import { useCashAlert } from "../cashflow/useCashAlert";
+import { useHolidayRequests, useTimeEntries } from "../time/useTime";
 import {
   assetsNeedingAttention,
   docsNeedingAttention,
@@ -175,6 +176,10 @@ export const TodayDashboard = () => {
   const { data: people = [] } = usePeople(isAdmin);
   const { data: claims = [] } = useClaims(isAdmin);
   const cashAlert = useCashAlert(isAdmin);
+  const { data: timeEntries = [] } = useTimeEntries(isAdmin);
+  const { data: holidayRequests = [] } = useHolidayRequests(isAdmin);
+  const hoursWaiting = timeEntries.filter((e) => e.status === "pending");
+  const holidayWaiting = holidayRequests.filter((r) => r.status === "pending");
   const { data: businessDocs = [] } = useBusinessDocuments(isAdmin);
   const { data: equipment = [] } = useAssets(isAdmin);
   const paperworkDue = docsNeedingAttention(businessDocs, new Date());
@@ -451,6 +456,29 @@ export const TodayDashboard = () => {
                   title="Approved, to pay back"
                   detail="Mark as paid once you have sent the money"
                   trailing={formatPence(owedToStaff(claims))}
+                />
+              ) : null}
+            </Group>
+          ) : null}
+
+          {isAdmin && (hoursWaiting.length > 0 || holidayWaiting.length > 0) ? (
+            <Group title="Staff time" to="/hours" action="See all">
+              {hoursWaiting.length > 0 ? (
+                <Row
+                  to="/hours"
+                  title="Hours waiting for you"
+                  detail={`${hoursWaiting.length} ${hoursWaiting.length === 1 ? "entry" : "entries"} to approve`}
+                  trailing={`${Math.round(hoursWaiting.reduce((s, e) => s + Number(e.hours), 0) * 10) / 10}h`}
+                  urgent
+                />
+              ) : null}
+              {holidayWaiting.length > 0 ? (
+                <Row
+                  to="/holiday"
+                  title="Holiday requests"
+                  detail={`${holidayWaiting.length} to decide`}
+                  trailing={`${holidayWaiting.reduce((s, r) => s + Number(r.days), 0)} days`}
+                  urgent
                 />
               ) : null}
             </Group>

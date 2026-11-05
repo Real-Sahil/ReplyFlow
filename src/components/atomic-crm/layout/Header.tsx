@@ -17,6 +17,8 @@ import {
   Repeat,
   Waves,
   FileCheck2,
+  Clock,
+  Palmtree,
   FileText,
   Truck,
   Settings,
@@ -320,6 +322,8 @@ const MoreMenu = () => (
         <MoreLink to="/companies" label="Companies" Icon={Building2} />
         <CanAccess resource="configuration" action="edit">
           <MoreLink to="/people" label="People" Icon={UserRound} />
+          <MoreLink to="/hours" label="Staff hours" Icon={Clock} />
+          <MoreLink to="/holiday" label="Staff holiday" Icon={Palmtree} />
           <MoreLink to="/paperwork" label="Paperwork" Icon={FileCheck2} />
           <MoreLink to="/assets" label="Equipment" Icon={Truck} />
         </CanAccess>

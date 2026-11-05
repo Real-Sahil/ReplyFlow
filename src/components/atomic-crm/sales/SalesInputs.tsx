@@ -31,13 +31,16 @@ export function SalesInputs() {
             id: "accountant",
             name: "Accountant (reads the finance pages only)",
           },
-          { id: "claimant", name: "Expenses only (sends expense claims)" },
+          {
+            id: "claimant",
+            name: "Staff sign-in (expenses, hours and holiday only)",
+          },
         ]}
         format={(value: string | undefined) =>
           value === "accountant" || value === "claimant" ? value : "agent"
         }
         disabled={record?.id === identity?.id || !!record?.administrator}
-        helperText="An accountant sees invoices, bills, the money book and reports, and cannot change anything. An expenses-only person can send expense claims and see how they went, and nothing else."
+        helperText="An accountant sees invoices, bills, the money book and reports, and cannot change anything. A staff sign-in can send expense claims, record hours and ask for holiday, and see how each went. Nothing else."
       />
       <BooleanInput
         source="disabled"

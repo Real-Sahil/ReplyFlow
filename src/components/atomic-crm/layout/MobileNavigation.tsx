@@ -22,6 +22,8 @@ import {
   Repeat,
   Waves,
   FileCheck2,
+  Clock,
+  Palmtree,
   FileText,
   Truck,
   Plus,
@@ -302,6 +304,20 @@ const MoreSheet = ({
               label="People"
               detail="Staff, holiday and documents"
               Icon={UserRound}
+              onPick={onOpenChange}
+            />
+            <MoreRow
+              to="/hours"
+              label="Staff hours"
+              detail="Approve the hours staff send"
+              Icon={Clock}
+              onPick={onOpenChange}
+            />
+            <MoreRow
+              to="/holiday"
+              label="Staff holiday"
+              detail="Approve holiday requests"
+              Icon={Palmtree}
               onPick={onOpenChange}
             />
             <MoreRow

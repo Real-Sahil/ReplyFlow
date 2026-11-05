@@ -29,6 +29,7 @@ import {
   type Person,
   type PersonDocument,
 } from "./people";
+import { useStaffSignIns } from "./useStaffSignIns";
 import {
   PEOPLE_KEY,
   usePeople,
@@ -102,6 +103,10 @@ const PersonDialog = ({
   );
   const [notes, setNotes] = useState(person?.notes ?? "");
   const [active, setActive] = useState(person?.active ?? true);
+  const [signIn, setSignIn] = useState(
+    person?.sales_id ? String(person.sales_id) : "",
+  );
+  const signIns = useStaffSignIns();
 
   const save = useMutation({
     mutationFn: async () => {
@@ -119,6 +124,7 @@ const PersonDialog = ({
         holiday_allowance_days: Number(allowance) || 0,
         notes: notes.trim() || null,
         active,
+        sales_id: signIn ? Number(signIn) : null,
       };
       const client = getSupabaseClient();
       const { error } = person
@@ -202,6 +208,21 @@ const PersonDialog = ({
               value={end}
               onChange={(e) => setEnd(e.target.value)}
             />
+          </Field>
+          <Field id="pe-signin" label="Their staff sign-in (optional)">
+            <select
+              id="pe-signin"
+              value={signIn}
+              onChange={(e) => setSignIn(e.target.value)}
+              className="h-9 rounded-md border bg-transparent px-3 text-sm"
+            >
+              <option value="">Not linked</option>
+              {signIns.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {`${s.first_name} ${s.last_name}`.trim()}
+                </option>
+              ))}
+            </select>
           </Field>
           <Field id="pe-rate" label="Pay rate in pounds (optional)">
             <Input

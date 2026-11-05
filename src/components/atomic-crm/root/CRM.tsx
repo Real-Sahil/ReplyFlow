@@ -90,6 +90,11 @@ const PeoplePage = lazyScreen(
   () => import("../people/PeoplePage"),
   "PeoplePage",
 );
+const HoursPage = lazyScreen(() => import("../time/HoursPage"), "HoursPage");
+const HolidayPage = lazyScreen(
+  () => import("../time/HolidayPage"),
+  "HolidayPage",
+);
 const StatementsPage = lazyScreen(
   () => import("../statements/StatementsPage"),
   "StatementsPage",
@@ -362,6 +367,8 @@ const DesktopAdmin = (
         <Route path="/cashflow" element={<CashFlowPage />} />
         <Route path="/paperwork" element={<PaperworkPage />} />
         <Route path="/statements" element={<StatementsPage />} />
+        <Route path="/hours" element={<HoursPage />} />
+        <Route path="/holiday" element={<HolidayPage />} />
         <Route path="/assets" element={<AssetsPage />} />
         <Route path="/people" element={<PeoplePage />} />
         <Route path="/claims" element={<ClaimsPage />} />
@@ -446,7 +453,7 @@ const mobilePosts = {
   edit: asMobileScreen("Post", posts.edit),
 };
 const MobileClaimsScreen = asMobileScreen("Staff expenses", ClaimsPage);
-// An expenses-only person has no mobile header or tab bar, only their own bar and this page.
+// A staff sign-in has no mobile header or tab bar, only their own bar and this page.
 const MobileClaims = () =>
   useIsClaimant() ? (
     <div className="px-4 pb-10 pt-4">
@@ -461,6 +468,24 @@ const MobileRecurring = asMobileScreen("Repeating", RecurringPage);
 const MobileCashFlow = asMobileScreen("Cash flow", CashFlowPage);
 const MobilePaperwork = asMobileScreen("Paperwork", PaperworkPage);
 const MobileStatements = asMobileScreen("Statements", StatementsPage);
+const MobileHoursScreen = asMobileScreen("Staff hours", HoursPage);
+const MobileHolidayScreen = asMobileScreen("Staff holiday", HolidayPage);
+const MobileHours = () =>
+  useIsClaimant() ? (
+    <div className="px-4 pb-10 pt-4">
+      <HoursPage />
+    </div>
+  ) : (
+    <MobileHoursScreen />
+  );
+const MobileHoliday = () =>
+  useIsClaimant() ? (
+    <div className="px-4 pb-10 pt-4">
+      <HolidayPage />
+    </div>
+  ) : (
+    <MobileHolidayScreen />
+  );
 const MobileAssets = asMobileScreen("Equipment", AssetsPage);
 const MobilePeople = asMobileScreen("People", PeoplePage);
 const MobileBusiness = asMobileScreen("Business and VAT", BusinessSettingsPage);
@@ -539,6 +564,8 @@ const MobileAdmin = (
           <Route path="/cashflow" element={<MobileCashFlow />} />
           <Route path="/paperwork" element={<MobilePaperwork />} />
           <Route path="/statements" element={<MobileStatements />} />
+          <Route path="/hours" element={<MobileHours />} />
+          <Route path="/holiday" element={<MobileHoliday />} />
           <Route path="/assets" element={<MobileAssets />} />
           <Route path="/people" element={<MobilePeople />} />
           <Route path="/claims" element={<MobileClaims />} />

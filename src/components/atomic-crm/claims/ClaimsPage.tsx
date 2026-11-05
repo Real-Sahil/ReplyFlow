@@ -619,7 +619,7 @@ const AllClaims = ({ claims }: { claims: Claim[] }) => (
     </div>
     {claims.length === 0 ? (
       <p className="rounded-xl bg-card p-6 text-center text-sm text-muted-foreground shadow-[var(--shadow-card)]">
-        No claims yet. Add a team member with the Expenses only access on the
+        No claims yet. Add a team member with the Staff sign-in access on the
         Team page, and give them their sign-in details.
       </p>
     ) : (

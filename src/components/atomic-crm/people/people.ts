@@ -15,6 +15,7 @@ export type Person = {
   holiday_allowance_days: number;
   notes: string | null;
   active: boolean;
+  sales_id?: number | null;
 };
 
 export type PersonDocument = {

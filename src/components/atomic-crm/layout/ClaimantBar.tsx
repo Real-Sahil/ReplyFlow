@@ -1,13 +1,22 @@
 import { LogOut } from "lucide-react";
 import { useLogout } from "ra-core";
+import { Link, useLocation } from "react-router";
 
 import { Button } from "@/components/ui/button";
 
 import { useConfigurationContext } from "../root/ConfigurationContext";
+import { cn } from "@/lib/utils";
 import { ThemeQuickToggle } from "../settings/AppearanceControls";
 
-// The only bar an expenses-only sign-in sees: the business name, light or dark, and sign out.
+// The only bar a staff sign-in sees: the business name, light or dark, sign out, and its three screens.
+const TABS = [
+  { to: "/claims", label: "Expenses" },
+  { to: "/hours", label: "Hours" },
+  { to: "/holiday", label: "Holiday" },
+];
+
 export const ClaimantBar = () => {
+  const { pathname } = useLocation();
   const { darkModeLogo, title } = useConfigurationContext();
   const logout = useLogout();
   return (
@@ -29,6 +38,26 @@ export const ClaimantBar = () => {
           </Button>
         </div>
       </div>
+      <nav
+        aria-label="Staff"
+        className="mx-auto flex max-w-3xl gap-1 px-3 pb-2"
+      >
+        {TABS.map((tab) => (
+          <Link
+            key={tab.to}
+            to={tab.to}
+            aria-current={pathname === tab.to ? "page" : undefined}
+            className={cn(
+              "flex-1 rounded-lg px-3 py-1.5 text-center text-sm font-medium",
+              pathname === tab.to
+                ? "bg-accent text-accent-foreground"
+                : "text-muted-foreground hover:bg-muted",
+            )}
+          >
+            {tab.label}
+          </Link>
+        ))}
+      </nav>
     </header>
   );
 };

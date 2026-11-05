@@ -7,6 +7,6 @@ export const useIsClaimant = () => {
   return (identity as { role?: string } | undefined)?.role === "claimant";
 };
 
-export const CLAIMANT_PATHS = ["/claims", "/profile"];
+export const CLAIMANT_PATHS = ["/claims", "/hours", "/holiday", "/profile"];
 export const isClaimantPath = (pathname: string) =>
   CLAIMANT_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
