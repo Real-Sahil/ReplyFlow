@@ -317,12 +317,14 @@ export const LoginPage = (props: { redirectTo?: string }) => {
             </Button>
           </div>
         </div>
-        <a
-          href="/privacy.html"
-          className="mt-4 block text-center text-xs text-muted-foreground hover:underline"
-        >
-          Privacy policy
-        </a>
+        <p className="mt-4 flex justify-center gap-4 text-xs text-muted-foreground">
+          <a href="/welcome" className="hover:underline">
+            What is {title}?
+          </a>
+          <a href="/privacy.html" className="hover:underline">
+            Privacy policy
+          </a>
+        </p>
       </div>
       <Notification />
     </div>
