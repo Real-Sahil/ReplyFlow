@@ -134,3 +134,8 @@ article.post h2 { font-size: 1.375rem; margin: 32px 0 12px; }
 .site-footer nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
 .site-footer a { color: var(--muted); }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+/* Hero video */
+.hero-video { margin: 16px 0 0; }
+.hero-video video { width: 100%; height: auto; aspect-ratio: 16 / 9; border-radius: 16px; background: var(--surface); box-shadow: var(--shadow); display: block; }
+.linkbtn { font: inherit; color: var(--accent); background: none; border: 0; padding: 0 4px; cursor: pointer; text-decoration: underline; text-underline-offset: 0.2em; text-decoration-thickness: 1px; }

@@ -1,9 +1,8 @@
 // The demo request form. It posts to the same enquiry endpoint the website form uses, so each request becomes
 // a contact and an opportunity in the business that owns the form key below.
 //
-// ENQUIRY_KEY is the business's enquiry key (organisations.enquiry_key). While it is empty nothing is sent
-// and the page says so, so a request can never land in the wrong business.
-const ENQUIRY_KEY = "";
+// ENQUIRY_KEY is the enquiry key of the ReplyFlow Demo business (organisations.enquiry_key), where requests land.
+const ENQUIRY_KEY = "29ebc72da4d045d29801d86dacc9b7f3";
 const ENDPOINT = "https://mdhmuyhtimjkysvsardi.supabase.co/functions/v1/web_enquiry";
 
 const form = document.getElementById("enquiry");
@@ -44,4 +43,25 @@ if (form && status) {
       status.textContent = "Something went wrong. Please try again.";
     }
   });
+}
+
+// The hero video plays on its own, muted and looping. People who ask their device for less motion get it
+// paused, and everyone can pause or play it.
+const video = document.getElementById("hero-video");
+const toggle = document.getElementById("hero-toggle");
+if (video && toggle) {
+  const sync = () => {
+    toggle.textContent = video.paused ? "Play" : "Pause";
+  };
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    video.removeAttribute("autoplay");
+    video.pause();
+  }
+  toggle.addEventListener("click", () => {
+    if (video.paused) video.play().catch(() => {});
+    else video.pause();
+  });
+  video.addEventListener("play", sync);
+  video.addEventListener("pause", sync);
+  sync();
 }

@@ -84,6 +84,10 @@ home = f"""
         <a class="btn" href="contact">Book a demo</a>
         <a class="btn quiet" href="features">See what it does</a>
       </div>
+      <figure class="hero-video">
+        <video id="hero-video" poster="site/hero-poster.webp" width="1280" height="720" muted loop playsinline preload="metadata" autoplay aria-label="A tour of ReplyFlow: the money book, sending a sheet, bills, owed and owing, staff expenses and the weekly summary, shown with demo data for a fictional shop."><source src="site/hero.mp4" type="video/mp4"><source src="site/hero.webm" type="video/webm"></video>
+        <figcaption class="caption">A 70-second tour. Shown with demo data for a fictional shop. <button type="button" class="linkbtn" id="hero-toggle" aria-controls="hero-video">Pause</button></figcaption>
+      </figure>
     </section>
 
     <section class="block">
@@ -138,7 +142,7 @@ home = f"""
     </section>
 """
 write("welcome.html", page("welcome", "ReplyFlow: replies, orders and the books for UK shops and makers",
-      "ReplyFlow brings customer messages, orders, invoices, money and staff expenses into one app for owner-run UK businesses that sell through Facebook and Messenger.", home))
+      "ReplyFlow brings customer messages, orders, invoices, money and staff expenses into one app for owner-run UK businesses that sell through Facebook and Messenger.", home, script=True))
 
 # ---------------------------------------------------------------- Features
 def group(title, intro, items):
