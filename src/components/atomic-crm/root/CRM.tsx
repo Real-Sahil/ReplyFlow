@@ -90,6 +90,10 @@ const PeoplePage = lazyScreen(
   () => import("../people/PeoplePage"),
   "PeoplePage",
 );
+const RecurringPage = lazyScreen(
+  () => import("../recurring/RecurringPage"),
+  "RecurringPage",
+);
 const SuppliersPage = lazyScreen(
   () => import("../stock/SuppliersPage"),
   "SuppliersPage",
@@ -338,6 +342,7 @@ const DesktopAdmin = (
         <Route path="/summary" element={<SummaryPage />} />
         <Route path="/bank" element={<BankMatchPage />} />
         <Route path="/suppliers" element={<SuppliersPage />} />
+        <Route path="/recurring" element={<RecurringPage />} />
         <Route path="/people" element={<PeoplePage />} />
         <Route path="/claims" element={<ClaimsPage />} />
         <Route path="/invoices" element={<InvoicesPage />} />
@@ -432,6 +437,7 @@ const MobileClaims = () =>
   );
 const MobileBank = asMobileScreen("Bank match", BankMatchPage);
 const MobileSuppliers = asMobileScreen("Suppliers and shopping", SuppliersPage);
+const MobileRecurring = asMobileScreen("Repeating", RecurringPage);
 const MobilePeople = asMobileScreen("People", PeoplePage);
 const MobileBusiness = asMobileScreen("Business and VAT", BusinessSettingsPage);
 
@@ -505,6 +511,7 @@ const MobileAdmin = (
           <Route path="/summary" element={<MobileSummary />} />
           <Route path="/bank" element={<MobileBank />} />
           <Route path="/suppliers" element={<MobileSuppliers />} />
+          <Route path="/recurring" element={<MobileRecurring />} />
           <Route path="/people" element={<MobilePeople />} />
           <Route path="/claims" element={<MobileClaims />} />
           <Route path="/invoices" element={<MobileInvoices />} />

@@ -19,6 +19,7 @@ import {
   Plug,
   Receipt,
   ReceiptText,
+  Repeat,
   Plus,
   Settings,
   Sofa,
@@ -315,6 +316,15 @@ const MoreSheet = ({
               label="Weekly summary"
               detail="Your week in money, stock and orders"
               Icon={CalendarCheck}
+              onPick={onOpenChange}
+            />
+          </CanAccess>
+          <CanAccess resource="configuration" action="edit">
+            <MoreRow
+              to="/recurring"
+              label="Repeating"
+              detail="Rent, subscriptions and regular payments"
+              Icon={Repeat}
               onPick={onOpenChange}
             />
           </CanAccess>
