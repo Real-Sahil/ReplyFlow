@@ -5,8 +5,7 @@
 If you have messaged an organisation's Facebook Page, or sent it an enquiry through a Facebook lead form,
 you can ask for your data to be deleted:
 
-1. Visit the Facebook data settings, or send the organisation a message on its Page asking for your data to be deleted
-   deleted.
+1. Visit the Facebook data settings, or send the organisation a message on its Page asking for your data to be deleted.
 2. Facebook gives you a confirmation code and a status link.
 3. The messages and contact details held for you are removed within 30 days, and the
    request is marked completed on the status link.
