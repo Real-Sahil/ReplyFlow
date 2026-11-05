@@ -19,6 +19,7 @@ import {
   waitingTotal,
 } from "../claims/claims";
 import { useClaims } from "../claims/useClaims";
+import { useCashAlert } from "../cashflow/useCashAlert";
 import { useOwedByCustomers, useOwedToSuppliers } from "../finance/useOwed";
 import { formatPence } from "../quotes/quoteMath";
 import { DashboardActivityLog } from "./DashboardActivityLog";
@@ -167,6 +168,7 @@ export const TodayDashboard = () => {
   const isAdmin = !!identity?.administrator;
   const { data: people = [] } = usePeople(isAdmin);
   const { data: claims = [] } = useClaims(isAdmin);
+  const cashAlert = useCashAlert(isAdmin);
   const { data: personDocuments = [] } = usePersonDocuments(isAdmin);
   const expiring = needingAttention(personDocuments, people, new Date());
   const { currency, dealStages } = useConfigurationContext();
@@ -377,6 +379,18 @@ export const TodayDashboard = () => {
               />
             ))}
           </Group>
+
+          {cashAlert?.firstBelowZero ? (
+            <Group title="Cash flow" to="/cashflow" action="See the forecast">
+              <Row
+                to="/cashflow"
+                title="Money may run short"
+                detail={`Around ${new Date(`${cashAlert.firstBelowZero}T00:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}. Chase what is owed or move a payment.`}
+                trailing={formatPence(cashAlert.lowest.balance)}
+                urgent
+              />
+            </Group>
+          ) : null}
 
           {owedCustomers.length > 0 || owedSuppliers.length > 0 ? (
             <Group title="Money" to="/owed" action="See all">

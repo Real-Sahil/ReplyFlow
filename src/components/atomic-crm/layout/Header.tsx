@@ -15,6 +15,7 @@ import {
   Receipt,
   ReceiptText,
   Repeat,
+  Waves,
   Settings,
   User,
   Users,
@@ -326,6 +327,7 @@ const MoreMenu = () => (
         <MoreLink to="/owed" label="Owed and owing" Icon={HandCoins} />
         <CanAccess resource="configuration" action="edit">
           <MoreLink to="/recurring" label="Repeating" Icon={Repeat} />
+          <MoreLink to="/cashflow" label="Cash flow" Icon={Waves} />
         </CanAccess>
         <MoreLink to="/bank" label="Bank match" Icon={Landmark} />
         <MoreLink to="/invoices" label="Invoices" Icon={Receipt} />

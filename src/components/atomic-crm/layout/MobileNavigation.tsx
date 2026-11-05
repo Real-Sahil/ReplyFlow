@@ -20,6 +20,7 @@ import {
   Receipt,
   ReceiptText,
   Repeat,
+  Waves,
   Plus,
   Settings,
   Sofa,
@@ -325,6 +326,13 @@ const MoreSheet = ({
               label="Repeating"
               detail="Rent, subscriptions and regular payments"
               Icon={Repeat}
+              onPick={onOpenChange}
+            />
+            <MoreRow
+              to="/cashflow"
+              label="Cash flow"
+              detail="When money may be tight"
+              Icon={Waves}
               onPick={onOpenChange}
             />
           </CanAccess>
