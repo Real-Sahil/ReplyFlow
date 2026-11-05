@@ -368,6 +368,13 @@ const MoreSheet = ({
               Icon={Waves}
               onPick={onOpenChange}
             />
+            <MoreRow
+              to="/insights"
+              label="Insights"
+              detail="Charts of income, costs and who pays"
+              Icon={ChartColumn}
+              onPick={onOpenChange}
+            />
           </CanAccess>
           <MoreRow
             to="/owed"

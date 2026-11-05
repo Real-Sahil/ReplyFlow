@@ -342,6 +342,7 @@ const MoreMenu = () => (
         <CanAccess resource="configuration" action="edit">
           <MoreLink to="/recurring" label="Repeating" Icon={Repeat} />
           <MoreLink to="/cashflow" label="Cash flow" Icon={Waves} />
+          <MoreLink to="/insights" label="Insights" Icon={ChartColumn} />
         </CanAccess>
         <MoreLink to="/bank" label="Bank match" Icon={Landmark} />
         <MoreLink to="/invoices" label="Invoices" Icon={Receipt} />
