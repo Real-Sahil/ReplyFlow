@@ -1,3 +1,4 @@
+import { BrandLogo } from "./BrandLogo";
 import { useLayoutEffect, useRef, useState } from "react";
 import {
   BookOpen,
@@ -70,7 +71,7 @@ const sectionFor = (pathname: string) => {
 // The toolbar: brand, the sections as tabs with a sliding marker, then search,
 // refresh, More and the user menu. It stays put and blurs what scrolls under it.
 export const Toolbar = () => {
-  const { darkModeLogo, title } = useConfigurationContext();
+  const { title } = useConfigurationContext();
   const location = useLocation();
   const active = sectionFor(location.pathname);
   const { total: unread } = useGetList("messenger_inbox", {
@@ -96,8 +97,7 @@ export const Toolbar = () => {
           aria-label={title}
           className="flex shrink-0 items-center gap-2 rounded-lg py-1 text-[15px] font-semibold tracking-tight"
         >
-          <img src={darkModeLogo} alt="" className="h-5" />
-          <span className="hidden lg:inline">{title}</span>
+          <BrandLogo />
         </Link>
         <Tabs active={active} inboxCount={inboxCount} />
         <div className="flex shrink-0 items-center gap-1">
@@ -199,7 +199,7 @@ const ACCOUNTANT_TABS: { to: string; label: string }[] = [
 ];
 
 export const AccountantToolbar = () => {
-  const { darkModeLogo, title } = useConfigurationContext();
+  const { title } = useConfigurationContext();
   const location = useLocation();
   return (
     <header
@@ -213,8 +213,7 @@ export const AccountantToolbar = () => {
           aria-label={title}
           className="flex shrink-0 items-center gap-2 rounded-lg py-1 text-[15px] font-semibold tracking-tight"
         >
-          <img src={darkModeLogo} alt="" className="h-5" />
-          <span className="hidden lg:inline">{title}</span>
+          <BrandLogo />
         </Link>
         <nav
           aria-label="Finance"

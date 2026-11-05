@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Palmtree, Plus, X } from "lucide-react";
 import { useGetIdentity, useNotify } from "ra-core";
 
@@ -197,7 +197,27 @@ const MyHoliday = ({ requests }: { requests: HolidayRequest[] }) => {
   );
 };
 
+// The staff sign-ins that are linked to a person in People. Approved holiday for anyone else is not added to
+// a person's leave, so the administrator is reminded.
+const useLinkedSignIns = (): Set<number> | null => {
+  const { data } = useQuery({
+    queryKey: ["people", "linked_sign_ins"],
+    retry: false,
+    queryFn: async () => {
+      const { data, error } = await getSupabaseClient()
+        .from("people")
+        .select("sales_id")
+        .eq("active", true)
+        .not("sales_id", "is", null);
+      if (error) throw error;
+      return new Set((data ?? []).map((p) => Number(p.sales_id)));
+    },
+  });
+  return data ?? null;
+};
+
 const AllHoliday = ({ requests }: { requests: HolidayRequest[] }) => {
+  const linked = useLinkedSignIns();
   const notify = useNotify();
   const queryClient = useQueryClient();
   const [refusing, setRefusing] = useState<HolidayRequest | null>(null);
@@ -277,6 +297,15 @@ const AllHoliday = ({ requests }: { requests: HolidayRequest[] }) => {
                 </Button>
               </div>
             </div>
+            {linked && !linked.has(Number(r.staff_id)) ? (
+              <p
+                role="status"
+                className="mt-2 rounded-md bg-muted px-2 py-1 text-xs text-muted-foreground"
+              >
+                {staffName(r)}'s sign-in is not linked to a person in People, so
+                approving this will not reduce their holiday allowance.
+              </p>
+            ) : null}
             {clash.length > 0 ? (
               <p
                 role="status"
