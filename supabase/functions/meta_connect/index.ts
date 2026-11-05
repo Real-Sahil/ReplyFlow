@@ -35,7 +35,7 @@ const ok = (data: unknown) =>
   });
 
 const back = (query: string) =>
-  Response.redirect(`${APP_URL}/#/facebook?${query}`, 302);
+  Response.redirect(`${APP_URL}/app#/facebook?${query}`, 302);
 
 const dialogUrl = (state: string) =>
   `https://www.facebook.com/${API}/dialog/oauth?${new URLSearchParams({

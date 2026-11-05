@@ -14,7 +14,7 @@ self.addEventListener("push", (event) => {
       tag: data.tag,
       icon: "appIcon/192.png",
       badge: "appIcon/192.png",
-      data: { url: data.url || "./" },
+      data: { url: data.url || "/app" },
     }),
   );
 });
@@ -22,7 +22,7 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const target = new URL(
-    event.notification.data?.url || "./",
+    event.notification.data?.url || "/app",
     self.registration.scope,
   ).href;
   event.waitUntil(

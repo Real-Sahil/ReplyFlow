@@ -235,7 +235,7 @@ const notifyStaff = async (message: InboundMessage, messageRowId: number) => {
       sendPushToOrganisation(Number(row.organisation_id), {
         title: name,
         body: message.body || "Sent an attachment",
-        url: "./#/messenger_inbox",
+        url: "/app#/messenger_inbox",
         tag: `message-${row.contact_id}`,
       }),
       new Promise((resolve) => setTimeout(resolve, 4000)),

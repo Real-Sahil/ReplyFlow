@@ -29,7 +29,7 @@ export const ForgotPasswordPage = () => {
       await resetPassword({
         email: values.email,
         // The reset link opens the set-password screen, not the login page.
-        redirectTo: `${window.location.origin}/#/set-password`,
+        redirectTo: `${window.location.origin}/app#/set-password`,
       });
     } catch (error: any) {
       notify(

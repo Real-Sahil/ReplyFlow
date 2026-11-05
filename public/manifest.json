@@ -66,7 +66,9 @@
       "type": "image/png"
     }
   ],
-  "start_url": ".",
+  "id": "/",
+  "start_url": "/app",
+  "scope": "/",
   "display": "standalone",
   "orientation": "any",
   "theme_color": "#f6f3f1",
@@ -80,7 +82,7 @@
     {
       "name": "Inbox",
       "short_name": "Inbox",
-      "url": "./#/messenger_inbox",
+      "url": "/app#/messenger_inbox",
       "icons": [
         {
           "src": "appIcon/192.png",
@@ -92,7 +94,7 @@
     {
       "name": "Pipeline",
       "short_name": "Pipeline",
-      "url": "./#/deals",
+      "url": "/app#/deals",
       "icons": [
         {
           "src": "appIcon/192.png",
@@ -104,7 +106,7 @@
     {
       "name": "Today",
       "short_name": "Today",
-      "url": "./#/",
+      "url": "/app#/",
       "icons": [
         {
           "src": "appIcon/192.png",

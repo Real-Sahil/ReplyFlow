@@ -65,3 +65,27 @@ if (video && toggle) {
   video.addEventListener("pause", sync);
   sync();
 }
+
+// The phone menu. The "Book a demo" button stays in the bar; the links open from the three-bar button.
+const navToggle = document.querySelector(".nav-toggle");
+const navMenu = document.getElementById("site-menu");
+if (navToggle && navMenu) {
+  const set = (open) => {
+    navMenu.classList.toggle("open", open);
+    navToggle.setAttribute("aria-expanded", String(open));
+    navToggle.setAttribute("aria-label", open ? "Close menu" : "Menu");
+  };
+  navToggle.addEventListener("click", () => set(!navMenu.classList.contains("open")));
+  navMenu.addEventListener("click", (event) => {
+    if (event.target.closest("a")) set(false);
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && navMenu.classList.contains("open")) {
+      set(false);
+      navToggle.focus();
+    }
+  });
+  window.matchMedia("(min-width: 760px)").addEventListener("change", (event) => {
+    if (event.matches) set(false);
+  });
+}

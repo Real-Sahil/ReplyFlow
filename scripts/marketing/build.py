@@ -2,7 +2,7 @@
 """Builds the static marketing pages into public/. Run: python3 scripts/marketing/build.py
 Pages share one header and footer. Everything is plain HTML and one stylesheet, so nothing here needs a
 build step on Vercel: the generated files are committed."""
-import html, pathlib
+import html, pathlib, re
 
 ROOT = pathlib.Path(__file__).resolve().parents[2] / "public"
 
@@ -12,16 +12,14 @@ MARK = ('<svg viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height=
 
 NAV = [("features", "Features"), ("pricing", "Pricing"), ("blog", "Blog"), ("contact", "Book a demo")]
 
-def page(slug, title, desc, body, depth=0, extra_head="", script=False):
-    up = "../" * depth
+def page(slug, title, desc, body, depth=0, extra_head="", script=True):
     links = []
-    for s, label in NAV:
-        if s == "contact":
+    for s_, label in NAV:
+        if s_ == "contact":
             continue
-        cur = ' aria-current="page"' if slug == s or (s == "blog" and slug.startswith("blog")) else ""
-        links.append(f'<a href="{up}{s}"{cur}>{label}</a>')
-    nav = "\n      ".join(links)
-    scr = f'<script src="{up}site/site.js" defer></script>' if script else ""
+        cur = ' aria-current="page"' if slug == s_ or (s_ == "blog" and slug.startswith("blog")) else ""
+        links.append(f'<a href="/{s_}"{cur}>{label}</a>')
+    nav = "\n        ".join(links)
     return f"""<!doctype html>
 <html lang="en-GB">
 <head>
@@ -32,17 +30,21 @@ def page(slug, title, desc, body, depth=0, extra_head="", script=False):
 <meta property="og:title" content="{html.escape(title)}">
 <meta property="og:description" content="{html.escape(desc)}">
 <meta property="og:type" content="website">
-<link rel="icon" href="{up}favicon.ico">
-<link rel="stylesheet" href="{up}site/site.css">
+<link rel="icon" href="/favicon.ico">
+<link rel="stylesheet" href="/site/site.css">
+<script src="/site/boot.js"></script>
 {extra_head}</head>
 <body>
 <div class="wrap">
   <header class="site-header">
-    <a class="brand" href="{up}welcome">{MARK}<span>ReplyFlow</span></a>
-    <nav class="site-nav" aria-label="Main">
-      {nav}
-      <a href="{up}">Sign in</a>
-      <a class="btn small" href="{up}contact">Book a demo</a>
+    <a class="brand" href="/">{MARK}<span>ReplyFlow</span></a>
+    <a class="btn small header-cta" href="/contact">Book a demo</a>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Menu">
+      <span aria-hidden="true"></span><span aria-hidden="true"></span><span aria-hidden="true"></span>
+    </button>
+    <nav class="site-nav" id="site-menu" aria-label="Main">
+        {nav}
+        <a href="/app">Sign in</a>
     </nav>
   </header>
   <main>
@@ -51,15 +53,16 @@ def page(slug, title, desc, body, depth=0, extra_head="", script=False):
   <footer class="site-footer">
     <span>ReplyFlow. Built for owner-run UK businesses.</span>
     <nav aria-label="Footer">
-      <a href="{up}features">Features</a>
-      <a href="{up}pricing">Pricing</a>
-      <a href="{up}blog">Blog</a>
-      <a href="{up}contact">Contact</a>
-      <a href="{up}privacy.html">Privacy policy</a>
+      <a href="/features">Features</a>
+      <a href="/pricing">Pricing</a>
+      <a href="/blog">Blog</a>
+      <a href="/contact">Contact</a>
+      <a href="/privacy">Privacy policy</a>
+      <a href="/app">Sign in</a>
     </nav>
   </footer>
 </div>
-{scr}
+<script src="/site/site.js" defer></script>
 </body>
 </html>
 """
@@ -68,10 +71,16 @@ def shot(name, alt, caption=""):
     cap = f'<p class="caption">{caption}</p>' if caption else ""
     return f'<div><div class="shot"><img src="site/{name}.webp" width="1600" height="1000" loading="lazy" alt="{html.escape(alt)}"></div>{cap}</div>'
 
+# Every link and file on a page is written from the site root (/features, /site/site.css), so a page works
+# the same wherever it sits. The pages are served without .html (see cleanUrls in vercel.json).
+def absolute(content):
+    content = re.sub(r'(href|src|poster)="(?!https?:|/|#|mailto:|tel:)(?:\.\./)*([^"]+)"', r'\1="/\2"', content)
+    return content.replace('"/privacy.html"', '"/privacy"')
+
 def write(path, content):
     p = ROOT / path
     p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(content, encoding="utf-8")
+    p.write_text(absolute(content), encoding="utf-8")
 
 DEMO_NOTE = "Screens use made-up shop data."
 
@@ -359,4 +368,18 @@ for p in POSTS:
     </article>
 """
     write(f"blog/{p['slug']}.html", page("blog-" + p["slug"], p["title"] + " · ReplyFlow", p["desc"], body, depth=1))
+
+# ---------------------------------------------------------------- Not found
+missing = """
+    <section class="hero">
+      <h1>That page is not here</h1>
+      <p class="lede">The link may be old, or mistyped. Try one of these.</p>
+      <div class="actions">
+        <a class="btn" href="/">Home</a>
+        <a class="btn quiet" href="/features">Features</a>
+        <a class="btn quiet" href="/blog">Blog</a>
+      </div>
+    </section>
+"""
+write("404.html", page("404", "Page not found · ReplyFlow", "That page could not be found.", missing))
 print("built")

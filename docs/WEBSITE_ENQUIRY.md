@@ -87,3 +87,21 @@ page it came from.
   a free Cloudflare Turnstile check later.
 - Requests are not rate-limited per IP. The same-email rule keeps repeat submissions
   from multiplying deals.
+
+## Where things are (website and app)
+
+The website is at the root and the app is at `/app`.
+
+| Address | What it is |
+|---|---|
+| `/` | Home (the file `public/welcome.html`, copied to `index.html` by `scripts/site-layout.mjs` after the build) |
+| `/features`, `/pricing`, `/contact`, `/blog`, `/blog/<post>` | Website pages, written by `scripts/marketing/build.py` |
+| `/privacy` | Privacy policy |
+| `/app` | The app (the built `index.html`, renamed `app.html`) |
+| `/login` | Goes to `/app` |
+| `/welcome` | Goes to `/` |
+
+Links made for the app before this (password resets, Facebook connection, notifications, an installed
+home-screen icon) still land on `/`. `public/site/boot.js` forwards anything carrying an app address (`#/...`),
+and the installed app itself, on to `/app`. In Supabase, the password reset link now goes to `/app#/set-password`;
+the redirect list already allows every address on the site.

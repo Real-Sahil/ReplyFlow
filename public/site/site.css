@@ -42,12 +42,13 @@ a { color: var(--accent); text-underline-offset: 0.2em; text-decoration-thicknes
 .narrow { max-width: 680px; margin: 0 auto; }
 
 /* Header */
-.site-header { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; padding-block: 16px; }
-.brand { display: flex; align-items: center; gap: 10px; color: var(--fg); text-decoration: none; font-weight: 600; font-size: 16px; letter-spacing: -0.011em; }
+.site-header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding-block: 16px; }
+.brand { display: flex; align-items: center; gap: 10px; color: var(--fg); text-decoration: none; font-weight: 600; font-size: 16px; letter-spacing: -0.011em; margin-right: auto; }
 .brand svg { width: 28px; height: 28px; }
-.site-nav { display: flex; flex-wrap: wrap; gap: 4px 20px; margin-left: auto; align-items: center; }
+.site-nav { display: flex; flex-wrap: wrap; gap: 4px 24px; align-items: center; order: 1; }
 .site-nav a { color: var(--muted); text-decoration: none; font-size: 15px; padding-block: 4px; }
 .site-nav a:hover, .site-nav a[aria-current="page"] { color: var(--fg); }
+.header-cta { order: 2; }
 .btn {
   display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 20px;
   background: var(--accent); color: var(--accent-fg); border-radius: 12px; text-decoration: none;
@@ -56,8 +57,24 @@ a { color: var(--accent); text-underline-offset: 0.2em; text-decoration-thicknes
 .btn:hover { filter: brightness(1.06); }
 .btn.quiet { background: transparent; color: var(--fg); border-color: var(--line); }
 .btn.small { min-height: 36px; padding: 0 16px; }
-.site-nav .btn { color: var(--accent-fg); }
-.site-nav .btn:hover { color: var(--accent-fg); }
+
+/* Menu button: three bars that become a cross. Phones only. */
+.nav-toggle { display: none; align-items: center; justify-content: center; flex-direction: column; gap: 5px; width: 44px; height: 44px; padding: 0; background: transparent; border: 1px solid var(--line); border-radius: 12px; cursor: pointer; order: 3; }
+.nav-toggle span { display: block; width: 18px; height: 2px; background: var(--fg); border-radius: 2px; transition: transform 0.2s ease, opacity 0.2s ease; }
+.nav-toggle[aria-expanded="true"] span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.nav-toggle[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
+.nav-toggle[aria-expanded="true"] span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+@media (max-width: 759px) {
+  .nav-toggle { display: inline-flex; }
+  .site-nav { order: 4; flex-basis: 100%; flex-direction: column; align-items: stretch; gap: 0; padding: 4px 0 8px; border-top: 1px solid var(--line); }
+  .site-nav a { padding: 12px 0; font-size: 17px; border-bottom: 1px solid var(--line); }
+  .site-nav a:last-child { border-bottom: 0; }
+  /* Without script the links simply show; with it they open from the button. */
+  .js .site-nav { display: none; }
+  .js .site-nav.open { display: flex; }
+}
+@media (min-width: 760px) { .site-nav { margin-left: auto; } .header-cta { margin-left: 8px; } }
+@media (prefers-reduced-motion: reduce) { .nav-toggle span { transition: none; } }
 
 /* Type */
 h1, h2, h3 { text-wrap: balance; letter-spacing: -0.022em; line-height: 1.15; margin: 0; font-weight: 600; }

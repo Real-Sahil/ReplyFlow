@@ -73,7 +73,7 @@ Deno.serve(async (req: Request) => {
   const page = kind === "claims" ? "claims" : kind;
   await sendPushToOrganisation(
     organisationId,
-    { ...message, url: `./#/${page}`, tag: `${kind}-${claimantId}` },
+    { ...message, url: `/app#/${page}`, tag: `${kind}-${claimantId}` },
     { administratorsOnly: true },
   );
   return json(200, { sent: true });

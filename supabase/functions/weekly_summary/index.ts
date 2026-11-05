@@ -64,7 +64,7 @@ Deno.serve(async (req: Request) => {
       await sendPushToOrganisation(Number(organisation.id), {
         title: "Your week is ready",
         body: "Your weekly summary is ready to read.",
-        url: "./#/summary",
+        url: "/app#/summary",
         tag: `weekly-${ymd(from)}`,
       });
       built++;

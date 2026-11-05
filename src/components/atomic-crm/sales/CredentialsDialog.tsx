@@ -31,7 +31,8 @@ export const CredentialsDialog = ({
   const message = credentialsMessage({
     name,
     business: title,
-    url: window.location.origin,
+    // The app lives at /app; the root is the website.
+    url: `${window.location.origin}/app`,
     email,
     password,
   });
