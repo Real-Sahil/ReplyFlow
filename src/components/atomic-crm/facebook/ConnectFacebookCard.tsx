@@ -126,7 +126,7 @@ export const ConnectFacebookCard = () => {
   };
 
   return (
-    <Card>
+    <Card className="glass">
       <CardContent className="flex flex-col gap-4">
         <div>
           <h2 className="text-lg font-semibold">Connect Facebook</h2>

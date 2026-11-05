@@ -20,7 +20,7 @@ export const TasksList = () => {
         </h2>
         <AddTask display="icon" selectContact />
       </div>
-      <Card className="p-4 mb-2">
+      <Card className="glass p-4 mb-2">
         <TasksListContent />
       </Card>
     </div>

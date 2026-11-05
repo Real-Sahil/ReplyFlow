@@ -76,7 +76,7 @@ export const SetupChecklist = () => {
   return (
     <section
       aria-label="Get set up"
-      className="flex flex-col gap-2 rounded-2xl bg-card p-4 shadow-[var(--shadow-card)]"
+      className="glass flex flex-col gap-2 rounded-2xl p-4"
     >
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="text-sm font-semibold text-muted-foreground">

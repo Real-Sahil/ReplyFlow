@@ -6,7 +6,7 @@ import html, pathlib, re
 
 ROOT = pathlib.Path(__file__).resolve().parents[2] / "public"
 
-MARK = ('<svg viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="23" fill="#2f6bed"/>'
+MARK = ('<svg viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="rfm" x1="0.1" y1="0" x2="0.9" y2="1"><stop offset="0" stop-color="#6c9cfb"/><stop offset=".5" stop-color="#2f6bed"/><stop offset="1" stop-color="#1c4cc0"/></linearGradient></defs><rect width="100" height="100" rx="23" fill="url(#rfm)"/>'
         '<path d="M26 30a8 8 0 0 1 8-8h32a8 8 0 0 1 8 8v22a8 8 0 0 1-8 8H48L34 73V60a8 8 0 0 1-8-8z" fill="#fff"/>'
         '<path d="M36 42h26m0 0-7-7m7 7-7 7" fill="none" stroke="#2f6bed" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/></svg>')
 
@@ -35,6 +35,7 @@ def page(slug, title, desc, body, depth=0, extra_head="", script=True):
 <script src="/site/boot.js"></script>
 {extra_head}</head>
 <body>
+<div class="breathing" aria-hidden="true"><i></i><i></i><i></i></div>
 <div class="wrap">
   <header class="site-header">
     <a class="brand" href="/">{MARK}<span>ReplyFlow</span></a>

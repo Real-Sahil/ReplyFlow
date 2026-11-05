@@ -562,9 +562,9 @@ textarea,
   --bubble-in: var(--muted);
   --note-bg: oklch(95.5% 0.04 85);
   --note-border: oklch(70% 0.09 80);
-  --mesh-1: oklch(86% 0.09 262 / 55%);
-  --mesh-2: oklch(90% 0.07 40 / 50%);
-  --mesh-3: oklch(88% 0.06 25 / 40%);
+  --mesh-1: oklch(84% 0.1 262 / 62%);
+  --mesh-2: oklch(90% 0.07 40 / 38%);
+  --mesh-3: oklch(88% 0.06 25 / 30%);
 }
 
 .dark {
@@ -580,9 +580,9 @@ textarea,
   --bubble-in: oklch(28% 0.01 40);
   --note-bg: oklch(27% 0.04 85);
   --note-border: oklch(56% 0.09 85);
-  --mesh-1: oklch(45% 0.13 262 / 60%);
-  --mesh-2: oklch(40% 0.09 40 / 50%);
-  --mesh-3: oklch(36% 0.1 25 / 50%);
+  --mesh-1: oklch(44% 0.14 262 / 66%);
+  --mesh-2: oklch(40% 0.09 40 / 34%);
+  --mesh-3: oklch(36% 0.1 25 / 30%);
 }
 
 html[data-glass="rich"] {
@@ -1018,4 +1018,68 @@ html.theme-fade *::after {
    heading is not repeated (it also left the buttons beside it too little room). */
 [data-mobile-screen] .page-title {
   display: none;
+}
+
+/* ---------------------------------------------------------------------------------------
+   Breathing. Three fields of colour that swell and fade at different, very slow rhythms behind the
+   glass. No edges and nothing to follow, so the content stays the thing to look at. While it runs it
+   replaces the still glow of body::before; with motion off, or for anyone who asks their device for
+   less motion, that still glow is what shows.
+   --------------------------------------------------------------------------------------- */
+html[data-motion="on"] body::before {
+  display: none;
+}
+.breathing {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+.breathing i {
+  position: absolute;
+  display: block;
+  width: 80vmax;
+  height: 80vmax;
+  border-radius: 50%;
+  will-change: transform, opacity;
+  animation: breathe var(--breath, 24s) ease-in-out infinite;
+  animation-delay: var(--lag, 0s);
+}
+.breathing i:nth-child(1) {
+  left: -22vmax;
+  top: -26vmax;
+  background: radial-gradient(closest-side, var(--mesh-1), transparent);
+  --breath: 24s;
+}
+.breathing i:nth-child(2) {
+  right: -30vmax;
+  top: 6vh;
+  background: radial-gradient(closest-side, var(--mesh-2), transparent);
+  --breath: 31s;
+  --lag: -11s;
+}
+.breathing i:nth-child(3) {
+  left: -26vmax;
+  bottom: -38vmax;
+  background: radial-gradient(closest-side, var(--mesh-3), transparent);
+  --breath: 38s;
+  --lag: -23s;
+}
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(0.9);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.14);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .breathing i {
+    animation: none;
+    opacity: 0.8;
+  }
 }

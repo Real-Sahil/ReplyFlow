@@ -51,9 +51,8 @@ export const AppearanceControls = () => {
           ]}
         />
         <span className="text-xs text-muted-foreground">
-          A slow drift of connected points behind the app. Off keeps the still
-          glow and saves battery. It starts off if your device asks for less
-          motion.
+          Colour behind the app that slowly swells and fades. Off keeps the glow
+          still. It starts off if your device asks for less motion.
         </span>
       </div>
     </div>

@@ -159,16 +159,16 @@ article.post h2 { font-size: 1.375rem; margin: 32px 0 12px; }
 .hero-video video { width: 100%; height: auto; aspect-ratio: 16 / 9; border-radius: 16px; background: var(--surface); box-shadow: var(--shadow); display: block; }
 .linkbtn { font: inherit; color: var(--accent); background: none; border: 0; padding: 0 4px; cursor: pointer; text-decoration: underline; text-underline-offset: 0.2em; text-decoration-thickness: 1px; }
 
-/* The glow and the constellation behind the page: blue and a little coral, as in the app. */
-:root { --mesh-1: oklch(86% 0.09 262 / 55%); --mesh-2: oklch(90% 0.07 40 / 50%); --mesh-3: oklch(88% 0.06 25 / 40%); }
+/* The glow behind the page: blue and a little coral, slowly swelling and fading one after another. Nothing to
+   follow, so the words stay the thing to look at. Still for anyone who asks their device for less motion. */
+:root { --mesh-1: oklch(84% 0.1 262 / 62%); --mesh-2: oklch(90% 0.07 40 / 38%); --mesh-3: oklch(88% 0.06 25 / 30%); }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) { --mesh-1: oklch(45% 0.13 262 / 60%); --mesh-2: oklch(40% 0.09 40 / 50%); --mesh-3: oklch(36% 0.1 25 / 50%); }
+  :root:not([data-theme="light"]) { --mesh-1: oklch(44% 0.14 262 / 66%); --mesh-2: oklch(40% 0.09 40 / 34%); --mesh-3: oklch(36% 0.1 25 / 30%); }
 }
-body::before {
-  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
-  background:
-    radial-gradient(55% 38% at 12% 6%, var(--mesh-1), transparent 70%),
-    radial-gradient(50% 36% at 96% 40%, var(--mesh-2), transparent 70%),
-    radial-gradient(60% 40% at 18% 96%, var(--mesh-3), transparent 70%);
-}
-.constellation { position: fixed; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
+.breathing { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+.breathing i { position: absolute; display: block; width: 80vmax; height: 80vmax; border-radius: 50%; will-change: transform, opacity; animation: breathe var(--breath, 24s) ease-in-out infinite; animation-delay: var(--lag, 0s); }
+.breathing i:nth-child(1) { left: -22vmax; top: -26vmax; background: radial-gradient(closest-side, var(--mesh-1), transparent); --breath: 24s; }
+.breathing i:nth-child(2) { right: -30vmax; top: 6vh; background: radial-gradient(closest-side, var(--mesh-2), transparent); --breath: 31s; --lag: -11s; }
+.breathing i:nth-child(3) { left: -26vmax; bottom: -38vmax; background: radial-gradient(closest-side, var(--mesh-3), transparent); --breath: 38s; --lag: -23s; }
+@keyframes breathe { 0%, 100% { opacity: 0.45; transform: scale(0.9); } 50% { opacity: 1; transform: scale(1.14); } }
+@media (prefers-reduced-motion: reduce) { .breathing i { animation: none; opacity: 0.8; } }
