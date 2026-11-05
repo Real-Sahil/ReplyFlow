@@ -1,3 +1,4 @@
+import { useIsPlatformOwner } from "../businesses/useBusinesses";
 import { useLayoutEffect, useRef, useState } from "react";
 import {
   BookOpen,
@@ -230,6 +231,18 @@ const InboxButton = ({ isActive }: { isActive: boolean }) => {
 
 // Everything that is not a daily destination: grouped lists, one row each,
 // with a short line saying what is behind it.
+// Only the platform owner sees it (set up a customer's business).
+const BusinessesRow = ({ onPick }: { onPick: (open: boolean) => void }) =>
+  useIsPlatformOwner() ? (
+    <MoreRow
+      to="/businesses"
+      label="Businesses"
+      detail="Set up a customer's business"
+      Icon={Building2}
+      onPick={onPick}
+    />
+  ) : null;
+
 const MoreSheet = ({
   open,
   onOpenChange,
@@ -507,6 +520,7 @@ const MoreSheet = ({
             Icon={User}
             onPick={onOpenChange}
           />
+          <BusinessesRow onPick={onOpenChange} />
         </MoreGroup>
         <p className="px-1 text-center text-xs text-muted-foreground">
           Version{" "}

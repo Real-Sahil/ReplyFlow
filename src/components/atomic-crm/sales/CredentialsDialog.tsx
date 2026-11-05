@@ -19,9 +19,12 @@ export const CredentialsDialog = ({
   name,
   email,
   password,
+  business,
   onClose,
 }: {
   name: string;
+  // The business the login is for, when it is not the signed-in person's own (a platform owner setting one up).
+  business?: string;
   email: string;
   password: string;
   onClose: () => void;
@@ -30,7 +33,7 @@ export const CredentialsDialog = ({
   const [copied, setCopied] = useState(false);
   const message = credentialsMessage({
     name,
-    business: title,
+    business: business ?? title,
     // The app lives at /app; the root is the website.
     url: `${window.location.origin}/app`,
     email,

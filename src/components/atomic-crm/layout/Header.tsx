@@ -1,3 +1,4 @@
+import { useIsPlatformOwner } from "../businesses/useBusinesses";
 import { BrandLogo } from "./BrandLogo";
 import { useLayoutEffect, useRef, useState } from "react";
 import {
@@ -301,6 +302,12 @@ const MoreGroup = ({
   </div>
 );
 
+// Only the platform owner sees it (set up a customer's business).
+const BusinessesLink = () =>
+  useIsPlatformOwner() ? (
+    <MoreLink to="/businesses" label="Businesses" Icon={Building2} />
+  ) : null;
+
 const MoreMenu = () => (
   <Popover>
     <PopoverTrigger asChild>
@@ -378,6 +385,7 @@ const MoreMenu = () => (
           <MoreLink to="/settings" label="Settings" Icon={Settings} />
         </CanAccess>
         <MoreLink to="/profile" label="My profile" Icon={User} />
+        <BusinessesLink />
       </MoreGroup>
     </PopoverContent>
   </Popover>

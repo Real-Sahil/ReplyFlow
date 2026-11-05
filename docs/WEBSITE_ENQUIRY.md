@@ -105,3 +105,18 @@ Links made for the app before this (password resets, Facebook connection, notifi
 home-screen icon) still land on `/`. `public/site/boot.js` forwards anything carrying an app address (`#/...`),
 and the installed app itself, on to `/app`. In Supabase, the password reset link now goes to `/app#/set-password`;
 the redirect list already allows every address on the site.
+
+## Setting up a customer's business
+
+Public sign-up is closed, so a customer's business is created for them by a **platform owner**.
+
+1. A platform owner is a row in `public.platform_owners` (their auth user id). Add one in the Supabase SQL editor:
+   `insert into public.platform_owners (user_id) select id from auth.users where email = '...';`
+2. The owner opens **More, then Businesses** in the app (the link only shows for owners), types the business name
+   and the administrator's name and email, and presses **Set up the business**.
+3. The app shows a one-time password once. Pass it to the customer with the app address (`/app`); the message is
+   written for you to copy. They choose their own password at first sign-in. No email is sent.
+4. The customer's business starts empty and separate: nobody in another business can see it.
+
+The work is done by the `create_business` function, which checks the caller against `platform_owners` and
+rolls back every step if one fails.
