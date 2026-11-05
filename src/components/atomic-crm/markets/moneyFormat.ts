@@ -17,13 +17,16 @@ export const setMoneyFormat = (
 
 export const moneyFormat = () => current;
 
+// A record that carries its own currency (an invoice) is written in that, whatever the business uses now.
 export const formatMoney = (
   pence: number,
-  options: { whole?: boolean; code?: boolean } = {},
+  options: { whole?: boolean; code?: boolean; currency?: string | null } = {},
 ) =>
   new Intl.NumberFormat(current.locale, {
     style: "currency",
-    currency: current.currency,
+    currency: isSupportedCurrency(options.currency)
+      ? (options.currency as string)
+      : current.currency,
     currencyDisplay: options.code ? "code" : "symbol",
     ...(options.whole
       ? { minimumFractionDigits: pence % 100 === 0 ? 0 : 2 }
@@ -43,18 +46,18 @@ export const currencySymbol = () =>
 // symbol is outside that (zł, ₹, Kč) is written as its code instead, so it never prints as a blank box.
 // Spaces that a locale puts between the number and the symbol are plain spaces, which the font can draw.
 const SPACES = new RegExp("[\\u202f\\u00a0]", "g");
-export const formatMoneyPdf = (pence: number) => {
-  const symbolic = formatMoney(pence);
+export const formatMoneyPdf = (pence: number, currency?: string | null) => {
+  const symbolic = formatMoney(pence, { currency });
   const drawable = Array.from(symbolic).every((c) => {
     const n = c.codePointAt(0) ?? 0;
     return n <= 0xff || n === 0x20ac || n === 0x202f;
   });
-  return (drawable ? symbolic : formatMoney(pence, { code: true })).replace(
-    SPACES,
-    " ",
-  );
+  return (
+    drawable ? symbolic : formatMoney(pence, { code: true, currency })
+  ).replace(SPACES, " ");
 };
 
-// A label written with "(£)" shows the business's own symbol, so a list of columns can be written once.
+// A label written with "(¤)" (the generic currency sign) shows the business's own symbol, so a list of columns
+// can be written once.
 export const withCurrency = (label: string) =>
-  label.replace("(£)", `(${currencySymbol()})`);
+  label.replace("(¤)", `(${currencySymbol()})`);

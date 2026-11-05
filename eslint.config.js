@@ -45,6 +45,41 @@ export default tseslint.config(
     },
   },
   {
+    // Money is written through the business's own currency and market (src/components/atomic-crm/markets and
+    // supabase/functions/_shared/moneyFormat.ts), never with a pound sign or "GBP" written into a screen. A
+    // business can work in any currency, so a literal here would be wrong for it. The files below are UK-only by
+    // nature (the VAT return), the defaults, or sample data.
+    files: ["src/**/*.{ts,tsx}", "supabase/functions/**/*.ts"],
+    ignores: [
+      "**/*.test.{ts,tsx}",
+      "src/components/atomic-crm/markets/**",
+      "src/components/atomic-crm/finance/accountantPack.ts",
+      "src/components/atomic-crm/root/defaultConfiguration.ts",
+      "src/preview-main.tsx",
+      "supabase/functions/_shared/moneyFormat.ts",
+    ],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "Literal[value=/£/]",
+          message:
+            "Do not write a pound sign into a screen. Use formatMoney, useMoney or currencySymbol (src/components/atomic-crm/markets).",
+        },
+        {
+          selector: "TemplateElement[value.raw=/£/]",
+          message:
+            "Do not write a pound sign into a screen. Use formatMoney, useMoney or currencySymbol (src/components/atomic-crm/markets).",
+        },
+        {
+          selector: "Literal[value='GBP']",
+          message:
+            "Do not write a currency code into a screen. A business chooses its own currency: use the markets helpers.",
+        },
+      ],
+    },
+  },
+  {
     // Node scripts and Claude Code hooks. TypeScript files rely on the
     // compiler for undefined identifiers; plain JS needs no-undef back on.
     files: ["**/*.mjs"],

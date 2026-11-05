@@ -1,4 +1,4 @@
-import { formatMoneyPdf as formatPence } from "../markets/moneyFormat";
+import { formatMoneyPdf } from "../markets/moneyFormat";
 import type { Invoice, InvoiceLine } from "./invoiceTypes";
 import { kindLabel } from "./invoiceTypes";
 
@@ -18,6 +18,9 @@ export const downloadInvoicePdf = async (
   const left = 48;
   const right = 547;
   let y = 56;
+  // Written in the currency the invoice was made in, never today's setting.
+  const formatPence = (pence: number) =>
+    formatMoneyPdf(pence, invoice.currency);
   const credit = invoice.kind === "credit_note";
 
   doc.setFont("helvetica", "bold");

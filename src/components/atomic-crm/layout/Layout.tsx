@@ -12,12 +12,15 @@ import { useIsClaimant } from "../misc/useIsClaimant";
 import { AccountantGuard } from "./AccountantGuard";
 import { ClaimantBar } from "./ClaimantBar";
 import { ClaimantGuard } from "./ClaimantGuard";
+import { useConfigurationContext } from "../root/ConfigurationContext";
 import { PasswordGate } from "./PasswordGate";
 import { AccountantToolbar, RecordBackLink, Toolbar } from "./Header";
 import { ScreenReady } from "./ScreenReady";
 
 export const Layout = ({ children }: { children: ReactNode }) => {
   useConfigurationLoader();
+  // Screens start afresh when the business's currency or market changes, so every amount is rewritten.
+  const { currency, market } = useConfigurationContext();
   useGlobalShortcuts();
   const accountant = useIsAccountant();
   const claimant = useIsClaimant();
@@ -40,7 +43,10 @@ export const Layout = ({ children }: { children: ReactNode }) => {
           id="main-content"
         >
           {accountant || claimant ? null : <RecordBackLink />}
-          <ErrorBoundary FallbackComponent={Error}>
+          <ErrorBoundary
+            FallbackComponent={Error}
+            key={`${currency}-${market}`}
+          >
             <Suspense
               fallback={<Skeleton className="h-12 w-12 rounded-full" />}
             >

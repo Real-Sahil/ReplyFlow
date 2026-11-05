@@ -163,11 +163,11 @@ export const InvoicesPage = () => {
                   <td className="px-3 py-2">{d.customer_name || "—"}</td>
                   {vatOn && (
                     <td className="px-3 py-2 text-right tabular-nums">
-                      {formatPence(sign(d.kind, d.vat_pence))}
+                      {formatPence(sign(d.kind, d.vat_pence), d.currency)}
                     </td>
                   )}
                   <td className="px-3 py-2 text-right tabular-nums">
-                    {formatPence(sign(d.kind, d.gross_pence))}
+                    {formatPence(sign(d.kind, d.gross_pence), d.currency)}
                   </td>
                   <td className="px-3 py-2 text-right">
                     <Button

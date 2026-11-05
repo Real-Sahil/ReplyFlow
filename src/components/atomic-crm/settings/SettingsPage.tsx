@@ -32,6 +32,7 @@ import {
   marketChoices as makeMarketChoices,
   marketFor,
 } from "../markets/markets";
+import { useCurrencyLocked } from "../markets/useCurrencyLocked";
 import { SettingsTags } from "./SettingsTags";
 
 const SECTIONS = [
@@ -128,7 +129,6 @@ const transformFormValues = (data: Record<string, any>) => ({
 
 export const SettingsPage = () => {
   const updateConfiguration = useConfigurationUpdater();
-  const before = useConfigurationContext();
   const notify = useNotify();
 
   return (
@@ -142,18 +142,15 @@ export const SettingsPage = () => {
         onSuccess: (data: any) => {
           updateConfiguration(data.config);
           notify("crm.settings.saved");
-          // Every amount on every screen is written from these two choices, so open screens start afresh.
-          if (
-            data.config.currency !== before.currency ||
-            data.config.market !== before.market
-          ) {
-            setTimeout(() => window.location.reload(), 900);
-          }
         },
-        onError: () => {
-          notify("crm.settings.save_error", {
-            type: "error",
-          });
+        onError: (error: Error) => {
+          // The database explains a refused currency change in plain words.
+          notify(
+            /already has records/.test(error?.message ?? "")
+              ? error.message
+              : "crm.settings.save_error",
+            { type: "error" },
+          );
         },
       }}
     >
@@ -195,6 +192,7 @@ const SettingsFormFields = () => {
   const translate = useTranslate();
   const currencyChoices = useMemo(() => makeCurrencyChoices(), []);
   const marketChoices = useMemo(() => makeMarketChoices(), []);
+  const currencyLocked = useCurrencyLocked();
   const {
     watch,
     setValue,
@@ -343,8 +341,8 @@ const SettingsFormFields = () => {
             </h2>
             <p className="text-sm text-muted-foreground">
               Every amount in the app, on invoices and in exports, is written in
-              this currency. Changing it does not convert amounts already
-              recorded.
+              this currency. Choose it before your first record: it cannot be
+              changed afterwards.
             </p>
             <h3 className="text-lg font-medium text-muted-foreground">
               Market
@@ -356,7 +354,7 @@ const SettingsFormFields = () => {
               inputText={(choice) => choice?.name}
               modal
               onChange={(code: string) => {
-                if (code)
+                if (code && !currencyLocked)
                   setValue("currency", marketFor(code).currency, {
                     shouldDirty: true,
                   });
@@ -371,7 +369,16 @@ const SettingsFormFields = () => {
               choices={currencyChoices}
               inputText={(choice) => choice?.id}
               modal
+              disabled={currencyLocked}
             />
+            {currencyLocked ? (
+              <p role="note" className="text-sm text-muted-foreground">
+                This business already has records, so its currency is fixed:
+                changing it would relabel them. Invoices always keep the
+                currency they were made in. To work in another currency, ask us
+                to set up a new business.
+              </p>
+            ) : null}
             {marketFor(watch("market")).ukTax ? null : (
               <p role="note" className="rounded-md bg-muted p-3 text-sm">
                 UK VAT rules, the VAT return and the flat-rate scheme are for

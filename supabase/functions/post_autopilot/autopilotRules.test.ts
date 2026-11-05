@@ -230,3 +230,43 @@ describe("parseSelection", () => {
     ).toBeNull();
   });
 });
+
+describe("prices in other currencies", () => {
+  it("reads a price written either way round, with either decimal mark", async () => {
+    const { pricesIn } = await import("./autopilotRules.ts");
+    expect(pricesIn("Only $499 today")).toEqual([499]);
+    expect(
+      pricesIn("Now 1.234,56 € or EUR 12,50").sort((a, b) => a - b),
+    ).toEqual([12.5, 1234.56]);
+    expect(pricesIn("£1,234.50 plus £5").sort((a, b) => a - b)).toEqual([
+      5, 1234.5,
+    ]);
+    expect(pricesIn("A sofa for everyone")).toEqual([]);
+  });
+  it("still stops a wrong price in a euro caption", async () => {
+    const { checkDraft } = await import("./autopilotRules.ts");
+    const { moneyFormatFor } = await import("../_shared/moneyFormat.ts");
+    const euro = moneyFormatFor("EUR", "IE");
+    const sofa = {
+      title: "Sofa",
+      price_pence: 79900,
+      original_price_pence: null,
+    } as never;
+    expect(checkDraft("Yours for €799.", sofa, euro)).toEqual({ ok: true });
+    const bad = checkDraft("Only €649 this week", sofa, euro);
+    expect(bad.ok).toBe(false);
+  });
+  it("tells the writer which currency to quote", async () => {
+    const { systemPromptFor, buildUserPrompt } =
+      await import("./autopilotRules.ts");
+    const { moneyFormatFor } = await import("../_shared/moneyFormat.ts");
+    const usd = moneyFormatFor("USD", "US");
+    expect(systemPromptFor(null, usd)).toContain("in USD, e.g. $499");
+    const sofa = {
+      title: "Sofa",
+      price_pence: 79900,
+      original_price_pence: null,
+    } as never;
+    expect(JSON.parse(buildUserPrompt(sofa, usd)).price).toBe("$799");
+  });
+});

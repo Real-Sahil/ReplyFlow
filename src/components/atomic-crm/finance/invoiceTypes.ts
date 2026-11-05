@@ -33,6 +33,8 @@ export type Invoice = {
   vat_pence: number;
   gross_pence: number;
   note: string | null;
+  // The currency the invoice was made in. It never changes, whatever the business uses later.
+  currency?: string;
   created_at: string;
   invoice_lines?: InvoiceLine[];
 };

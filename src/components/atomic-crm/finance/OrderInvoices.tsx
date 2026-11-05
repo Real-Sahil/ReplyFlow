@@ -65,7 +65,7 @@ export const OrderInvoices = () => {
               </span>
               <span className="ml-auto tabular-nums">
                 {d.kind === "credit_note" ? "-" : ""}
-                {formatPence(d.gross_pence)}
+                {formatPence(d.gross_pence, d.currency)}
               </span>
               <Button
                 type="button"

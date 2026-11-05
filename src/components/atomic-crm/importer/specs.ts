@@ -61,10 +61,11 @@ export const claimsSpec = (now = new Date()): Spec<ClaimRow> => {
       {
         key: "amount",
         label: "Amount",
+        // eslint-disable-next-line no-restricted-syntax -- a column heading a person may have typed
         aliases: ["cost", "total", "amount £"],
         required: true,
         example: "12.50",
-        help: "In pounds, like 12.50. Up to £5,000.",
+        help: "In the business's currency, like 12.50. Up to 5,000.",
       },
       {
         key: "what",
@@ -109,7 +110,7 @@ export const claimsSpec = (now = new Date()): Spec<ClaimRow> => {
       const amount = parsePence(c.amount, { max: 500000 });
       if (amount === null)
         errors.push(
-          "The amount must be like 12.50, more than 0 and up to £5,000.",
+          "The amount must be like 12.50, more than 0 and up to 5,000.",
         );
       if (!c.what) errors.push("Say what it was for.");
       else if (c.what.length > 300)
@@ -178,6 +179,7 @@ export const moneySpec = (
     {
       key: "amount",
       label: "Amount",
+      // eslint-disable-next-line no-restricted-syntax -- a column heading a person may have typed
       aliases: ["amount £", "total"],
       required: true,
       example: "850.00",

@@ -15,6 +15,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { AuthMiddleware, UserMiddleware } from "../_shared/authentication.ts";
 import { corsHeaders, OptionsMiddleware } from "../_shared/cors.ts";
 import { businessNameOf } from "../_shared/businessName.ts";
+import { getMoneyFormat } from "../_shared/money.ts";
 import { getUserSale } from "../_shared/getUserSale.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { createErrorResponse } from "../_shared/utils.ts";
@@ -109,14 +110,19 @@ const groqChat = async (
 const draftFor = async (
   product: ProductFacts,
   businessName: string | null,
+  organisationId: number,
 ): Promise<string> => {
+  const format = await getMoneyFormat(organisationId);
   const message = parseDraft(
-    await groqChat(systemPromptFor(businessName), buildUserPrompt(product)),
+    await groqChat(
+      systemPromptFor(businessName, format),
+      buildUserPrompt(product, format),
+    ),
   );
   if (!message) {
     throw new DraftRejected("The AI writer did not return a usable caption.");
   }
-  const check = checkDraft(message, product);
+  const check = checkDraft(message, product, format);
   if (!check.ok) throw new DraftRejected(check.reason);
   return message;
 };
@@ -285,7 +291,7 @@ const runAutopilot = async (organisationId: number) => {
         skipped.push(`product ${product.id}: photo could not be used`);
         continue;
       }
-      const message = await draftFor(product, businessName);
+      const message = await draftFor(product, businessName, organisationId);
       const now = new Date().toISOString();
       const { error } = await supabaseAdmin.from("page_posts").insert({
         organisation_id: organisationId,
@@ -360,7 +366,13 @@ const suggest = async (
   try {
     const businessName = await businessNameOf(Number(sale.organisation_id));
     return json({
-      data: { message: await draftFor(product as ProductFacts, businessName) },
+      data: {
+        message: await draftFor(
+          product as ProductFacts,
+          businessName,
+          Number(sale.organisation_id),
+        ),
+      },
     });
   } catch (error) {
     if (error instanceof NotConfigured) {
@@ -441,7 +453,11 @@ const draftSelected = async (
         skipped.push(`product ${product.id}: photo could not be used`);
         continue;
       }
-      const message = await draftFor(product, businessName);
+      const message = await draftFor(
+        product,
+        businessName,
+        Number(sale.organisation_id),
+      );
       const now = new Date().toISOString();
       const { error } = await supabaseAdmin.from("page_posts").insert({
         organisation_id: sale.organisation_id,

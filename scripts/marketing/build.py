@@ -234,7 +234,7 @@ pricing = f"""
       <h2>Questions</h2>
       <div style="margin-top:24px">
         {qa("What currency do you charge in?", "Pounds sterling.")}
-        {qa("Can I use it in another currency or country?", "Yes for the money itself. Each business picks its market and currency in Settings (pounds, euros, dollars and more), and every amount, invoice and export follows. Tax is UK VAT only for now. In other markets invoices are issued without tax lines and the VAT return tools are switched off. Tell us which tax rules you need on the demo form.")}
+        {qa("Can I use it in another currency or country?", "Yes for the money itself. Each business picks its market and currency in Settings (pounds, euros, dollars and more) before its first record, and every amount, invoice and export follows. Once there are records the currency is fixed, and every invoice keeps the currency it was made in. Tax is UK VAT only for now. In other markets invoices are issued without tax lines and the VAT return tools are switched off. Tell us which tax rules you need on the demo form.")}
         {qa("Is there a contract?", "We will tell you the terms on the call, before you decide anything.")}
         {qa("Do you take payment on this website?", "No. There is nothing to buy here yet. Book a call and we will set you up.")}
         {qa("Will you replace my accountant?", "No. ReplyFlow keeps tidy records and your accountant can look at them with a read-only login. It does not file anything for you.")}

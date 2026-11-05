@@ -1,3 +1,9 @@
+import {
+  DEFAULT_MONEY_FORMAT,
+  formatMoney,
+  type MoneyFormat,
+} from "../_shared/moneyFormat.ts";
+
 // Pure rules for the post autopilot: when the next posts go out, what the
 // caption must look like, and whether a drafted caption can be trusted.
 // Kept free of Deno-only APIs so they can be unit tested with vitest.
@@ -140,14 +146,17 @@ export type ProductFacts = {
 const nameForPrompt = (name: string | null | undefined) =>
   name?.replace(/\s+/g, " ").trim().slice(0, 80) || null;
 
-export const systemPromptFor = (businessName?: string | null) =>
+export const systemPromptFor = (
+  businessName?: string | null,
+  format: MoneyFormat = DEFAULT_MONEY_FORMAT,
+) =>
   [
     `You write Facebook Page posts for ${nameForPrompt(businessName) ?? "a business"}, a UK business.`,
     "You are given one product as JSON. Write one post about it.",
     "Rules:",
     "- British English. Warm, plain and confident. Two to four short sentences.",
     "- Use only the facts in the JSON. Never invent materials, sizes, fabric names, delivery times, stock levels or offers.",
-    "- If a price is given, quote it exactly as given, in pounds, e.g. £499. Do not quote any other price.",
+    `- If a price is given, quote it exactly as given, in ${format.currency}, e.g. ${formatMoney(49900, format, { whole: true })}. Do not quote any other price.`,
     "- Do not include a web link. The link is attached separately.",
     "- At most two hashtags, at the end. Often none.",
     'Reply with only a JSON object: {"message": "<the post>"}.',
@@ -155,11 +164,12 @@ export const systemPromptFor = (businessName?: string | null) =>
 
 export const SYSTEM_PROMPT = systemPromptFor(null);
 
-export const buildUserPrompt = (product: ProductFacts) => {
+export const buildUserPrompt = (
+  product: ProductFacts,
+  format: MoneyFormat = DEFAULT_MONEY_FORMAT,
+) => {
   const pounds = (pence: number | null) =>
-    pence == null
-      ? null
-      : `£${(pence / 100).toFixed(pence % 100 === 0 ? 0 : 2)}`;
+    pence == null ? null : formatMoney(pence, format, { whole: true });
   return JSON.stringify({
     name: product.title,
     collection: product.collection,
@@ -196,11 +206,40 @@ export const parseDraft = (raw: string): string | null => {
   return trimmed.length > 0 && trimmed.length <= 2000 ? trimmed : null;
 };
 
-// Every £ amount in the caption must be one of the product's own prices. A wrong
+// A price is a number next to a currency symbol or a three-letter code, written either way round: "$499",
+// "499 €", "EUR 12,50". Numbers are read with the last separator as the decimal point when it is followed by
+// one or two digits ("1.234,56" and "1,234.56" are both 1234.56).
+// eslint-disable-next-line no-restricted-syntax -- these are the symbols to look for in a caption, in any currency
+const SYMBOL = "[£$€¥₹]|[A-Z]{3}";
+const AMOUNT = "\\d[\\d.,\\s]*\\d|\\d";
+const toNumber = (text: string): number => {
+  const t = text.replace(/\s/g, "");
+  const last = Math.max(t.lastIndexOf(","), t.lastIndexOf("."));
+  if (last === -1 || t.length - last - 1 > 2)
+    return Number(t.replace(/[.,]/g, ""));
+  return Number(
+    t.slice(0, last).replace(/[.,]/g, "") + "." + t.slice(last + 1),
+  );
+};
+export const pricesIn = (message: string): number[] => {
+  const found: number[] = [];
+  for (const m of message.matchAll(
+    new RegExp(`(?:${SYMBOL})\\s?(${AMOUNT})`, "g"),
+  ))
+    found.push(toNumber(m[1]));
+  for (const m of message.matchAll(
+    new RegExp(`(${AMOUNT})\\s?(?:${SYMBOL})`, "g"),
+  ))
+    found.push(toNumber(m[1]));
+  return found;
+};
+
+// Every price in the caption, in any currency, must be one of the product's own prices. A wrong
 // price on a public Page is the one mistake we cannot afford, so anything else fails.
 export const checkDraft = (
   message: string,
   product: ProductFacts,
+  format: MoneyFormat = DEFAULT_MONEY_FORMAT,
 ): { ok: true } | { ok: false; reason: string } => {
   if (/https?:\/\/|www\./i.test(message)) {
     return { ok: false, reason: "The caption contains a link." };
@@ -208,14 +247,11 @@ export const checkDraft = (
   const allowed = [product.price_pence, product.original_price_pence]
     .filter((p): p is number => p != null)
     .map((p) => p / 100);
-  const amounts = [...message.matchAll(/£\s?(\d[\d,]*(?:\.\d{1,2})?)/g)].map(
-    (match) => Number(match[1].replace(/,/g, "")),
-  );
-  const stray = amounts.find((amount) => !allowed.includes(amount));
+  const stray = pricesIn(message).find((amount) => !allowed.includes(amount));
   if (stray !== undefined) {
     return {
       ok: false,
-      reason: `The caption quotes £${stray}, which is not a price for this product.`,
+      reason: `The caption quotes ${formatMoney(Math.round(stray * 100), format, { whole: true })}, which is not a price for this product.`,
     };
   }
   return { ok: true };

@@ -43,4 +43,5 @@ export const poundsToPence = (text: string): number | null => {
 };
 
 // Written in the signed-in business's currency and market (see markets/moneyFormat).
-export const formatPence = (pence: number) => formatMoney(pence);
+export const formatPence = (pence: number, currency?: string | null) =>
+  formatMoney(pence, { currency });
