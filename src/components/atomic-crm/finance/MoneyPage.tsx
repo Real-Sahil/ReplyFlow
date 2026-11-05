@@ -5,6 +5,7 @@ import { BookOpen, FileSpreadsheet, Plus } from "lucide-react";
 import { useCanAccess, useGetIdentity, useNotify } from "ra-core";
 
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -144,6 +145,48 @@ export const MoneyPage = () => {
     onError: (e: Error) => notify(e.message, { type: "error" }),
   });
 
+  const rowActions = (e: MoneyEntry) => (
+    <>
+      {e.receipt_path && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => openReceipt(e.receipt_path!)}
+        >
+          Receipt
+        </Button>
+      )}
+      {!readOnly && e.state === "planned" && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() =>
+            change.mutate({
+              id: e.id,
+              patch: {
+                status: "done",
+                entry_date: new Date().toLocaleDateString("en-CA"),
+                payment_method: "bank_transfer",
+              },
+            })
+          }
+        >
+          Mark done
+        </Button>
+      )}
+      {!readOnly && e.state !== "void" && (
+        <>
+          <Button variant="ghost" size="sm" onClick={() => setEditing(e)}>
+            Edit
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setVoiding(e)}>
+            Void
+          </Button>
+        </>
+      )}
+    </>
+  );
+
   return (
     <div className="mt-2 flex flex-col gap-4 px-4 md:px-0">
       <div className="flex flex-wrap items-center gap-3">
@@ -274,7 +317,57 @@ export const MoneyPage = () => {
       )}
 
       {entries.length > 0 && (
-        <div className="overflow-x-auto rounded-lg border">
+        <ul
+          className="flex flex-col gap-2 md:hidden"
+          aria-label="Money entries"
+        >
+          {entries.map((e) => (
+            <li
+              key={e.id}
+              className={cn(
+                "rounded-xl bg-card p-3 shadow-[var(--shadow-card)]",
+                e.state === "void" && "text-muted-foreground line-through",
+              )}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-medium">{e.category_label}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {[
+                      day(e.entry_date),
+                      e.counterparty,
+                      e.payment_method ? METHOD_LABEL[e.payment_method] : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                </div>
+                <p className="shrink-0 font-semibold tabular-nums">
+                  {e.direction === "in" ? "+" : "-"}
+                  {formatPence(e.amount_pence)}
+                </p>
+              </div>
+              {e.note ? <p className="mt-1 text-sm">{e.note}</p> : null}
+              <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
+                <span className="text-xs text-muted-foreground no-underline">
+                  {e.state === "void"
+                    ? `Voided: ${e.void_reason}`
+                    : e.status === "planned"
+                      ? "Planned"
+                      : "Done"}
+                  {e.order_id ? ` · ${e.order_reference}` : ""}
+                </span>
+                <div className="flex flex-wrap whitespace-nowrap">
+                  {rowActions(e)}
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {entries.length > 0 && (
+        <div className="hidden overflow-x-auto rounded-lg border md:block">
           <table className="w-full min-w-[900px] text-sm">
             <thead className="bg-muted/40 text-left text-xs text-muted-foreground">
               <tr>
@@ -345,53 +438,7 @@ export const MoneyPage = () => {
                         : "Done"}
                   </td>
                   <td className="px-3 py-2 text-right whitespace-nowrap">
-                    {e.receipt_path && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openReceipt(e.receipt_path!)}
-                      >
-                        Receipt
-                      </Button>
-                    )}
-                    {!readOnly && e.state === "planned" && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() =>
-                          change.mutate({
-                            id: e.id,
-                            patch: {
-                              status: "done",
-                              entry_date: new Date().toLocaleDateString(
-                                "en-CA",
-                              ),
-                              payment_method: "bank_transfer",
-                            },
-                          })
-                        }
-                      >
-                        Mark done
-                      </Button>
-                    )}
-                    {!readOnly && e.state !== "void" && (
-                      <>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setEditing(e)}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setVoiding(e)}
-                        >
-                          Void
-                        </Button>
-                      </>
-                    )}
+                    {rowActions(e)}
                   </td>
                 </tr>
               ))}

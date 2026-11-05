@@ -79,6 +79,9 @@ export const authProvider: AuthProvider = {
       id: user?.id ?? 0,
       fullName: user ? `${user.first_name} ${user.last_name}` : "Jane Doe",
       avatar: user?.avatar?.src,
+      // The demo user is an administrator, so the administrator screens can be shown.
+      administrator: user?.administrator ?? true,
+      role: (user?.administrator ?? true) ? "admin" : "agent",
     });
   },
   async getAuthorizationDetails() {

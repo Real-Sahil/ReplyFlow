@@ -607,7 +607,7 @@ const AllClaims = ({ claims }: { claims: Claim[] }) => (
           : ""}
       </p>
     </div>
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-card p-4 text-sm shadow-[var(--shadow-card)]">
+    <div className="flex flex-col gap-3 rounded-xl bg-card p-4 text-sm shadow-[var(--shadow-card)] sm:flex-row sm:items-center sm:justify-between">
       <span className="min-w-0 flex-1">
         <span className="block font-medium">A sheet for your staff</span>
         <span className="text-muted-foreground">

@@ -5,6 +5,7 @@ import { FileSpreadsheet, Plus, Wallet } from "lucide-react";
 import { useNotify } from "ra-core";
 
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -88,6 +89,47 @@ export const BillsPage = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: BILLS_KEY }),
     onError: (e: Error) => notify(e.message, { type: "error" }),
   });
+
+  const rowActions = (b: Bill) => (
+    <>
+      {b.receipt_path && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => openReceipt(b.receipt_path!)}
+        >
+          Receipt
+        </Button>
+      )}
+      {!readOnly && b.status === "unpaid" && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() =>
+            change.mutate({
+              id: b.id,
+              patch: {
+                paid_date: new Date().toLocaleDateString("en-CA"),
+                payment_method: "bank_transfer",
+              },
+            })
+          }
+        >
+          Mark paid
+        </Button>
+      )}
+      {!readOnly && b.status !== "void" && (
+        <>
+          <Button variant="ghost" size="sm" onClick={() => setEditing(b)}>
+            Edit
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setVoiding(b)}>
+            Void
+          </Button>
+        </>
+      )}
+    </>
+  );
 
   return (
     <div className="mt-2 flex flex-col gap-4 px-4 md:px-0">
@@ -186,7 +228,57 @@ export const BillsPage = () => {
       )}
 
       {bills.length > 0 && (
-        <div className="overflow-x-auto rounded-lg border">
+        <ul className="flex flex-col gap-2 md:hidden" aria-label="Bills">
+          {bills.map((b) => (
+            <li
+              key={b.id}
+              className={cn(
+                "rounded-xl bg-card p-3 shadow-[var(--shadow-card)]",
+                b.status === "void" && "text-muted-foreground line-through",
+              )}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-medium">{b.supplier_name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {[day(b.bill_date), b.reference]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                </div>
+                <p className="shrink-0 font-semibold tabular-nums">
+                  {formatPence(b.gross_pence)}
+                </p>
+              </div>
+              <p className="mt-1 text-sm">
+                {b.description}
+                <span className="text-muted-foreground">
+                  {" "}
+                  · {b.category_label}
+                </span>
+              </p>
+              <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
+                <span className="text-xs text-muted-foreground no-underline">
+                  {b.status === "void"
+                    ? `Voided: ${b.void_reason}`
+                    : b.status === "paid"
+                      ? `Paid ${day(b.paid_date!)}${b.payment_method ? ` (${METHOD_LABEL[b.payment_method]})` : ""}`
+                      : b.due_date
+                        ? `Due ${day(b.due_date)}`
+                        : "Unpaid"}
+                  {vatOn ? ` · VAT ${formatPence(b.vat_pence)}` : ""}
+                </span>
+                <div className="flex flex-wrap whitespace-nowrap">
+                  {rowActions(b)}
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {bills.length > 0 && (
+        <div className="hidden overflow-x-auto rounded-lg border md:block">
           <table className="w-full min-w-[820px] text-sm">
             <thead className="bg-muted/40 text-left text-xs text-muted-foreground">
               <tr>
@@ -257,50 +349,7 @@ export const BillsPage = () => {
                           : "Unpaid"}
                   </td>
                   <td className="px-3 py-2 text-right whitespace-nowrap">
-                    {b.receipt_path && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openReceipt(b.receipt_path!)}
-                      >
-                        Receipt
-                      </Button>
-                    )}
-                    {!readOnly && b.status === "unpaid" && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() =>
-                          change.mutate({
-                            id: b.id,
-                            patch: {
-                              paid_date: new Date().toLocaleDateString("en-CA"),
-                              payment_method: "bank_transfer",
-                            },
-                          })
-                        }
-                      >
-                        Mark paid
-                      </Button>
-                    )}
-                    {!readOnly && b.status !== "void" && (
-                      <>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setEditing(b)}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setVoiding(b)}
-                        >
-                          Void
-                        </Button>
-                      </>
-                    )}
+                    {rowActions(b)}
                   </td>
                 </tr>
               ))}
