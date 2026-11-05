@@ -8,7 +8,8 @@ step with the code: when a feature changes, update the matching section.
 - **Business verification** must be approved (Business settings → Security Center).
 - **Data deletion** URL is set to `https://mdhmuyhtimjkysvsardi.supabase.co/functions/v1/data_deletion`
   (App settings → Basic → Data deletion callback URL). It is also linked from `DATA_DELETION.md`.
-- **Privacy policy** URL is set to the published `PRIVACY_POLICY.md` on the Mere & Row website.
+- **Privacy policy** URL is the published page at `/privacy` on the ReplyFlow website (its text is kept in
+  `PRIVACY_POLICY.md`).
 - **Test user**: create a Facebook test user, add them as a Page role (Editor), and give the
   reviewer their login through the app dashboard's Test Users page. Do not put passwords in
   this repository.

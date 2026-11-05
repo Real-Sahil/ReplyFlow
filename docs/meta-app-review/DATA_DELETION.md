@@ -1,17 +1,17 @@
 # Data deletion
 
-## For people who use Facebook or Messenger with Mere & Row
+## For people who use Facebook or Messenger with an organisation that uses ReplyFlow
 
-If you have messaged our Facebook Page, or sent us an enquiry through a Facebook lead form,
-you can ask us to delete your data:
+If you have messaged an organisation's Facebook Page, or sent it an enquiry through a Facebook lead form,
+you can ask for your data to be deleted:
 
-1. Visit the Facebook data settings, or send us a message on our Page asking us to delete
-   your data.
+1. Visit the Facebook data settings, or send the organisation a message on its Page asking for your data to be deleted
+   deleted.
 2. Facebook gives you a confirmation code and a status link.
-3. We remove the messages and contact details we hold for you, within 30 days, and mark the
-   request completed on the status link.
+3. The messages and contact details held for you are removed within 30 days, and the
+   request is marked completed on the status link.
 
-The status link shows the code, when we received the request, and whether it is complete.
+The status link shows the code, when the request was received, and whether it is complete.
 
 ## For staff: working the queue
 

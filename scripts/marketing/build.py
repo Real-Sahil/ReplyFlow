@@ -369,6 +369,56 @@ for p in POSTS:
 """
     write(f"blog/{p['slug']}.html", page("blog-" + p["slug"], p["title"] + " · ReplyFlow", p["desc"], body, depth=1))
 
+
+# ---------------------------------------------------------------- Privacy
+privacy = """
+    <article class="post">
+      <h1>Privacy policy</h1>
+      <p class="meta">Last updated: 5 November 2026</p>
+
+      <h2>Who this covers</h2>
+      <p>ReplyFlow is software that organisations use to answer customers, follow orders and keep their records. This page explains how personal information is handled in two situations: when you deal with an organisation that uses ReplyFlow, and when you use ReplyFlow's own website or sign in to the app.</p>
+      <p>When you send an enquiry, message, order or claim to an organisation, that organisation decides why and how your information is used and is responsible for it. ReplyFlow processes the information on the organisation's behalf and only for the purposes the organisation sets. For your rights over that information, contact the organisation first.</p>
+
+      <h2>What may be collected</h2>
+      <ul>
+        <li>Details given in an enquiry or booking: name, email address, phone number and what you are interested in.</li>
+        <li>Messages and comments sent to an organisation's Facebook Page, and messages sent through Messenger.</li>
+        <li>Answers given on a Facebook lead form.</li>
+        <li>Order details: what was bought, delivery details, payments and the updates sent about the order.</li>
+        <li>For people who work for an organisation and sign in: name, work email, role, and the expense claims, hours and holiday requests they send.</li>
+        <li>Basic technical information needed to keep the service secure and working, such as error reports and sign-in activity.</li>
+      </ul>
+
+      <h2>Why it is used</h2>
+      <p>To answer enquiries, arrange and deliver orders, keep people updated, handle after-sales issues, pay and record staff expenses, keep the financial records an organisation is required to keep, and keep the service secure. Information is not sold, and it is not used to build advertising profiles.</p>
+
+      <h2>How long it is kept</h2>
+      <p>Enquiry and messaging records are kept for as long as the organisation is in touch with you, and are removed when you ask the organisation to remove them. Order, invoice and payment records are kept for as long as the law requires the organisation to keep them. Records are separated by organisation, and one organisation cannot see another's.</p>
+
+      <h2>Who it is shared with</h2>
+      <p>Only with the services needed to run the product, which act on instructions and do not use the information for their own purposes:</p>
+      <ul>
+        <li>Supabase, for database and file hosting.</li>
+        <li>Vercel, for website and app hosting.</li>
+        <li>Meta, for Facebook and Messenger, when an organisation connects its Page.</li>
+        <li>Postmark, for email.</li>
+        <li>An AI writing service, which is sent product details (not customer details) to draft posts when an organisation uses that feature.</li>
+      </ul>
+      <p>Information may also be shared when the law requires it.</p>
+
+      <h2>Your rights</h2>
+      <p>You can ask to see, correct or delete the information held about you, and to object to or restrict how it is used. For information held by an organisation, ask that organisation. To delete data you sent through Facebook or Messenger, you can send a deletion request from Facebook's data settings; Facebook gives you a confirmation code and a status link so you can follow it. For ReplyFlow's own website and accounts, <a href="/contact">contact us</a>. If you are not happy with the answer, you can complain to your data protection authority, which in the United Kingdom is the Information Commissioner's Office.</p>
+
+      <h2>Cookies and storage</h2>
+      <p>The website does not use advertising or tracking cookies. The app stores a sign-in session and a few preferences, such as light or dark mode, on your device so it works as expected.</p>
+
+      <h2>Changes</h2>
+      <p>This page is updated when practices change. The date at the top shows when it last changed.</p>
+    </article>
+"""
+write("privacy.html", page("privacy", "Privacy policy · ReplyFlow", "How personal information is handled when you deal with an organisation that uses ReplyFlow, and when you use ReplyFlow itself.", privacy))
+
 # ---------------------------------------------------------------- Not found
 missing = """
     <section class="hero">
