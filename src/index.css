@@ -331,6 +331,47 @@ a[href] > [data-slot="card"]:hover {
   outline-offset: 2px;
 }
 
+/* The parts the browser draws itself, themed from the palette so they belong to the app. */
+::selection {
+  background: color-mix(in oklch, var(--primary) 24%, transparent);
+  color: inherit;
+}
+input,
+textarea,
+[contenteditable] {
+  caret-color: var(--primary);
+}
+/* Native checkboxes, radios, range sliders and progress bars. */
+:root {
+  accent-color: var(--primary);
+}
+a:not([data-slot]):not([class]),
+.prose a {
+  text-underline-offset: 0.2em;
+  text-decoration-thickness: 1px;
+}
+/* Thin scrollbars in the border colour, so long lists and tables do not show a grey system bar. */
+@layer base {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+  background-clip: content-box;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

@@ -157,7 +157,7 @@ export const LoginPage = (props: { redirectTo?: string }) => {
   );
   // Sits on the right beside the sign-in form, and slides across to the left for sign-up.
   const overlayClass = cn(
-    "hidden flex-col items-center justify-center gap-4 overflow-hidden bg-black p-10 text-center text-white transition-transform duration-700 ease-in-out motion-reduce:transition-none md:absolute md:inset-y-0 md:left-1/2 md:flex md:w-1/2",
+    "hidden flex-col items-center justify-center gap-4 overflow-hidden bg-primary p-10 text-center text-primary-foreground transition-transform duration-700 ease-in-out motion-reduce:transition-none md:absolute md:inset-y-0 md:left-1/2 md:flex md:w-1/2",
     signingUp ? "md:-translate-x-full" : "md:translate-x-0",
   );
 
@@ -294,19 +294,6 @@ export const LoginPage = (props: { redirectTo?: string }) => {
 
           {/* Coloured panel: invites the other form on wide screens */}
           <div className={overlayClass} aria-hidden="true">
-            {/* Vertical blue light streaks, brightest at the bottom */}
-            <div
-              className="pointer-events-none absolute inset-0 opacity-90"
-              style={{
-                backgroundImage:
-                  "repeating-linear-gradient(90deg, transparent 0 18px, rgba(37, 99, 235, 0.9) 22px, rgba(37, 99, 235, 0) 30px, transparent 38px 56px)",
-                maskImage:
-                  "linear-gradient(to top, black 0%, black 35%, transparent 80%)",
-                WebkitMaskImage:
-                  "linear-gradient(to top, black 0%, black 35%, transparent 80%)",
-                filter: "blur(1px)",
-              }}
-            />
             <img
               className="relative mb-2 h-8 brightness-0 invert"
               src={darkModeLogo}
