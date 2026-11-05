@@ -13,6 +13,7 @@ import { AccountantGuard } from "./AccountantGuard";
 import { ClaimantBar } from "./ClaimantBar";
 import { ClaimantGuard } from "./ClaimantGuard";
 import { useConfigurationContext } from "../root/ConfigurationContext";
+import { ConstellationBackground } from "./ConstellationBackground";
 import { PasswordGate } from "./PasswordGate";
 import { AccountantToolbar, RecordBackLink, Toolbar } from "./Header";
 import { ScreenReady } from "./ScreenReady";
@@ -26,7 +27,8 @@ export const Layout = ({ children }: { children: ReactNode }) => {
   const claimant = useIsClaimant();
   return (
     <DataImportProvider>
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen">
+        <ConstellationBackground />
         <ScreenReady />
         <AccountantGuard />
         <ClaimantGuard />

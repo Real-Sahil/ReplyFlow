@@ -4,6 +4,7 @@ import { useStore } from "ra-core";
 import {
   ThemeProviderContext,
   type GlassLevel,
+  type Motion,
   type Theme,
 } from "./theme-context";
 
@@ -15,6 +16,7 @@ type ThemeProviderProps = {
 
 const DARK_QUERY = "(prefers-color-scheme: dark)";
 const LESS_TRANSPARENCY_QUERY = "(prefers-reduced-transparency: reduce)";
+const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 // The colour browsers use for their own chrome (address bar, installed-app title bar).
 const BROWSER_COLOUR = { light: "#f6f3f1", dark: "#171211" } as const;
 
@@ -52,6 +54,11 @@ export function ThemeProvider({
     "glass",
     matches(LESS_TRANSPARENCY_QUERY) || weakDevice() ? "off" : "regular",
   );
+  // Someone who asks their device for less motion, or has a weak device, starts with it off.
+  const [motion, setMotion] = useStore<Motion>(
+    "motion",
+    matches(REDUCED_MOTION_QUERY) || weakDevice() ? "off" : "on",
+  );
   const [systemDark, setSystemDark] = useState(() => matches(DARK_QUERY));
 
   useEffect(() => {
@@ -87,9 +94,21 @@ export function ThemeProvider({
     window.document.documentElement.setAttribute("data-glass", glass);
   }, [glass]);
 
+  useEffect(() => {
+    window.document.documentElement.setAttribute("data-motion", motion);
+  }, [motion]);
+
   const value = useMemo(
-    () => ({ theme, resolvedTheme, setTheme, glass, setGlass }),
-    [theme, resolvedTheme, setTheme, glass, setGlass],
+    () => ({
+      theme,
+      resolvedTheme,
+      setTheme,
+      glass,
+      setGlass,
+      motion,
+      setMotion,
+    }),
+    [theme, resolvedTheme, setTheme, glass, setGlass, motion, setMotion],
   );
 
   return (

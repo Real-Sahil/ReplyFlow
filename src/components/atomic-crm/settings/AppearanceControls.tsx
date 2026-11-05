@@ -6,7 +6,7 @@ import { Segmented } from "@/components/ui/segmented";
 
 // Light, dark or follow the device, and how much glass the navigation uses. Saved per browser.
 export const AppearanceControls = () => {
-  const { theme, setTheme, glass, setGlass } = useTheme();
+  const { theme, setTheme, glass, setGlass, motion, setMotion } = useTheme();
   return (
     <div className="flex flex-col gap-4 p-4">
       <div className="flex flex-col gap-1.5">
@@ -37,6 +37,23 @@ export const AppearanceControls = () => {
         <span className="text-xs text-muted-foreground">
           Glass is the frosted look of the menus and bars. Off gives plain
           surfaces and is easier on older phones.
+        </span>
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <span className="text-sm font-medium">Background motion</span>
+        <Segmented
+          label="Background motion"
+          value={motion}
+          onChange={setMotion}
+          options={[
+            ["on", "On"],
+            ["off", "Off"],
+          ]}
+        />
+        <span className="text-xs text-muted-foreground">
+          A slow drift of connected points behind the app. Off keeps the still
+          glow and saves battery. It starts off if your device asks for less
+          motion.
         </span>
       </div>
     </div>

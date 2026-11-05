@@ -13,6 +13,7 @@ import { AccountantMobileNav } from "./AccountantMobileNav";
 import { ClaimantBar } from "./ClaimantBar";
 import { ClaimantGuard } from "./ClaimantGuard";
 import { useConfigurationContext } from "../root/ConfigurationContext";
+import { ConstellationBackground } from "./ConstellationBackground";
 import { PasswordGate } from "./PasswordGate";
 import { MobileNavigation } from "./MobileNavigation";
 import { PullToRefresh } from "./PullToRefresh";
@@ -26,6 +27,7 @@ export const MobileLayout = ({ children }: { children: ReactNode }) => {
   const claimant = useIsClaimant();
   return (
     <DataImportProvider>
+      <ConstellationBackground />
       <ScreenReady />
       <AccountantGuard />
       <ClaimantGuard />

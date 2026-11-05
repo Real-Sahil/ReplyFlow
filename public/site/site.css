@@ -5,9 +5,10 @@
   --fg: oklch(21% 0.012 38);
   --muted: oklch(44% 0.013 45);
   --line: oklch(88% 0.008 55);
-  --accent: oklch(54% 0.165 29);
+  --accent: oklch(52% 0.18 262);
+  --coral: oklch(62% 0.15 35);
   --accent-fg: oklch(99% 0.004 80);
-  --accent-soft: oklch(94.5% 0.03 29);
+  --accent-soft: oklch(94.5% 0.03 262);
   --shadow: 0 0 0 0.5px oklch(32% 0.03 50 / 12%), 0 12px 32px -16px oklch(32% 0.03 50 / 30%);
   color-scheme: light;
 }
@@ -18,9 +19,10 @@
     --fg: oklch(96% 0.006 70);
     --muted: oklch(72% 0.01 60);
     --line: oklch(30% 0.01 40);
-    --accent: oklch(70% 0.16 34);
+    --accent: oklch(68% 0.15 255);
+    --coral: oklch(72% 0.13 35);
     --accent-fg: oklch(16% 0.01 40);
-    --accent-soft: oklch(26% 0.04 30);
+    --accent-soft: oklch(26% 0.04 262);
     --shadow: 0 0 0 0.5px oklch(100% 0 0 / 10%), 0 12px 32px -16px oklch(0% 0 0 / 60%);
     color-scheme: dark;
   }
@@ -156,3 +158,17 @@ article.post h2 { font-size: 1.375rem; margin: 32px 0 12px; }
 .hero-video { margin: 16px 0 0; }
 .hero-video video { width: 100%; height: auto; aspect-ratio: 16 / 9; border-radius: 16px; background: var(--surface); box-shadow: var(--shadow); display: block; }
 .linkbtn { font: inherit; color: var(--accent); background: none; border: 0; padding: 0 4px; cursor: pointer; text-decoration: underline; text-underline-offset: 0.2em; text-decoration-thickness: 1px; }
+
+/* The glow and the constellation behind the page: blue and a little coral, as in the app. */
+:root { --mesh-1: oklch(86% 0.09 262 / 55%); --mesh-2: oklch(90% 0.07 40 / 50%); --mesh-3: oklch(88% 0.06 25 / 40%); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --mesh-1: oklch(45% 0.13 262 / 60%); --mesh-2: oklch(40% 0.09 40 / 50%); --mesh-3: oklch(36% 0.1 25 / 50%); }
+}
+body::before {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(55% 38% at 12% 6%, var(--mesh-1), transparent 70%),
+    radial-gradient(50% 36% at 96% 40%, var(--mesh-2), transparent 70%),
+    radial-gradient(60% 40% at 18% 96%, var(--mesh-3), transparent 70%);
+}
+.constellation { position: fixed; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }

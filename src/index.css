@@ -53,8 +53,8 @@
 }
 
 :root {
-  /* ReplyFlow theme, light (Coral evolved). Warm grey ground, white cells, a deep
-     coral tint for the single action, and colour that only ever carries
+  /* ReplyFlow theme, light. Warm grey ground, white cells, a blue for the single action
+     (the logo's blue) with warm coral as the second colour, and colour that only ever carries
      meaning (time running out, success, danger). Type is the system font.
      Dark is the .dark block below; glass is the "Glass" section at the end. */
   color-scheme: light;
@@ -65,40 +65,42 @@
   --card-foreground: oklch(21% 0.012 38);
   --popover: oklch(99% 0.004 80 / 92%);
   --popover-foreground: oklch(21% 0.012 38);
-  --primary: oklch(54% 0.165 29);
+  --primary: oklch(52% 0.18 262);
   --primary-foreground: oklch(99% 0.004 80);
   --secondary: oklch(93% 0.008 55);
   --secondary-foreground: oklch(21% 0.012 38);
   --muted: oklch(93% 0.008 55);
   --muted-foreground: oklch(47% 0.013 45);
-  --accent: oklch(94.5% 0.03 29);
-  --accent-foreground: oklch(46% 0.15 29);
+  --accent: oklch(94.5% 0.03 262);
+  --accent-foreground: oklch(44% 0.16 262);
   /* Danger is a cooler, deeper crimson so it never reads as the coral tint. */
   --destructive: oklch(50% 0.2 17);
   --border: oklch(88% 0.008 55);
   /* The border of a form control: 3:1 against its surface, so a field is findable. */
   --input: oklch(60% 0.012 50);
-  --ring: oklch(54% 0.165 29 / 55%);
+  --ring: oklch(52% 0.18 262 / 55%);
   /* Soft colour planes: a warm peach for what needs you, a cool grey for the rest. */
-  --peach: oklch(94.5% 0.035 45);
+  --peach: oklch(94.5% 0.035 35);
+  /* The second colour: warm coral, for the glow, soft panels and the few things that need warmth. */
+  --coral: oklch(62% 0.15 35);
   --cool: oklch(94.5% 0.012 225);
   --warning: oklch(50% 0.12 65);
   --warning-soft: oklch(95% 0.045 80);
   --success: oklch(46% 0.11 155);
   --success-soft: oklch(95% 0.04 155);
-  --chart-1: oklch(54% 0.165 29);
+  --chart-1: oklch(52% 0.18 262);
   --chart-2: oklch(56% 0.11 155);
   --chart-3: oklch(66% 0.13 75);
   --chart-4: oklch(50% 0.2 17);
   --chart-5: oklch(58% 0.03 50);
   --sidebar: oklch(96.5% 0.006 60);
   --sidebar-foreground: oklch(21% 0.012 38);
-  --sidebar-primary: oklch(54% 0.165 29);
+  --sidebar-primary: oklch(52% 0.18 262);
   --sidebar-primary-foreground: oklch(99% 0.004 80);
-  --sidebar-accent: oklch(94.5% 0.03 29);
-  --sidebar-accent-foreground: oklch(46% 0.15 29);
+  --sidebar-accent: oklch(94.5% 0.03 262);
+  --sidebar-accent-foreground: oklch(44% 0.16 262);
   --sidebar-border: oklch(88% 0.008 55);
-  --sidebar-ring: oklch(54% 0.165 29 / 55%);
+  --sidebar-ring: oklch(52% 0.18 262 / 55%);
   --toolbar: oklch(97.5% 0.006 60 / 76%);
   --shadow-card:
     0 0 0 0.5px oklch(32% 0.03 50 / 10%), 0 1px 2px oklch(32% 0.03 50 / 6%);
@@ -152,37 +154,38 @@
   --card-foreground: oklch(96% 0.006 70);
   --popover: oklch(24% 0.01 40 / 92%);
   --popover-foreground: oklch(96% 0.006 70);
-  --primary: oklch(70% 0.16 34);
+  --primary: oklch(68% 0.15 255);
   --primary-foreground: oklch(16% 0.01 40);
   --secondary: oklch(27% 0.01 40);
   --secondary-foreground: oklch(96% 0.006 70);
   --muted: oklch(27% 0.01 40);
   --muted-foreground: oklch(74% 0.012 55);
-  --accent: oklch(30% 0.05 35);
-  --accent-foreground: oklch(84% 0.1 45);
+  --accent: oklch(30% 0.05 262);
+  --accent-foreground: oklch(84% 0.09 262);
   --destructive: oklch(74% 0.16 20);
   --border: oklch(33% 0.011 40);
   --input: oklch(56% 0.012 45);
-  --ring: oklch(70% 0.16 34 / 60%);
-  --peach: oklch(29% 0.04 40);
+  --ring: oklch(68% 0.15 255 / 60%);
+  --peach: oklch(30% 0.045 35);
+  --coral: oklch(72% 0.13 35);
   --cool: oklch(27% 0.012 225);
   --warning: oklch(79% 0.12 75);
   --warning-soft: oklch(30% 0.05 75);
   --success: oklch(78% 0.13 155);
   --success-soft: oklch(28% 0.05 155);
-  --chart-1: oklch(70% 0.16 34);
+  --chart-1: oklch(68% 0.15 255);
   --chart-2: oklch(74% 0.12 155);
   --chart-3: oklch(78% 0.12 75);
   --chart-4: oklch(72% 0.16 20);
   --chart-5: oklch(70% 0.03 50);
   --sidebar: oklch(14% 0.01 30);
   --sidebar-foreground: oklch(96% 0.006 70);
-  --sidebar-primary: oklch(70% 0.16 34);
+  --sidebar-primary: oklch(68% 0.15 255);
   --sidebar-primary-foreground: oklch(16% 0.01 40);
-  --sidebar-accent: oklch(30% 0.05 35);
-  --sidebar-accent-foreground: oklch(84% 0.1 45);
+  --sidebar-accent: oklch(30% 0.05 262);
+  --sidebar-accent-foreground: oklch(84% 0.09 262);
   --sidebar-border: oklch(33% 0.011 40);
-  --sidebar-ring: oklch(70% 0.16 34 / 60%);
+  --sidebar-ring: oklch(68% 0.15 255 / 60%);
   --toolbar: oklch(18% 0.01 35 / 70%);
   --shadow-card:
     0 0 0 0.5px oklch(100% 0 0 / 8%), 0 1px 2px oklch(0% 0 0 / 40%);
@@ -554,14 +557,14 @@ textarea,
   --glass-shadow: 0 12px 32px oklch(35% 0.05 30 / 20%);
   --glass-text-shadow: none;
   --glass-solid: var(--card);
-  --primary-hi: oklch(63% 0.17 33);
-  --primary-lo: oklch(46% 0.16 27);
+  --primary-hi: oklch(61% 0.18 262);
+  --primary-lo: oklch(44% 0.17 262);
   --bubble-in: var(--muted);
   --note-bg: oklch(95.5% 0.04 85);
   --note-border: oklch(70% 0.09 80);
-  --mesh-1: oklch(86% 0.09 40 / 55%);
-  --mesh-2: oklch(90% 0.07 75 / 50%);
-  --mesh-3: oklch(88% 0.06 340 / 40%);
+  --mesh-1: oklch(86% 0.09 262 / 55%);
+  --mesh-2: oklch(90% 0.07 40 / 50%);
+  --mesh-3: oklch(88% 0.06 25 / 40%);
 }
 
 .dark {
@@ -572,14 +575,14 @@ textarea,
   --glass-edge-lo: oklch(100% 0 0 / 12%);
   --glass-shadow: 0 14px 36px oklch(0% 0 0 / 55%);
   --glass-text-shadow: 0 1px 1px oklch(0% 0 0 / 35%);
-  --primary-hi: oklch(78% 0.15 40);
-  --primary-lo: oklch(58% 0.17 30);
+  --primary-hi: oklch(78% 0.13 255);
+  --primary-lo: oklch(58% 0.16 262);
   --bubble-in: oklch(28% 0.01 40);
   --note-bg: oklch(27% 0.04 85);
   --note-border: oklch(56% 0.09 85);
-  --mesh-1: oklch(52% 0.17 28 / 55%);
-  --mesh-2: oklch(48% 0.11 65 / 40%);
-  --mesh-3: oklch(38% 0.12 335 / 45%);
+  --mesh-1: oklch(45% 0.13 262 / 60%);
+  --mesh-2: oklch(40% 0.09 40 / 50%);
+  --mesh-3: oklch(36% 0.1 25 / 50%);
 }
 
 html[data-glass="rich"] {
