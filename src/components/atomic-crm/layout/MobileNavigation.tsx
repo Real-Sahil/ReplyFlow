@@ -21,6 +21,8 @@ import {
   ReceiptText,
   Repeat,
   Waves,
+  FileCheck2,
+  Truck,
   Plus,
   Settings,
   Sofa,
@@ -299,6 +301,20 @@ const MoreSheet = ({
               label="People"
               detail="Staff, holiday and documents"
               Icon={UserRound}
+              onPick={onOpenChange}
+            />
+            <MoreRow
+              to="/paperwork"
+              label="Paperwork"
+              detail="Insurance, licences and certificates"
+              Icon={FileCheck2}
+              onPick={onOpenChange}
+            />
+            <MoreRow
+              to="/assets"
+              label="Equipment"
+              detail="Vans, tools and service dates"
+              Icon={Truck}
               onPick={onOpenChange}
             />
           </CanAccess>

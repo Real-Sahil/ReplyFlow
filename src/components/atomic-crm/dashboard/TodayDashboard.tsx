@@ -20,6 +20,12 @@ import {
 } from "../claims/claims";
 import { useClaims } from "../claims/useClaims";
 import { useCashAlert } from "../cashflow/useCashAlert";
+import {
+  assetsNeedingAttention,
+  docsNeedingAttention,
+  dueLabel,
+} from "../paperwork/paperwork";
+import { useAssets, useBusinessDocuments } from "../paperwork/usePaperwork";
 import { useOwedByCustomers, useOwedToSuppliers } from "../finance/useOwed";
 import { formatPence } from "../quotes/quoteMath";
 import { DashboardActivityLog } from "./DashboardActivityLog";
@@ -169,6 +175,10 @@ export const TodayDashboard = () => {
   const { data: people = [] } = usePeople(isAdmin);
   const { data: claims = [] } = useClaims(isAdmin);
   const cashAlert = useCashAlert(isAdmin);
+  const { data: businessDocs = [] } = useBusinessDocuments(isAdmin);
+  const { data: equipment = [] } = useAssets(isAdmin);
+  const paperworkDue = docsNeedingAttention(businessDocs, new Date());
+  const serviceDue = assetsNeedingAttention(equipment, new Date());
   const { data: personDocuments = [] } = usePersonDocuments(isAdmin);
   const expiring = needingAttention(personDocuments, people, new Date());
   const { currency, dealStages } = useConfigurationContext();
@@ -443,6 +453,39 @@ export const TodayDashboard = () => {
                   trailing={formatPence(owedToStaff(claims))}
                 />
               ) : null}
+            </Group>
+          ) : null}
+
+          {isAdmin && (paperworkDue.length > 0 || serviceDue.length > 0) ? (
+            <Group title="Business paperwork" to="/paperwork" action="See all">
+              {paperworkDue.slice(0, 3).map((d) => (
+                <Row
+                  key={`doc-${d.id}`}
+                  to="/paperwork"
+                  title={d.title}
+                  detail={expiryLabel(d.expires_on, new Date())}
+                  trailing={
+                    expiryState(d.expires_on, new Date()) === "expired"
+                      ? "Expired"
+                      : "Soon"
+                  }
+                  urgent
+                />
+              ))}
+              {serviceDue.slice(0, 3).map((a) => (
+                <Row
+                  key={`asset-${a.id}`}
+                  to="/assets"
+                  title={`${a.name}: service or test`}
+                  detail={dueLabel(a.next_service_date, new Date())}
+                  trailing={
+                    expiryState(a.next_service_date, new Date()) === "expired"
+                      ? "Overdue"
+                      : "Soon"
+                  }
+                  urgent
+                />
+              ))}
             </Group>
           ) : null}
 

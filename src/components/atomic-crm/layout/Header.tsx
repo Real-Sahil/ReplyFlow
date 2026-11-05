@@ -16,6 +16,8 @@ import {
   ReceiptText,
   Repeat,
   Waves,
+  FileCheck2,
+  Truck,
   Settings,
   User,
   Users,
@@ -317,6 +319,8 @@ const MoreMenu = () => (
         <MoreLink to="/companies" label="Companies" Icon={Building2} />
         <CanAccess resource="configuration" action="edit">
           <MoreLink to="/people" label="People" Icon={UserRound} />
+          <MoreLink to="/paperwork" label="Paperwork" Icon={FileCheck2} />
+          <MoreLink to="/assets" label="Equipment" Icon={Truck} />
         </CanAccess>
         <MoreLink to={ImportPage.path} label="Import data" Icon={Import} />
       </MoreGroup>
