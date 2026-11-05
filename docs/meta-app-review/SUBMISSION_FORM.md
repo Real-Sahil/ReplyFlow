@@ -12,6 +12,30 @@ Request: `pages_messaging`, `pages_show_list`, `pages_read_engagement`, `pages_m
 does not do that. If Page Mentions (or `pages_utility_messaging`, or `business_management`) is in the request
 list, remove it. An unused permission is a common reason for a refusal.
 
+## What Meta's list may show, and what to do with each
+
+Meta lists every permission added to the submission, in no useful order. Match it against this table.
+
+| On Meta's list | Do this |
+|---|---|
+| Page Mentions | **Remove it.** Not used. |
+| pages_utility_messaging | **Remove it.** Not used, and utility messages are charged by Meta. |
+| business_management | **Remove it for now.** Not used. If a customer's Page can only be reached through their business portfolio and will not list, add it later with its own review. |
+| public_profile | Only needs the agreement ticked. It is the basic Facebook login information and needs no description or video. |
+| pages_show_list | Keep. The other Page permissions require it. |
+| pages_read_engagement | Keep. `pages_manage_posts`, `pages_manage_engagement` and `pages_manage_metadata` need it or `pages_show_list`. |
+| pages_manage_posts, pages_manage_metadata, pages_messaging | Keep. |
+| pages_manage_engagement | **Add it if it is missing.** The app replies to and hides comments with it. |
+| leads_retrieval | Add only if the lead-ad feature is being reviewed. |
+
+"Your submission must include pages_show_list" means exactly that: leave it in. To take a permission out, go to
+App Review, Permissions and features, find it, and remove it from the request; it can also be removed under
+Use cases, Customize.
+
+"Ensure you have performed required API test calls" means the app must have made a successful call with that
+permission. Connecting a Page and doing each step of the shot list once makes the calls; Meta can take up to a
+day to count them.
+
 ## The fields that are the same on every form
 
 | Field | What to enter |
@@ -38,6 +62,14 @@ the ReplyFlow Inbox next to that customer's contact record and orders, so staff 
 pages_messaging only to send a reply to a person who has messaged the Page first, inside Messenger's 24-hour
 window. We never send promotions or broadcasts. Without this permission staff would have to leave the app and
 answer every message in Facebook, and the reply could not be linked to the customer's order.
+
+### pages_messaging: "instructions to reproduce" (paste this too)
+1. Open `https://replyflow-sahil.vercel.app/app` and sign in with the username and password given above.
+2. Open the user menu, then Facebook connection, and check the test Page is connected.
+3. On Facebook, as the test customer account, send a message to the test Page.
+4. In ReplyFlow open Inbox. The conversation appears within a few seconds. Open it, type a reply and press Send.
+5. The reply arrives in Messenger for the test customer account. Replies can only be sent within 24 hours of the
+   customer's last message; after that the app shows the window has closed and does not send.
 
 ### pages_show_list
 When an administrator chooses to connect Facebook, ReplyFlow needs the list of Pages that person manages so
