@@ -5,7 +5,7 @@
 
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { sendPushToOrganisation } from "../_shared/webPush.ts";
-import { claimsMessage } from "./message.ts";
+import { claimsMessage, holidayMessage, hoursMessage } from "./message.ts";
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), {
@@ -30,12 +30,20 @@ Deno.serve(async (req: Request) => {
   } catch {
     return json(400, { message: "Bad Request" });
   }
+  const kind = String(body.kind ?? "claims");
   const organisationId = Number(body.organisation_id);
-  const claimantId = Number(body.claimant_id);
+  const claimantId = Number(body.claimant_id ?? body.staff_id);
   const count = Number(body.count);
-  const total = Number(body.total_pence);
+  const total = Number(body.total_pence ?? 0);
   const flagged = Number(body.flagged ?? 0);
-  if (![organisationId, claimantId, count, total].every(Number.isFinite)) {
+  const hours = Number(body.hours ?? 0);
+  const days = Number(body.days ?? 0);
+  if (
+    !["claims", "hours", "holiday"].includes(kind) ||
+    ![organisationId, claimantId, count, total, hours, days].every(
+      Number.isFinite,
+    )
+  ) {
     return json(400, { message: "Bad Request" });
   }
 
@@ -48,15 +56,17 @@ Deno.serve(async (req: Request) => {
     .maybeSingle();
   if (!sale) return json(404, { message: "Not Found" });
 
-  const message = claimsMessage({
-    name: `${sale.first_name} ${sale.last_name}`.trim(),
-    count,
-    totalPence: total,
-    flagged,
-  });
+  const name = `${sale.first_name} ${sale.last_name}`.trim();
+  const message =
+    kind === "hours"
+      ? hoursMessage({ name, count, hours })
+      : kind === "holiday"
+        ? holidayMessage({ name, count, days })
+        : claimsMessage({ name, count, totalPence: total, flagged });
+  const page = kind === "claims" ? "claims" : kind;
   await sendPushToOrganisation(
     organisationId,
-    { ...message, url: "./#/claims", tag: `claims-${claimantId}` },
+    { ...message, url: `./#/${page}`, tag: `${kind}-${claimantId}` },
     { administratorsOnly: true },
   );
   return json(200, { sent: true });

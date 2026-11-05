@@ -34,3 +34,31 @@ describe("claimsMessage", () => {
     ).toBe("Someone sent a claim for £5.00. One may be a duplicate.");
   });
 });
+
+import { holidayMessage, hoursMessage } from "./message.ts";
+
+describe("hoursMessage", () => {
+  it("words one entry and a batch", () => {
+    expect(hoursMessage({ name: "Sam Jones", count: 1, hours: 7.5 })).toEqual({
+      title: "Hours to approve",
+      body: "Sam Jones recorded 7.5 hours.",
+    });
+    expect(
+      hoursMessage({ name: "Sam Jones", count: 5, hours: 37.5 }).body,
+    ).toBe("Sam Jones recorded 5 entries, 37.5 hours in all.");
+  });
+});
+
+describe("holidayMessage", () => {
+  it("words one request and a batch", () => {
+    expect(holidayMessage({ name: "Leah Brennan", count: 1, days: 1 })).toEqual(
+      {
+        title: "Holiday request",
+        body: "Leah Brennan asked for 1 day of holiday.",
+      },
+    );
+    expect(holidayMessage({ name: "", count: 2, days: 3.5 }).body).toBe(
+      "Someone sent 2 requests, 3.5 days in all.",
+    );
+  });
+});
