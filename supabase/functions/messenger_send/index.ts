@@ -6,6 +6,7 @@
 // is sent first, then a text with its name, price and link (plus text, if given).
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { getMoneyFormat } from "../_shared/money.ts";
 import { AuthMiddleware, UserMiddleware } from "../_shared/authentication.ts";
 import { corsHeaders, OptionsMiddleware } from "../_shared/cors.ts";
 import { getUserSale } from "../_shared/getUserSale.ts";
@@ -222,7 +223,10 @@ Deno.serve((req: Request) =>
               logged: `[photo] ${product.title}`,
             });
           }
-          const description = formatProductMessage(product);
+          const description = formatProductMessage(
+            product,
+            await getMoneyFormat(Number(sale.organisation_id)),
+          );
           outgoing.push({
             message: { text: description },
             logged: description,

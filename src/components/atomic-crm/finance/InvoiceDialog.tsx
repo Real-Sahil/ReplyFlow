@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { currencySymbol } from "../markets/moneyFormat";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2 } from "lucide-react";
 import { useNotify } from "ra-core";
@@ -181,7 +182,7 @@ export const InvoiceDialog = ({
                 />
               </div>
               <div className="flex flex-col gap-1">
-                <Label htmlFor={`p-${i}`}>Price (£)</Label>
+                <Label htmlFor={`p-${i}`}>Price ({currencySymbol()})</Label>
                 <Input
                   id={`p-${i}`}
                   inputMode="decimal"

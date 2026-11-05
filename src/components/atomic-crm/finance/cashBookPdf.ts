@@ -1,4 +1,4 @@
-import { formatPence } from "../quotes/quoteMath";
+import { formatMoneyPdf as formatPence } from "../markets/moneyFormat";
 import { CHANNEL_LABEL } from "./moneyTypes";
 
 // A row of the cash_book view: a customer payment, a supplier bill or a money-book entry.

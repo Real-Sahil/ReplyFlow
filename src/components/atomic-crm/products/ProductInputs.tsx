@@ -1,4 +1,5 @@
 import { required } from "ra-core";
+import { currencySymbol } from "../markets/moneyFormat";
 import { BooleanInput } from "@/components/admin/boolean-input";
 import { NumberInput } from "@/components/admin/number-input";
 import { TextInput } from "@/components/admin/text-input";
@@ -21,14 +22,14 @@ export const ProductInputs = () => (
       <TextInput source="colour" helperText={false} />
       <NumberInput
         source="price_pence"
-        label="Price (£)"
+        label={`Price (${currencySymbol()})`}
         format={toPounds}
         parse={toPence}
         helperText={false}
       />
       <NumberInput
         source="original_price_pence"
-        label="Original price (£)"
+        label={`Original price (${currencySymbol()})`}
         format={toPounds}
         parse={toPence}
         helperText={false}

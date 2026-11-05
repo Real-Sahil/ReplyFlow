@@ -52,6 +52,7 @@ import type { CrmDataProvider } from "../providers/types";
 import {
   defaultCompanySectors,
   defaultCurrency,
+  defaultMarket,
   defaultDarkModeLogo,
   defaultDealCategories,
   defaultDealPipelineStatuses,
@@ -254,6 +255,7 @@ export const CRM = ({
       store.setItem(CONFIGURATION_STORE_KEY, {
         companySectors,
         currency,
+        market: defaultMarket,
         dealCategories,
         dealPipelineStatuses,
         dealStages,

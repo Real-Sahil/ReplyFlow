@@ -1,3 +1,4 @@
+import { formatMoney, type MoneyFormat } from "../_shared/moneyFormat.ts";
 // Messenger allows free-form replies for 24 hours after the customer's last message.
 export const REPLY_WINDOW_MS = 24 * 60 * 60 * 1000;
 
@@ -25,15 +26,12 @@ export type ProductForMessage = {
   source_url: string | null;
 };
 
-const pounds = (pence: number) =>
-  new Intl.NumberFormat("en-GB", {
-    style: "currency",
-    currency: "GBP",
-    minimumFractionDigits: pence % 100 === 0 ? 0 : 2,
-  }).format(pence / 100);
-
 // The text that goes with a product photo: name, price, and the website link.
-export const formatProductMessage = (product: ProductForMessage) => {
+export const formatProductMessage = (
+  product: ProductForMessage,
+  format?: MoneyFormat,
+) => {
+  const pounds = (pence: number) => formatMoney(pence, format, { whole: true });
   const lines = [product.title];
   if (product.price_pence != null) {
     const was =

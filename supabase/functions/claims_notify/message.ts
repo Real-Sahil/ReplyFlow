@@ -1,21 +1,20 @@
+import { formatMoney, type MoneyFormat } from "../_shared/moneyFormat.ts";
 // The wording of the notification, kept apart so it can be tested.
-
-const pounds = (pence: number) =>
-  new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(
-    pence / 100,
-  );
 
 export const claimsMessage = ({
   name,
   count,
   totalPence,
   flagged,
+  format,
 }: {
   name: string;
   count: number;
   totalPence: number;
   flagged: number;
+  format?: MoneyFormat;
 }): { title: string; body: string } => {
+  const pounds = (pence: number) => formatMoney(pence, format);
   const who = name || "Someone";
   const title =
     count === 1 ? "New expense claim" : `${count} new expense claims`;

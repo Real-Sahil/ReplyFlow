@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useStore } from "ra-core";
 
+import { setMoneyFormat } from "../markets/moneyFormat";
 import type { DealStage, LabeledValue, NoteStatus } from "../types";
 import { defaultConfiguration } from "./defaultConfiguration";
 
@@ -9,6 +10,8 @@ export const CONFIGURATION_STORE_KEY = "app.configuration";
 export interface ConfigurationContextValue {
   companySectors: LabeledValue[];
   currency: string;
+  // ISO 3166 country code of the business's market (see markets/markets.ts).
+  market: string;
   dealCategories: LabeledValue[];
   dealPipelineStatuses: string[];
   dealStages: DealStage[];
@@ -26,7 +29,12 @@ export const useConfigurationContext = () => {
   );
   // Merge with defaults so that missing fields in stored config
   // fall back to default values (e.g. when new settings are added)
-  return useMemo(() => ({ ...defaultConfiguration, ...config }), [config]);
+  return useMemo(() => {
+    const merged = { ...defaultConfiguration, ...config };
+    // Every amount in the app is written in the business's currency and market.
+    setMoneyFormat(merged.currency, merged.market);
+    return merged;
+  }, [config]);
 };
 
 export const useConfigurationUpdater = () => {

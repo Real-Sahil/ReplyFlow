@@ -76,7 +76,9 @@ export const parseBankAmount = (raw: string): number | null => {
     text = text.slice(1, -1);
   }
   if (/\b(dr|debit)\b/i.test(text)) negative = true;
-  text = text.replace(/\b(cr|dr|credit|debit)\b/gi, "").replace(/[£,\s]/g, "");
+  text = text
+    .replace(/\b(cr|dr|credit|debit)\b/gi, "")
+    .replace(/[£$€,\s]/g, "");
   if (text.startsWith("-")) {
     negative = !negative ? true : negative;
     text = text.slice(1);

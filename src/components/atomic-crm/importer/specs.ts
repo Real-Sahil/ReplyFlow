@@ -1,4 +1,5 @@
 import { CLAIM_CATEGORIES } from "../claims/claims";
+import { formatMoney } from "../markets/moneyFormat";
 import {
   daysBefore,
   isFuture,
@@ -10,10 +11,7 @@ import {
   type Spec,
 } from "./engine";
 
-const pounds = (pence: number) =>
-  new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(
-    pence / 100,
-  );
+const pounds = (pence: number) => formatMoney(pence);
 
 const shortDate = (iso: string) =>
   new Date(`${iso}T00:00:00`).toLocaleDateString("en-GB", {

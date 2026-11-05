@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Building2 } from "lucide-react";
+import { marketFor } from "../markets/markets";
+import { useConfigurationContext } from "../root/ConfigurationContext";
 import { useGetIdentity, useGetOne, useNotify } from "ra-core";
 
 import { Button } from "@/components/ui/button";
@@ -101,6 +103,9 @@ const blank = (value: string) => (value.trim() === "" ? null : value.trim());
 // One page for the details every invoice carries, and the optional VAT switch. It is for
 // administrators; everyone else can read the saved values elsewhere but not change them.
 export const BusinessSettingsPage = () => {
+  const { market: marketCode } = useConfigurationContext();
+  const market = marketFor(marketCode);
+  const ukTax = market.ukTax;
   const notify = useNotify();
   const queryClient = useQueryClient();
   const { identity } = useGetIdentity();
@@ -134,7 +139,7 @@ export const BusinessSettingsPage = () => {
     setForm((f) => ({ ...f, [key]: value }));
   };
 
-  const issues = problems(form);
+  const issues = problems(ukTax ? form : { ...form, vat_registered: false });
 
   const save = useMutation({
     mutationFn: async () => {
@@ -146,7 +151,7 @@ export const BusinessSettingsPage = () => {
         trading_name: blank(form.trading_name),
         address: blank(form.address),
         company_number: blank(form.company_number),
-        vat_registered: form.vat_registered,
+        vat_registered: form.vat_registered && ukTax,
         vat_number: form.vat_registered
           ? normaliseVatNumber(form.vat_number)
           : null,
@@ -290,13 +295,21 @@ export const BusinessSettingsPage = () => {
             </p>
           </div>
           <Switch
-            checked={form.vat_registered}
+            checked={form.vat_registered && ukTax}
+            disabled={!ukTax}
             onCheckedChange={(on) => set("vat_registered", on)}
             aria-label="VAT registered"
           />
         </div>
+        {!ukTax && (
+          <p role="note" className="rounded-md bg-muted p-3 text-sm">
+            UK VAT is for businesses in the United Kingdom. This business's
+            market is {market.name}, so invoices are issued without tax lines.
+            Change the market under Settings if that is not right.
+          </p>
+        )}
 
-        {form.vat_registered && (
+        {form.vat_registered && ukTax && (
           <>
             <Field id="vat-number" label="VAT number">
               <Input

@@ -1,3 +1,5 @@
+import { formatMoney } from "../markets/moneyFormat";
+
 // Pricing for a quote. Money is whole pence throughout; each step rounds to the penny,
 // so the PDF and the totals on screen always agree.
 
@@ -40,7 +42,5 @@ export const poundsToPence = (text: string): number | null => {
   return roundPence(Number(trimmed) * 100);
 };
 
-export const formatPence = (pence: number) =>
-  new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(
-    pence / 100,
-  );
+// Written in the signed-in business's currency and market (see markets/moneyFormat).
+export const formatPence = (pence: number) => formatMoney(pence);

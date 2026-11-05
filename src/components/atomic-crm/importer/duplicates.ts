@@ -3,6 +3,7 @@
 // is not one (two real £4.20 coffees on one day do happen).
 
 import type { BillRow, MoneyRow } from "./specs";
+import { formatMoney } from "../markets/moneyFormat";
 
 const same = (a: string | null | undefined, b: string | null | undefined) =>
   (a ?? "").trim().toLowerCase() === (b ?? "").trim().toLowerCase();
@@ -17,10 +18,7 @@ const shortDate = (iso: string) =>
     year: "numeric",
   });
 
-const pounds = (pence: number) =>
-  new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(
-    pence / 100,
-  );
+const pounds = (pence: number) => formatMoney(pence);
 
 // ---- Money book: the same day, the same direction and amount, and the same person (or nobody named).
 

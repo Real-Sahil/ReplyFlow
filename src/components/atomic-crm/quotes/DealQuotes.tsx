@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { currencySymbol } from "../markets/moneyFormat";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useGetIdentity, useNotify } from "ra-core";
 import { Download, FileText, Pencil, Plus, Trash2 } from "lucide-react";
@@ -288,7 +289,7 @@ const QuoteDialog = ({
                 />
               </div>
               <div className="flex flex-col gap-1">
-                {index === 0 && <Label>Price (£)</Label>}
+                {index === 0 && <Label>Price ({currencySymbol()})</Label>}
                 <Input
                   inputMode="decimal"
                   value={line.price}

@@ -1,3 +1,4 @@
+import { formatMoney, type MoneyFormat } from "../_shared/moneyFormat.ts";
 // Renders the customer's order page. Pure string building, so it can be unit tested and
 // has no Deno-only APIs. Everything from the database is escaped before it reaches the page.
 
@@ -43,16 +44,14 @@ export type TrackingOrder = {
   security_held_pence: number | null;
   // The business that sold it, so every business sees its own name on its customers' page.
   business_name?: string | null;
+  // How amounts are written for the business that sold it. Pounds when absent.
+  money_format?: MoneyFormat;
 };
-
-const pounds = (pence: number) =>
-  new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(
-    pence / 100,
-  );
 
 // What the customer pays and when. Balance and security deposit amounts are shown, since
 // the customer needs the cash ready for delivery. No VAT is charged.
 export const paymentLines = (order: TrackingOrder): string[] => {
+  const pounds = (pence: number) => formatMoney(pence, order.money_format);
   const lines: string[] = [];
   lines.push(
     order.payment_terms === "deposit_first"

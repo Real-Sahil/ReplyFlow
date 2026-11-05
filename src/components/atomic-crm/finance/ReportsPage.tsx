@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { currencySymbol } from "../markets/moneyFormat";
 import { useQuery } from "@tanstack/react-query";
 import { ChartColumn } from "lucide-react";
 
@@ -260,7 +261,7 @@ const PeriodReport = ({ tab }: { tab: "pnl" | "channels" }) => {
                     [
                       { key: "section", label: "Section" },
                       { key: "label", label: "Line" },
-                      { key: "amount", label: "Amount (£)" },
+                      { key: "amount", label: `Amount (${currencySymbol()})` },
                     ],
                   ),
                 )
@@ -464,7 +465,9 @@ const Forecast = () => {
           </select>
         </div>
         <div className="flex flex-col gap-1">
-          <Label htmlFor="fc-open">Bank balance today (£, optional)</Label>
+          <Label htmlFor="fc-open">
+            Bank balance today ({currencySymbol()}, optional)
+          </Label>
           <Input
             id="fc-open"
             inputMode="decimal"

@@ -1,4 +1,5 @@
 import { required, useGetOne } from "ra-core";
+import { currencySymbol } from "../markets/moneyFormat";
 import { useEffect } from "react";
 import { useFormContext, useWatch } from "react-hook-form";
 import { AutocompleteInput } from "@/components/admin/autocomplete-input";
@@ -136,8 +137,8 @@ export const OrderInputs = () => (
     </div>
 
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-      {money("quoted_price_pence", "Quoted (£)")}
-      {money("agreed_price_pence", "Agreed (£)")}
+      {money("quoted_price_pence", `Quoted (${currencySymbol()})`)}
+      {money("agreed_price_pence", `Agreed (${currencySymbol()})`)}
       <SelectInput
         source="payment_terms"
         label="Payment"
@@ -148,8 +149,11 @@ export const OrderInputs = () => (
         defaultValue="cash_on_delivery"
         helperText={false}
       />
-      {money("deposit_required_pence", "Deposit due (£)")}
-      {money("security_deposit_pence", "Security deposit requested (£)")}
+      {money("deposit_required_pence", `Deposit due (${currencySymbol()})`)}
+      {money(
+        "security_deposit_pence",
+        `Security deposit requested (${currencySymbol()})`,
+      )}
     </div>
     <p className="text-sm text-muted-foreground">
       Payments are recorded in the Payments section below. The amount paid is

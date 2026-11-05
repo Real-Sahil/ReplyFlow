@@ -2,13 +2,14 @@
 // wording states what the figures show and no more: it does not predict, and it does not advise.
 
 import type { Line, Pnl } from "../finance/reports";
+import { moneyFormat } from "../markets/moneyFormat";
 
 export type MonthRow = Pnl["months"][number];
 
 const pounds = (pence: number) =>
-  new Intl.NumberFormat("en-GB", {
+  new Intl.NumberFormat(moneyFormat().locale, {
     style: "currency",
-    currency: "GBP",
+    currency: moneyFormat().currency,
     maximumFractionDigits: 0,
   }).format(pence / 100);
 const monthName = (m: string) =>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { currencySymbol } from "../markets/moneyFormat";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   useGetIdentity,
@@ -241,7 +242,7 @@ const RecordPayment = ({
           </select>
         </div>
         <div className="flex flex-col gap-1">
-          <Label htmlFor="payment-amount">Amount (£)</Label>
+          <Label htmlFor="payment-amount">Amount ({currencySymbol()})</Label>
           <Input
             id="payment-amount"
             inputMode="decimal"

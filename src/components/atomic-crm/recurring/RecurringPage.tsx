@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { currencySymbol } from "../markets/moneyFormat";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Pause, Pencil, Play, Plus, Repeat } from "lucide-react";
 import { useGetIdentity, useNotify } from "ra-core";
@@ -224,7 +225,9 @@ const RepeatDialog = ({
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="rp-amount">
-              {kind === "bill" ? "Amount before VAT (£)" : "Amount (£)"}
+              {kind === "bill"
+                ? `Amount before VAT (${currencySymbol()})`
+                : `Amount (${currencySymbol()})`}
             </Label>
             <Input
               id="rp-amount"
@@ -236,7 +239,7 @@ const RepeatDialog = ({
           </div>
           {kind === "bill" ? (
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="rp-vat">VAT (£)</Label>
+              <Label htmlFor="rp-vat">VAT ({currencySymbol()})</Label>
               <Input
                 id="rp-vat"
                 inputMode="decimal"

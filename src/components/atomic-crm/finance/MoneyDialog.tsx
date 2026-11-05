@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { currencySymbol } from "../markets/moneyFormat";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCanAccess, useGetList, useNotify } from "ra-core";
 
@@ -225,7 +226,7 @@ export const MoneyDialog = ({
               ))}
             </select>
           </Field>
-          <Field id="m-amount" label="Amount (£)">
+          <Field id="m-amount" label={`Amount (${currencySymbol()})`}>
             <Input
               id="m-amount"
               inputMode="decimal"
@@ -341,7 +342,7 @@ export const MoneyDialog = ({
 
           {vatApplies && (
             <>
-              <Field id="m-vat" label="Of which VAT (£)">
+              <Field id="m-vat" label={`Of which VAT (${currencySymbol()})`}>
                 <Input
                   id="m-vat"
                   inputMode="decimal"

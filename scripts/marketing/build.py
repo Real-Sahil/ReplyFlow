@@ -131,7 +131,7 @@ home = f"""
     <section class="block">
       <div class="narrow" style="margin:0">
         <h2>What it is not</h2>
-        <p class="muted" style="margin-top:12px">It does not run payroll and it does not replace your accountant. It keeps good records, adds up hours and holiday, and gives your accountant clean numbers and their own read-only login. It works in pounds and follows UK VAT.</p>
+        <p class="muted" style="margin-top:12px">It does not run payroll and it does not replace your accountant. It keeps good records, adds up hours and holiday, and gives your accountant clean numbers and their own read-only login. It follows UK VAT. Other markets and currencies are supported for amounts and invoices, without local tax rules yet.</p>
       </div>
     </section>
 
@@ -180,6 +180,7 @@ features = f"""
  ("Cash flow.", "The next 30, 60 or 90 days from your balance, what is owed, what is due and what is planned. Leave out any line you do not trust."),
  ("Repeating items.", "Rent, subscriptions, insurance and loan payments added ahead of time as planned entries or unpaid bills."),
  ("Customer statements.", "What each customer was invoiced, credited and paid, aged by how late it is."),
+ ("Your market and currency.", "Choose a market and a currency for each business. Amounts, invoices, exports and messages are written that way. UK VAT is built in; other markets are invoiced without tax lines for now."),
  ("Mileage, bank matching and sheets.", "Log miles at an editable rate, match bank lines to what you recorded, and import a CSV or Excel sheet with a template."),
  ("Insights and a weekly summary.", "Charts of income, costs and who pays most, and one summary of your week."),
  ("Accountant login and month lock.", "A read-only finance login for your accountant. Lock a signed-off month so nothing dated in it can change."),
@@ -232,8 +233,8 @@ pricing = f"""
     <section class="block">
       <h2>Questions</h2>
       <div style="margin-top:24px">
-        {qa("What currency do you charge in?", "Pounds sterling. The app works in pounds and follows UK VAT today.")}
-        {qa("Can I use it in another currency or country?", "Not for the books yet. Invoices, the money book and VAT are built for the UK. If you run a business elsewhere, tell us what you need on the demo form so we know how many people are asking.")}
+        {qa("What currency do you charge in?", "Pounds sterling.")}
+        {qa("Can I use it in another currency or country?", "Yes for the money itself. Each business picks its market and currency in Settings (pounds, euros, dollars and more), and every amount, invoice and export follows. Tax is UK VAT only for now. In other markets invoices are issued without tax lines and the VAT return tools are switched off. Tell us which tax rules you need on the demo form.")}
         {qa("Is there a contract?", "We will tell you the terms on the call, before you decide anything.")}
         {qa("Do you take payment on this website?", "No. There is nothing to buy here yet. Book a call and we will set you up.")}
         {qa("Will you replace my accountant?", "No. ReplyFlow keeps tidy records and your accountant can look at them with a read-only login. It does not file anything for you.")}

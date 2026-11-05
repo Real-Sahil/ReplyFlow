@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { currencySymbol, formatMoney } from "../markets/moneyFormat";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Camera, Check, FileSpreadsheet, Plus, X } from "lucide-react";
 import { useGetIdentity, useNotify } from "ra-core";
@@ -166,7 +167,7 @@ const NewClaimDialog = ({ onClose }: { onClose: () => void }) => {
         </DialogHeader>
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="claim-amount">Amount (£)</Label>
+            <Label htmlFor="claim-amount">Amount ({currencySymbol()})</Label>
             <Input
               id="claim-amount"
               inputMode="decimal"
@@ -177,7 +178,8 @@ const NewClaimDialog = ({ onClose }: { onClose: () => void }) => {
             />
             {amount && pence === null ? (
               <p className="text-xs text-destructive">
-                Enter an amount like 12.50 (up to £5,000).
+                Enter an amount like 12.50 (up to{" "}
+                {formatMoney(500000, { whole: true })}).
               </p>
             ) : null}
           </div>

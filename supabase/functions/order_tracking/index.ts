@@ -3,6 +3,7 @@
 // the only way in. An unknown or malformed token gets the same "not found" page.
 
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
+import { getMoneyFormat } from "../_shared/money.ts";
 import {
   renderNotFound,
   renderTrackingPage,
@@ -81,6 +82,7 @@ Deno.serve(async (req: Request) => {
     renderTrackingPage({
       ...(data as TrackingOrder),
       business_name: businessName,
+      money_format: await getMoneyFormat(Number(data.organisation_id)),
       security_requested_pence: Number(data.security_deposit_pence ?? 0),
       security_held_pence: held,
     }),

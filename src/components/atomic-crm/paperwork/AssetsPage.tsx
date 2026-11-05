@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { currencySymbol } from "../markets/moneyFormat";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Truck, Wrench } from "lucide-react";
 import { useGetIdentity, useNotify } from "ra-core";
@@ -179,7 +180,7 @@ const AssetDialog = ({
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="as-cost">Cost (£)</Label>
+            <Label htmlFor="as-cost">Cost ({currencySymbol()})</Label>
             <Input
               id="as-cost"
               inputMode="decimal"

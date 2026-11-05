@@ -27,6 +27,11 @@ import {
   type ConfigurationContextValue,
 } from "../root/ConfigurationContext";
 import { defaultConfiguration } from "../root/defaultConfiguration";
+import {
+  currencyChoices as makeCurrencyChoices,
+  marketChoices as makeMarketChoices,
+  marketFor,
+} from "../markets/markets";
 import { SettingsTags } from "./SettingsTags";
 
 const SECTIONS = [
@@ -105,25 +110,13 @@ export const validateItemsInUse = (
   return undefined;
 };
 
-const getCurrencyChoices = () => {
-  const displayNames = new Intl.DisplayNames(
-    typeof navigator !== "undefined"
-      ? (navigator.languages as string[])
-      : ["en"],
-    { type: "currency" },
-  );
-  return Intl.supportedValuesOf("currency").map((code) => ({
-    id: code,
-    name: `${code} – ${displayNames.of(code)}`,
-  }));
-};
-
 const transformFormValues = (data: Record<string, any>) => ({
   config: {
     title: data.title,
     lightModeLogo: data.lightModeLogo,
     darkModeLogo: data.darkModeLogo,
     currency: data.currency,
+    market: data.market,
     companySectors: ensureValues(data.companySectors),
     dealCategories: ensureValues(data.dealCategories),
     taskTypes: ensureValues(data.taskTypes),
@@ -135,6 +128,7 @@ const transformFormValues = (data: Record<string, any>) => ({
 
 export const SettingsPage = () => {
   const updateConfiguration = useConfigurationUpdater();
+  const before = useConfigurationContext();
   const notify = useNotify();
 
   return (
@@ -148,6 +142,13 @@ export const SettingsPage = () => {
         onSuccess: (data: any) => {
           updateConfiguration(data.config);
           notify("crm.settings.saved");
+          // Every amount on every screen is written from these two choices, so open screens start afresh.
+          if (
+            data.config.currency !== before.currency ||
+            data.config.market !== before.market
+          ) {
+            setTimeout(() => window.location.reload(), 900);
+          }
         },
         onError: () => {
           notify("crm.settings.save_error", {
@@ -172,6 +173,7 @@ const SettingsForm = () => {
       lightModeLogo: { src: config.lightModeLogo },
       darkModeLogo: { src: config.darkModeLogo },
       currency: config.currency,
+      market: config.market,
       companySectors: config.companySectors,
       dealCategories: config.dealCategories,
       taskTypes: config.taskTypes,
@@ -191,7 +193,8 @@ const SettingsForm = () => {
 
 const SettingsFormFields = () => {
   const translate = useTranslate();
-  const currencyChoices = useMemo(() => getCurrencyChoices(), []);
+  const currencyChoices = useMemo(() => makeCurrencyChoices(), []);
+  const marketChoices = useMemo(() => makeMarketChoices(), []);
   const {
     watch,
     setValue,
@@ -332,16 +335,35 @@ const SettingsFormFields = () => {
           </CardContent>
         </Card>
 
-        {/* Deals */}
-        <Card id="deals">
+        {/* Market and currency */}
+        <Card id="market">
           <CardContent className="space-y-4">
             <h2 className="text-xl font-semibold text-muted-foreground">
-              {translate("resources.deals.name", {
-                smart_count: 2,
-              })}
+              Market and currency
             </h2>
+            <p className="text-sm text-muted-foreground">
+              Every amount in the app, on invoices and in exports, is written in
+              this currency. Changing it does not convert amounts already
+              recorded.
+            </p>
             <h3 className="text-lg font-medium text-muted-foreground">
-              {translate("crm.settings.deals.currency")}
+              Market
+            </h3>
+            <AutocompleteInput
+              source="market"
+              label={false}
+              choices={marketChoices}
+              inputText={(choice) => choice?.name}
+              modal
+              onChange={(code: string) => {
+                if (code)
+                  setValue("currency", marketFor(code).currency, {
+                    shouldDirty: true,
+                  });
+              }}
+            />
+            <h3 className="text-lg font-medium text-muted-foreground">
+              Currency
             </h3>
             <AutocompleteInput
               source="currency"
@@ -350,7 +372,24 @@ const SettingsFormFields = () => {
               inputText={(choice) => choice?.id}
               modal
             />
+            {marketFor(watch("market")).ukTax ? null : (
+              <p role="note" className="rounded-md bg-muted p-3 text-sm">
+                UK VAT rules, the VAT return and the flat-rate scheme are for
+                the United Kingdom only. In this market invoices are issued
+                without tax lines, so enter prices as you charge them.
+              </p>
+            )}
+          </CardContent>
+        </Card>
 
+        {/* Deals */}
+        <Card id="deals">
+          <CardContent className="space-y-4">
+            <h2 className="text-xl font-semibold text-muted-foreground">
+              {translate("resources.deals.name", {
+                smart_count: 2,
+              })}
+            </h2>
             <Separator />
 
             <h3 className="text-lg font-medium text-muted-foreground">

@@ -1,4 +1,5 @@
 import { ResponsiveBar } from "@nivo/bar";
+import { currencySymbol } from "../markets/moneyFormat";
 import { ResponsivePie } from "@nivo/pie";
 
 import { formatPence } from "../quotes/quoteMath";
@@ -20,8 +21,8 @@ const longMonth = (m: string) =>
   });
 const compact = (pounds: number) =>
   Math.abs(pounds) >= 1000
-    ? `£${Math.round(pounds / 100) / 10}k`
-    : `£${Math.round(pounds)}`;
+    ? `${currencySymbol()}${Math.round(pounds / 100) / 10}k`
+    : `${currencySymbol()}${Math.round(pounds)}`;
 
 const Tip = ({
   title,

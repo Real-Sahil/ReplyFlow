@@ -1,3 +1,4 @@
+import { formatMoney } from "../markets/moneyFormat";
 // Records and reminders for staff and contractors. Pure helpers, so each rule can be tested. This is
 // record keeping: it does not calculate pay and it does not file anything.
 
@@ -137,7 +138,4 @@ export const payLabel = (
 ) =>
   person.pay_rate_pence == null
     ? "Pay not recorded"
-    : `£${(person.pay_rate_pence / 100).toLocaleString("en-GB", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      })}${person.pay_basis ? ` per ${BASIS_LABEL[person.pay_basis]}` : ""}`;
+    : `${formatMoney(person.pay_rate_pence)}${person.pay_basis ? ` per ${BASIS_LABEL[person.pay_basis]}` : ""}`;

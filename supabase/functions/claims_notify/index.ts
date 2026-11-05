@@ -5,6 +5,7 @@
 
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { sendPushToOrganisation } from "../_shared/webPush.ts";
+import { getMoneyFormat } from "../_shared/money.ts";
 import { claimsMessage, holidayMessage, hoursMessage } from "./message.ts";
 
 const json = (status: number, body: unknown) =>
@@ -62,7 +63,13 @@ Deno.serve(async (req: Request) => {
       ? hoursMessage({ name, count, hours })
       : kind === "holiday"
         ? holidayMessage({ name, count, days })
-        : claimsMessage({ name, count, totalPence: total, flagged });
+        : claimsMessage({
+            name,
+            count,
+            totalPence: total,
+            flagged,
+            format: await getMoneyFormat(organisationId),
+          });
   const page = kind === "claims" ? "claims" : kind;
   await sendPushToOrganisation(
     organisationId,

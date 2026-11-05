@@ -8,7 +8,9 @@ import lightModeLogo from "./logos/logo_replyflow_light.svg";
 export const defaultDarkModeLogo = darkModeLogo;
 export const defaultLightModeLogo = lightModeLogo;
 
-export const defaultCurrency = "USD";
+// ReplyFlow is built for UK businesses first, so a business that has not chosen starts in the United Kingdom, in pounds.
+export const defaultCurrency = "GBP";
+export const defaultMarket = "GB";
 
 export const defaultTitle = "ReplyFlow";
 
@@ -67,6 +69,7 @@ export const defaultTaskTypes = [
 export const defaultConfiguration: ConfigurationContextValue = {
   companySectors: defaultCompanySectors,
   currency: defaultCurrency,
+  market: defaultMarket,
   dealCategories: defaultDealCategories,
   dealPipelineStatuses: defaultDealPipelineStatuses,
   dealStages: defaultDealStages,

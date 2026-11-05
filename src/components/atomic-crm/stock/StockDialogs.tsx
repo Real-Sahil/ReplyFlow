@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { currencySymbol } from "../markets/moneyFormat";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useGetList, useNotify } from "ra-core";
 
@@ -336,7 +337,10 @@ export const MovementDialog = ({
             </Field>
           )}
           {kind === "purchase" && (
-            <Field id="mv-cost" label={`Cost of each ${item.unit} (£)`}>
+            <Field
+              id="mv-cost"
+              label={`Cost of each ${item.unit} (${currencySymbol()})`}
+            >
               <Input
                 id="mv-cost"
                 inputMode="decimal"

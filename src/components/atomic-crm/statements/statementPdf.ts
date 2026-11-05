@@ -1,4 +1,4 @@
-import { formatPence } from "../quotes/quoteMath";
+import { formatMoneyPdf as formatPence } from "../markets/moneyFormat";
 import {
   BUCKET_LABEL,
   ageing,

@@ -1,4 +1,5 @@
 import { lazy, Suspense, useMemo, useState } from "react";
+import { currencySymbol } from "../markets/moneyFormat";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { TrendingDown, TrendingUp, Waves } from "lucide-react";
 import { useGetIdentity, useNotify } from "ra-core";
@@ -58,7 +59,7 @@ const Tile = ({
 
 // Parse "1,250.50" or "-300" into pence. Negative balances (an overdraft) are allowed.
 const parseBalance = (text: string): number | null => {
-  const cleaned = text.replace(/[£,\s]/g, "");
+  const cleaned = text.replace(/[£$€,\s]/g, "");
   if (!/^-?\d+(\.\d{1,2})?$/.test(cleaned)) return null;
   return Math.round(Number.parseFloat(cleaned) * 100);
 };
@@ -84,7 +85,9 @@ const BalanceEntry = ({ onDone }: { onDone: () => void }) => {
   return (
     <div className="flex flex-wrap items-end gap-2">
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="cf-balance">Money in the bank today (£)</Label>
+        <Label htmlFor="cf-balance">
+          Money in the bank today ({currencySymbol()})
+        </Label>
         <Input
           id="cf-balance"
           inputMode="decimal"

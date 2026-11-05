@@ -139,7 +139,7 @@ export const parsePence = (
   text: string,
   { max, allowZero = false }: { max: number; allowZero?: boolean },
 ): number | null => {
-  const cleaned = text.replace(/[£,\s]/g, "");
+  const cleaned = text.replace(/[£$€,\s]/g, "");
   if (!/^\d+(\.\d{1,2})?$/.test(cleaned)) return null;
   const pence = Math.round(Number.parseFloat(cleaned) * 100);
   if (pence > max) return null;

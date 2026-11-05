@@ -1,5 +1,6 @@
 import { getSupabaseClient } from "../providers/supabase/supabase";
-import { formatPence, quoteTotals, type QuoteLine } from "./quoteMath";
+import { formatMoneyPdf as formatPence } from "../markets/moneyFormat";
+import { quoteTotals, type QuoteLine } from "./quoteMath";
 
 export type QuoteForPdf = {
   quote_number: string;

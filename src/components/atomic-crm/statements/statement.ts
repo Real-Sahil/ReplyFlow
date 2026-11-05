@@ -1,3 +1,4 @@
+import { formatMoney } from "../markets/moneyFormat";
 // Customer statements. Pure functions, so the rules can be tested. A statement lists what was invoiced,
 // credited and paid, with a running balance, and says how much of what is owed is late.
 
@@ -120,10 +121,7 @@ export const ageing = (open: OpenInvoice[]): Record<AgeBucket, number> => {
   return out;
 };
 
-const pounds = (pence: number) =>
-  new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(
-    pence / 100,
-  );
+const pounds = (pence: number) => formatMoney(pence);
 const ukDate = (iso: string) =>
   new Date(`${iso.slice(0, 10)}T00:00:00`).toLocaleDateString("en-GB");
 

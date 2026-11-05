@@ -1,3 +1,4 @@
+import { withCurrency } from "../markets/moneyFormat";
 // CSV for exports made in the browser. Spreadsheets run a cell that starts with = + - @
 // as a formula, so such cells are prefixed with an apostrophe and stay text.
 
@@ -15,7 +16,7 @@ export const toCsv = (
   rows: Record<string, unknown>[],
   columns: { key: string; label: string }[],
 ): string => {
-  const lines = [columns.map((c) => cell(c.label)).join(",")];
+  const lines = [columns.map((c) => cell(withCurrency(c.label))).join(",")];
   for (const row of rows) {
     lines.push(columns.map((c) => cell(row[c.key])).join(","));
   }

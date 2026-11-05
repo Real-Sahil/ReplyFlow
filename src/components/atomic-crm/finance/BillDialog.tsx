@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { currencySymbol } from "../markets/moneyFormat";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useGetList, useNotify } from "ra-core";
 
@@ -216,7 +217,7 @@ export const BillDialog = ({
               />
             </Field>
           </div>
-          <Field id="b-total" label="Total on the bill (£)">
+          <Field id="b-total" label={`Total on the bill (${currencySymbol()})`}>
             <Input
               id="b-total"
               inputMode="decimal"
@@ -225,7 +226,7 @@ export const BillDialog = ({
             />
           </Field>
           {vatOn ? (
-            <Field id="b-vat" label="Of which VAT (£)">
+            <Field id="b-vat" label={`Of which VAT (${currencySymbol()})`}>
               <Input
                 id="b-vat"
                 inputMode="decimal"

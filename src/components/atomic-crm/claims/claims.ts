@@ -49,7 +49,7 @@ export const STATUS_LABEL: Record<ClaimStatus, string> = {
 
 // "12.50", "£12.5" or "1,250" -> pence. Anything else, zero or over £5,000 -> null.
 export const parsePounds = (text: string): number | null => {
-  const cleaned = text.replace(/[£,\s]/g, "");
+  const cleaned = text.replace(/[£$€,\s]/g, "");
   if (!/^\d+(\.\d{1,2})?$/.test(cleaned)) return null;
   const pence = Math.round(Number.parseFloat(cleaned) * 100);
   return pence > 0 && pence <= 500000 ? pence : null;

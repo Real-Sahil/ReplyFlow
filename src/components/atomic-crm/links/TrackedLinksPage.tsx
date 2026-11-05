@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { formatMoney } from "../markets/moneyFormat";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useGetIdentity, useNotify } from "ra-core";
 import { Copy, Link2, Plus } from "lucide-react";
@@ -117,7 +118,7 @@ export const TrackedLinksPage = () => {
               />
               <Figure
                 label="Value of those enquiries"
-                value={`£${report.totals.value.toLocaleString("en-GB")}`}
+                value={formatMoney(report.totals.value * 100, { whole: true })}
               />
             </dl>
             {report.rows.length === 0 ? (
@@ -159,7 +160,7 @@ export const TrackedLinksPage = () => {
                             {row.enquiries}
                           </td>
                           <td className="px-3 py-2 text-right tabular-nums">
-                            £{row.value.toLocaleString("en-GB")}
+                            {formatMoney(row.value * 100, { whole: true })}
                           </td>
                           <td className="px-3 py-2">
                             <CopyLink url={trackedLinkUrl(baseUrl, row.code)} />

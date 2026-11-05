@@ -1,3 +1,4 @@
+import { formatMoney } from "../markets/moneyFormat";
 // Money owed to the business by customers, and by the business to suppliers. Pure helpers over the
 // rows the two views return, so each rule can be tested.
 
@@ -64,11 +65,7 @@ export const byUrgency = <T extends { due_date: string | null }>(
     return a.due_date.localeCompare(b.due_date);
   });
 
-const pounds = (pence: number) =>
-  `£${(pence / 100).toLocaleString("en-GB", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
+const pounds = (pence: number) => formatMoney(pence);
 
 // A short, polite reminder to copy into Messenger, a text or an email. It names the amount and the
 // invoice, says what was due when, and makes it easy to ignore if it has already been paid. It never
