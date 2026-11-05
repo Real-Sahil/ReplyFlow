@@ -22,6 +22,7 @@ import {
   Repeat,
   Waves,
   FileCheck2,
+  FileText,
   Truck,
   Plus,
   Settings,
@@ -357,6 +358,13 @@ const MoreSheet = ({
             label="Owed and owing"
             detail="Who owes you, and who you owe"
             Icon={HandCoins}
+            onPick={onOpenChange}
+          />
+          <MoreRow
+            to="/statements"
+            label="Customer statements"
+            detail="What each customer owes, to send"
+            Icon={FileText}
             onPick={onOpenChange}
           />
           <MoreRow

@@ -17,6 +17,7 @@ import {
   Repeat,
   Waves,
   FileCheck2,
+  FileText,
   Truck,
   Settings,
   User,
@@ -329,6 +330,11 @@ const MoreMenu = () => (
           <MoreLink to="/summary" label="Weekly summary" Icon={CalendarCheck} />
         </CanAccess>
         <MoreLink to="/owed" label="Owed and owing" Icon={HandCoins} />
+        <MoreLink
+          to="/statements"
+          label="Customer statements"
+          Icon={FileText}
+        />
         <CanAccess resource="configuration" action="edit">
           <MoreLink to="/recurring" label="Repeating" Icon={Repeat} />
           <MoreLink to="/cashflow" label="Cash flow" Icon={Waves} />
