@@ -32,6 +32,7 @@ import {
   type RecurringItem,
   type RepeatKind,
 } from "./recurring";
+import { InvoiceRepeatsSection } from "./InvoiceRepeats";
 import { RECURRING_KEY, useRecurring } from "./useRecurring";
 
 const day = (iso: string) =>
@@ -481,6 +482,7 @@ export const RecurringPage = () => {
         to bills as unpaid, so they show in what is coming up. Mark them done or
         paid when they happen.
       </p>
+      <InvoiceRepeatsSection />
       {isError ? (
         <p className="text-sm text-muted-foreground">
           This could not be loaded. Please try again.

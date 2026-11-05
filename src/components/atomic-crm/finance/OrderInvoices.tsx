@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { FileText } from "lucide-react";
-import { useRecordContext } from "ra-core";
+import { useGetIdentity, useRecordContext } from "ra-core";
 
 import { Button } from "@/components/ui/button";
 
 import { formatPence } from "../quotes/quoteMath";
+import { RepeatInvoiceDialog } from "../recurring/InvoiceRepeats";
 import { InvoiceDialog, type OrderForInvoice } from "./InvoiceDialog";
 import { downloadInvoicePdf } from "./invoicePdf";
 import { kindLabel, type Invoice } from "./invoiceTypes";
@@ -14,6 +15,8 @@ import { useInvoices } from "./useInvoices";
 export const OrderInvoices = () => {
   const order = useRecordContext<OrderForInvoice>();
   const { data: documents = [] } = useInvoices({ orderId: order?.id });
+  const { data: identity } = useGetIdentity();
+  const [repeating, setRepeating] = useState<Invoice | null>(null);
   const [dialog, setDialog] = useState<
     { kind: "invoice" } | { kind: "credit_note"; for: Invoice } | null
   >(null);
@@ -88,11 +91,27 @@ export const OrderInvoices = () => {
                   Credit note
                 </Button>
               )}
+              {d.kind === "invoice" && identity?.administrator && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setRepeating(d)}
+                >
+                  Repeat
+                </Button>
+              )}
             </li>
           ))}
         </ul>
       )}
 
+      {repeating && (
+        <RepeatInvoiceDialog
+          invoice={repeating}
+          onClose={() => setRepeating(null)}
+        />
+      )}
       {dialog && (
         <InvoiceDialog
           order={order}
