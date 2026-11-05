@@ -14,6 +14,7 @@ import { ClaimantBar } from "./ClaimantBar";
 import { ClaimantGuard } from "./ClaimantGuard";
 import { useConfigurationContext } from "../root/ConfigurationContext";
 import { BreathingBackground } from "./BreathingBackground";
+import { PointerLight } from "./PointerLight";
 import { PasswordGate } from "./PasswordGate";
 import { AccountantToolbar, RecordBackLink, Toolbar } from "./Header";
 import { ScreenReady } from "./ScreenReady";
@@ -29,6 +30,7 @@ export const Layout = ({ children }: { children: ReactNode }) => {
     <DataImportProvider>
       <div className="min-h-screen">
         <BreathingBackground />
+        <PointerLight />
         <ScreenReady />
         <AccountantGuard />
         <ClaimantGuard />

@@ -14,6 +14,7 @@ import { ClaimantBar } from "./ClaimantBar";
 import { ClaimantGuard } from "./ClaimantGuard";
 import { useConfigurationContext } from "../root/ConfigurationContext";
 import { BreathingBackground } from "./BreathingBackground";
+import { PointerLight } from "./PointerLight";
 import { PasswordGate } from "./PasswordGate";
 import { MobileNavigation } from "./MobileNavigation";
 import { PullToRefresh } from "./PullToRefresh";
@@ -28,6 +29,7 @@ export const MobileLayout = ({ children }: { children: ReactNode }) => {
   return (
     <DataImportProvider>
       <BreathingBackground />
+      <PointerLight />
       <ScreenReady />
       <AccountantGuard />
       <ClaimantGuard />

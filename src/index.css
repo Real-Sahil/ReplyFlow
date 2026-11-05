@@ -611,7 +611,25 @@ body::before {
   }
 }
 
+/* The light behind the glass (see PointerLight): its direction from -1 to 1, and, over a glass surface, where
+   the pointer is on it and how strongly a spotlight shows. At rest the light sits above and a little left. */
+@property --gk {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
+:root {
+  --lx: -0.5;
+  --ly: -1;
+  --spot: 46%;
+}
+.dark {
+  --spot: 18%;
+}
+
 .glass {
+  --gk: 0;
+  transition: --gk 260ms ease;
   isolation: isolate;
   background: linear-gradient(
     150deg,
@@ -644,7 +662,7 @@ body::before {
   padding: 1px;
   pointer-events: none;
   background: linear-gradient(
-    140deg,
+    calc(140deg + (var(--lx) + 0.5) * 38deg),
     var(--glass-edge-hi),
     oklch(100% 0 0 / 4%) 38%,
     oklch(100% 0 0 / 3%) 62%,
@@ -664,11 +682,22 @@ body::before {
   z-index: -1;
   border-radius: inherit;
   pointer-events: none;
-  background: radial-gradient(
-    90% 55% at 18% 0%,
-    oklch(100% 0 0 / 22%),
-    transparent 62%
-  );
+  background:
+    radial-gradient(
+      180px circle at var(--gx, 50%) var(--gy, 0%),
+      oklch(100% 0 0 / calc(var(--gk) * var(--spot))),
+      transparent 70%
+    ),
+    radial-gradient(
+      90% 55% at calc(18% + (var(--lx) + 0.5) * 34%) 0%,
+      oklch(100% 0 0 / 22%),
+      transparent 62%
+    );
+}
+@media (hover: hover) {
+  .glass:hover {
+    --gk: 1;
+  }
 }
 
 /* Rich is only a little more than regular; heavy blur costs speed on cheaper phones, so
@@ -1031,7 +1060,9 @@ html[data-motion="on"] body::before {
 }
 .breathing {
   position: fixed;
-  inset: 0;
+  /* A little larger than the screen, so the colour can shift against the light without showing an edge. */
+  inset: -28px;
+  transform: translate3d(calc(var(--lx) * -12px), calc(var(--ly) * -8px), 0);
   z-index: -1;
   pointer-events: none;
   overflow: hidden;
