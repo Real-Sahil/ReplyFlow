@@ -16,6 +16,12 @@ import { getSupabaseClient } from "../providers/supabase/supabase";
 import { formatPence } from "../quotes/quoteMath";
 import { balanceAgeDays, buildForecast } from "./forecast";
 import { CASH_BALANCE_KEY, useCashBalance } from "./useCashBalance";
+import {
+  exclusionKeys,
+  useExclusions,
+  useInvoicedMonths,
+  useLeaveOut,
+} from "./useForecastLinks";
 
 const BalanceChart = lazy(() =>
   import("./BalanceChart").then((m) => ({ default: m.BalanceChart })),
@@ -113,6 +119,9 @@ export const CashFlowPage = () => {
   const planned = useMoney({ state: "planned" });
   const bills = useBills({ status: "unpaid" });
   const owed = useOwedByCustomers();
+  const exclusions = useExclusions(isAdmin);
+  const invoicedMonths = useInvoicedMonths(isAdmin);
+  const { leaveOut, putBack } = useLeaveOut();
 
   const forecast = useMemo(() => {
     if (!balance.data) return null;
@@ -120,7 +129,11 @@ export const CashFlowPage = () => {
       openingPence: balance.data.balance_pence,
       today,
       days,
+      leftOut: exclusionKeys(exclusions.data ?? []),
+      invoiced: invoicedMonths.data ?? new Set<string>(),
       planned: (planned.data ?? []).map((e) => ({
+        id: e.id,
+        recurring_item_id: e.recurring_item_id,
         entry_date: e.entry_date,
         direction: e.direction,
         amount_pence: e.amount_pence,
@@ -128,6 +141,7 @@ export const CashFlowPage = () => {
         note: e.note,
       })),
       bills: (bills.data ?? []).map((b) => ({
+        id: b.id,
         supplier_name: b.supplier_name,
         bill_date: b.bill_date,
         due_date: b.due_date,
@@ -135,6 +149,7 @@ export const CashFlowPage = () => {
         description: b.description,
       })),
       owed: (owed.data ?? []).map((o) => ({
+        order_id: o.order_id,
         customer_name: o.customer_name,
         order_reference: o.order_reference,
         due_date: o.due_date,
@@ -147,6 +162,8 @@ export const CashFlowPage = () => {
     planned.data,
     bills.data,
     owed.data,
+    exclusions.data,
+    invoicedMonths.data,
     days,
     lateDays,
     today,
@@ -338,23 +355,79 @@ export const CashFlowPage = () => {
                           {f.late ? " · already late" : ""}
                         </p>
                       </div>
-                      <p
-                        className={cn(
-                          "shrink-0 font-medium tabular-nums",
-                          f.pence < 0 ? "" : "text-primary",
-                        )}
-                      >
-                        {f.pence < 0 ? "-" : "+"}
-                        {formatPence(Math.abs(f.pence))}
-                      </p>
+                      <div className="flex shrink-0 items-center gap-1">
+                        <p
+                          className={cn(
+                            "font-medium tabular-nums",
+                            f.pence < 0 ? "" : "text-primary",
+                          )}
+                        >
+                          {f.pence < 0 ? "-" : "+"}
+                          {formatPence(Math.abs(f.pence))}
+                        </p>
+                        {f.key ? (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 px-2 text-xs"
+                            disabled={leaveOut.isPending}
+                            onClick={() => leaveOut.mutate(f.key as string)}
+                          >
+                            Leave out
+                          </Button>
+                        ) : null}
+                      </div>
                     </li>
                   ))}
                 </ul>
               )}
+              {forecast.skipped.length > 0 ? (
+                <details className="text-sm">
+                  <summary className="cursor-pointer text-muted-foreground">
+                    Not counted ({forecast.skipped.length})
+                  </summary>
+                  <ul className="mt-2 overflow-hidden rounded-xl bg-card shadow-[var(--shadow-card)]">
+                    {forecast.skipped.map((f) => (
+                      <li
+                        key={f.key ?? f.label}
+                        className="flex items-center justify-between gap-3 border-b px-4 py-2.5 last:border-b-0"
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate">{f.label}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {day(f.date)} ·{" "}
+                            {f.reason === "invoiced"
+                              ? "Counted through its invoice instead"
+                              : "You left this out"}
+                          </p>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-1">
+                          <span className="tabular-nums text-muted-foreground">
+                            {f.pence < 0 ? "-" : "+"}
+                            {formatPence(Math.abs(f.pence))}
+                          </span>
+                          {f.reason === "left_out" && f.key ? (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 px-2 text-xs"
+                              disabled={putBack.isPending}
+                              onClick={() => putBack.mutate(f.key as string)}
+                            >
+                              Put back
+                            </Button>
+                          ) : null}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              ) : null}
               <p className="text-xs text-muted-foreground">
-                A guide, not a promise. A repeating retainer and the invoice for
-                it can both appear, so check the list for the same money counted
-                twice.
+                A guide, not a promise. Link a repeating invoice to its
+                repeating money-in entry and, once the invoice is issued, that
+                month is counted through the invoice only. Use Leave out for
+                anything else that should not count.
               </p>
             </>
           ) : null}

@@ -8,6 +8,7 @@ export type MoneyEntry = {
   category_group: string;
   status: "planned" | "done";
   state: MoneyState;
+  recurring_item_id?: number | null;
   entry_date: string;
   period_from: string | null;
   period_to: string | null;

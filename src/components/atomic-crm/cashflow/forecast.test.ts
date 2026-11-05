@@ -167,3 +167,73 @@ describe("dates", () => {
     expect(balanceAgeDays("2026-11-01", TODAY)).toBe(4);
   });
 });
+
+describe("double counting and leaving lines out", () => {
+  const base = {
+    openingPence: 100000,
+    today: "2026-11-05",
+    days: 30,
+    bills: [],
+    owed: [],
+    lateCustomerDays: 14,
+  };
+  const retainer = {
+    id: 1,
+    recurring_item_id: 7,
+    entry_date: "2026-11-10",
+    direction: "in" as const,
+    amount_pence: 50000,
+    counterparty: null,
+    note: "Retainer",
+  };
+  const invoice = {
+    order_id: 3,
+    customer_name: "Acme",
+    order_reference: "ORD-3",
+    due_date: "2026-11-24",
+    owed_pence: 50000,
+  };
+
+  it("counts the planned retainer until an invoice is raised for that month", () => {
+    const f = buildForecast({ ...base, planned: [retainer], owed: [] });
+    expect(f.totalIn).toBe(50000);
+    expect(f.skipped).toHaveLength(0);
+  });
+
+  it("drops the planned retainer once that month is invoiced, keeping the invoice", () => {
+    const f = buildForecast({
+      ...base,
+      planned: [retainer],
+      owed: [invoice],
+      invoiced: new Set(["7:2026-11"]),
+    });
+    expect(f.totalIn).toBe(50000);
+    expect(f.skipped.map((s) => [s.key, s.reason])).toEqual([
+      ["planned:1", "invoiced"],
+    ]);
+  });
+
+  it("only drops the month that was invoiced", () => {
+    const f = buildForecast({
+      ...base,
+      planned: [retainer, { ...retainer, id: 2, entry_date: "2026-12-01" }],
+      invoiced: new Set(["7:2026-11"]),
+      days: 40,
+    });
+    expect(f.totalIn).toBe(50000);
+  });
+
+  it("leaves out a line the person chose, and says so", () => {
+    const f = buildForecast({
+      ...base,
+      planned: [],
+      owed: [invoice],
+      leftOut: new Set(["customer:3"]),
+    });
+    expect(f.totalIn).toBe(0);
+    expect(f.skipped[0]).toMatchObject({
+      key: "customer:3",
+      reason: "left_out",
+    });
+  });
+});

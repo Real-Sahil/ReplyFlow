@@ -29,6 +29,7 @@ import {
   type RepeatLine,
 } from "./invoiceRepeat";
 import { FREQUENCY_LABEL, nextOccurrence, type Frequency } from "./recurring";
+import { useRecurring } from "./useRecurring";
 import {
   INVOICE_DRAFTS_KEY,
   INVOICE_REPEATS_KEY,
@@ -95,6 +96,9 @@ export const RepeatInvoiceDialog = ({
         ),
   );
   const [end, setEnd] = useState("");
+  const [item, setItem] = useState("");
+  const { data: items = [] } = useRecurring();
+  const moneyIn = items.filter((i) => i.kind === "money_in" && i.active);
   const [dueDays, setDueDays] = useState(
     String(
       invoice.due_date
@@ -117,6 +121,7 @@ export const RepeatInvoiceDialog = ({
         next_date: first,
         end_date: end || null,
         due_days: Number(dueDays),
+        recurring_item_id: item ? Number(item) : null,
       });
       if (error) throw error;
       await supabase.rpc("generate_my_invoice_drafts");
@@ -192,6 +197,30 @@ export const RepeatInvoiceDialog = ({
               onChange={(e) => setDueDays(e.target.value)}
             />
           </div>
+          {moneyIn.length > 0 ? (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="ri-item">
+                Is this already in Repeating as money coming in? (optional)
+              </Label>
+              <select
+                id="ri-item"
+                value={item}
+                onChange={(e) => setItem(e.target.value)}
+                className="h-9 rounded-md border bg-transparent px-2 text-sm"
+              >
+                <option value="">No, it is not</option>
+                {moneyIn.map((i) => (
+                  <option key={i.id} value={i.id}>
+                    {i.title}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-muted-foreground">
+                If so, the cash-flow view counts each month through the invoice
+                once it is issued, not twice.
+              </p>
+            </div>
+          ) : null}
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={onClose}>
               Cancel

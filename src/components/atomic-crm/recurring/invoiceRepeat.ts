@@ -21,6 +21,7 @@ export type RecurringInvoice = {
   note: string | null;
   lines: RepeatLine[];
   active: boolean;
+  recurring_item_id: number | null;
   last_generated_on: string | null;
 };
 

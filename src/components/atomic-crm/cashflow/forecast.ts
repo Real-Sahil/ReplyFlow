@@ -6,6 +6,9 @@
 // chooses (or not at all). This is a guide to when money is tight, not a promise.
 
 export type PlannedEntry = {
+  id?: number;
+  // The repeating item that made this entry, if one did.
+  recurring_item_id?: number | null;
   entry_date: string;
   direction: "in" | "out";
   amount_pence: number;
@@ -13,6 +16,7 @@ export type PlannedEntry = {
   note: string;
 };
 export type UnpaidBill = {
+  id?: number;
   supplier_name: string;
   bill_date: string;
   due_date: string | null;
@@ -20,6 +24,7 @@ export type UnpaidBill = {
   description: string;
 };
 export type CustomerOwes = {
+  order_id?: number;
   customer_name: string | null;
   order_reference: string | null;
   due_date: string | null;
@@ -28,12 +33,17 @@ export type CustomerOwes = {
 
 export type FlowSource = "planned" | "bill" | "customer";
 export type Flow = {
+  // "planned:12", "bill:5" or "customer:7" (an order), so a line can be left out and put back.
+  key?: string;
   date: string;
   pence: number; // positive in, negative out
   label: string;
   source: FlowSource;
   late: boolean;
 };
+export type SkipReason = "left_out" | "invoiced";
+export type Skipped = Flow & { reason: SkipReason };
+
 export type Day = {
   date: string;
   inPence: number;
@@ -52,6 +62,11 @@ export type ForecastInput = {
   lateCustomerDays: number | null;
   // Customer invoices with no due date are assumed to be paid after this many days.
   noDueDateDays?: number;
+  // Lines the person chose to leave out, by key.
+  leftOut?: Set<string>;
+  // "<repeating item id>:<YYYY-MM>" for each month an invoice has been issued for a repeating retainer, so
+  // that month's planned entry is not counted as well as the invoice.
+  invoiced?: Set<string>;
 };
 
 export type Forecast = {
@@ -64,6 +79,8 @@ export type Forecast = {
   firstBelowZero: string | null;
   // Late customer money left out of the forecast, because the person chose not to count it.
   leftOutPence: number;
+  // Lines not counted, with why, so they can be shown and put back.
+  skipped: Skipped[];
 };
 
 export const addDays = (iso: string, n: number) => {
@@ -77,25 +94,44 @@ export const buildForecast = (input: ForecastInput): Forecast => {
   const end = addDays(today, days);
   const flows: Flow[] = [];
   let leftOut = 0;
+  const skipped: Skipped[] = [];
+  const mine = input.leftOut ?? new Set<string>();
+  const invoiced = input.invoiced ?? new Set<string>();
+  // Adds a flow, or sets it aside when it is covered by an invoice or the person left it out.
+  const add = (f: Flow, covered = false) => {
+    if (covered) skipped.push({ ...f, reason: "invoiced" });
+    else if (f.key && mine.has(f.key))
+      skipped.push({ ...f, reason: "left_out" });
+    else flows.push(f);
+  };
 
   for (const e of input.planned) {
     const late = e.entry_date < today;
     const date = late ? today : e.entry_date;
     if (date > end) continue;
-    flows.push({
-      date,
-      pence: e.direction === "in" ? e.amount_pence : -e.amount_pence,
-      label: e.counterparty ? `${e.note} (${e.counterparty})` : e.note,
-      source: "planned",
-      late,
-    });
+    const covered =
+      e.recurring_item_id != null &&
+      e.direction === "in" &&
+      invoiced.has(`${e.recurring_item_id}:${e.entry_date.slice(0, 7)}`);
+    add(
+      {
+        key: e.id === undefined ? undefined : `planned:${e.id}`,
+        date,
+        pence: e.direction === "in" ? e.amount_pence : -e.amount_pence,
+        label: e.counterparty ? `${e.note} (${e.counterparty})` : e.note,
+        source: "planned",
+        late,
+      },
+      covered,
+    );
   }
   for (const b of input.bills) {
     const due = b.due_date ?? b.bill_date;
     const late = due < today;
     const date = late ? today : due;
     if (date > end) continue;
-    flows.push({
+    add({
+      key: b.id === undefined ? undefined : `bill:${b.id}`,
       date,
       pence: -b.gross_pence,
       label: `${b.supplier_name}: ${b.description}`,
@@ -106,10 +142,12 @@ export const buildForecast = (input: ForecastInput): Forecast => {
   for (const o of input.owed) {
     const name = o.customer_name ?? "A customer";
     const label = o.order_reference ? `${name} (${o.order_reference})` : name;
+    const key = o.order_id === undefined ? undefined : `customer:${o.order_id}`;
     if (!o.due_date) {
       const date = addDays(today, input.noDueDateDays ?? 14);
       if (date <= end)
-        flows.push({
+        add({
+          key,
           date,
           pence: o.owed_pence,
           label,
@@ -125,7 +163,8 @@ export const buildForecast = (input: ForecastInput): Forecast => {
       }
       const date = addDays(today, lateCustomerDays);
       if (date <= end)
-        flows.push({
+        add({
+          key,
           date,
           pence: o.owed_pence,
           label,
@@ -135,7 +174,8 @@ export const buildForecast = (input: ForecastInput): Forecast => {
       continue;
     }
     if (o.due_date <= end)
-      flows.push({
+      add({
+        key,
         date: o.due_date,
         pence: o.owed_pence,
         label,
@@ -182,6 +222,7 @@ export const buildForecast = (input: ForecastInput): Forecast => {
     lowest,
     firstBelowZero,
     leftOutPence: leftOut,
+    skipped,
   };
 };
 
