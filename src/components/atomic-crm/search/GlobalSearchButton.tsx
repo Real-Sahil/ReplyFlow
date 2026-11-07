@@ -64,8 +64,10 @@ const SHORTCUT_LABEL =
  */
 export const GlobalSearchButton = ({
   variant = "labelled",
+  className,
 }: {
   variant?: "labelled" | "icon";
+  className?: string;
 }) => {
   const translate = useTranslate();
   const [open, setOpen] = useState(false);
@@ -92,7 +94,7 @@ export const GlobalSearchButton = ({
           variant="ghost"
           size="icon"
           // same shape and icon size as its neighbour, MobileRefreshButton
-          className="rounded-full"
+          className={cn("rounded-full", className)}
           onClick={() => setOpen(true)}
           aria-label={translate("crm.search.title")}
         >
@@ -106,7 +108,10 @@ export const GlobalSearchButton = ({
           onClick={() => setOpen(true)}
           aria-label={translate("crm.search.title")}
           aria-keyshortcuts="Control+K Meta+K"
-          className="w-9 justify-center border-transparent bg-muted px-0 font-normal text-muted-foreground shadow-none hover:bg-secondary md:w-40 md:justify-start md:px-3 lg:w-56"
+          className={cn(
+            "w-9 justify-center border-transparent bg-muted px-0 font-normal text-muted-foreground shadow-none hover:bg-secondary md:w-40 md:justify-start md:px-3 lg:w-56",
+            className,
+          )}
         >
           <Search />
           <span className="hidden flex-1 text-left md:inline">

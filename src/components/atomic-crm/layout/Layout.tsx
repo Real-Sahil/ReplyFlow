@@ -16,7 +16,8 @@ import { useConfigurationContext } from "../root/ConfigurationContext";
 import { BreathingBackground } from "./BreathingBackground";
 import { PointerLight } from "./PointerLight";
 import { PasswordGate } from "./PasswordGate";
-import { AccountantToolbar, RecordBackLink, Toolbar } from "./Header";
+import { AccountantToolbar, RecordBackLink } from "./Header";
+import { Sidebar } from "./Sidebar";
 import { ScreenReady } from "./ScreenReady";
 
 export const Layout = ({ children }: { children: ReactNode }) => {
@@ -28,36 +29,41 @@ export const Layout = ({ children }: { children: ReactNode }) => {
   const claimant = useIsClaimant();
   return (
     <DataImportProvider>
-      <div className="min-h-screen">
+      <div
+        className={
+          claimant || accountant ? "min-h-screen" : "flex min-h-screen"
+        }
+      >
         <BreathingBackground />
         <PointerLight />
         <ScreenReady />
         <AccountantGuard />
         <ClaimantGuard />
         <PasswordGate />
-        {claimant ? (
-          <ClaimantBar />
-        ) : accountant ? (
-          <AccountantToolbar />
-        ) : (
-          <Toolbar />
-        )}
-        <main
-          className="mx-auto min-w-0 max-w-6xl px-4 py-6 md:px-6 md:py-8"
-          id="main-content"
-        >
-          {accountant || claimant ? null : <RecordBackLink />}
-          <ErrorBoundary
-            FallbackComponent={Error}
-            key={`${currency}-${market}`}
+        {claimant || accountant ? null : <Sidebar />}
+        <div className="min-w-0 flex-1">
+          {claimant ? (
+            <ClaimantBar />
+          ) : accountant ? (
+            <AccountantToolbar />
+          ) : null}
+          <main
+            className="mx-auto min-w-0 max-w-6xl px-4 py-6 md:px-6 md:py-8"
+            id="main-content"
           >
-            <Suspense
-              fallback={<Skeleton className="h-12 w-12 rounded-full" />}
+            {accountant || claimant ? null : <RecordBackLink />}
+            <ErrorBoundary
+              FallbackComponent={Error}
+              key={`${currency}-${market}`}
             >
-              {children}
-            </Suspense>
-          </ErrorBoundary>
-        </main>
+              <Suspense
+                fallback={<Skeleton className="h-12 w-12 rounded-full" />}
+              >
+                {children}
+              </Suspense>
+            </ErrorBoundary>
+          </main>
+        </div>
       </div>
       <Notification />
     </DataImportProvider>

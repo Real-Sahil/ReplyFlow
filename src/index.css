@@ -293,6 +293,15 @@ h3 {
   border-bottom: 0.5px solid var(--border);
 }
 
+/* The sidebar is the same glass as the toolbar was, with its hairline on the right. */
+[data-slot="sidebar"] {
+  background-color: var(--toolbar);
+  backdrop-filter: saturate(var(--glass-saturate, 1.8))
+    blur(var(--glass-blur, 20px));
+  -webkit-backdrop-filter: saturate(var(--glass-saturate, 1.8))
+    blur(var(--glass-blur, 20px));
+}
+
 /* Each screen eases in instead of snapping into place. */
 @keyframes rise {
   from {
@@ -715,6 +724,7 @@ html[data-glass="off"] body::before {
   display: none;
 }
 html[data-glass="off"] .glass,
+html[data-glass="off"] [data-slot="sidebar"],
 html[data-glass="off"] [data-slot="toolbar"] {
   background: var(--glass-solid);
   -webkit-backdrop-filter: none;
