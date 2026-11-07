@@ -20,19 +20,6 @@ const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 // The colour browsers use for their own chrome (address bar, installed-app title bar).
 const BROWSER_COLOUR = { light: "#f6f3f1", dark: "#171211" } as const;
 
-// Frosted glass is drawn by the graphics chip. On a very weak device it can make screens slow, so
-// those start with the plain look; anyone can still turn glass on in their profile.
-const weakDevice = () => {
-  if (typeof navigator === "undefined") return false;
-  const { deviceMemory, hardwareConcurrency } = navigator as Navigator & {
-    deviceMemory?: number;
-  };
-  return (
-    (deviceMemory !== undefined && deviceMemory <= 2) ||
-    (hardwareConcurrency !== undefined && hardwareConcurrency <= 2)
-  );
-};
-
 const matches = (query: string) =>
   typeof window !== "undefined" && !!window.matchMedia?.(query).matches;
 
@@ -52,12 +39,12 @@ export function ThemeProvider({
   const [theme, setTheme] = useStore<Theme>(storageKey, defaultTheme);
   const [glass, setGlass] = useStore<GlassLevel>(
     "glass",
-    matches(LESS_TRANSPARENCY_QUERY) || weakDevice() ? "off" : "regular",
+    matches(LESS_TRANSPARENCY_QUERY) ? "off" : "regular",
   );
-  // Someone who asks their device for less motion, or has a weak device, starts with it off.
+  // Someone who asks their device for less motion starts with it off.
   const [motion, setMotion] = useStore<Motion>(
     "motion",
-    matches(REDUCED_MOTION_QUERY) || weakDevice() ? "off" : "on",
+    matches(REDUCED_MOTION_QUERY) ? "off" : "on",
   );
   const [systemDark, setSystemDark] = useState(() => matches(DARK_QUERY));
 

@@ -256,27 +256,23 @@ const NavLink = ({
   </Link>
 );
 
-// The sidebar: brand and a collapse button, search, the main sections, the rest of the app in groups, and
-// refresh, theme and the user menu at the foot. It scrolls on its own when the list is longer than the screen.
-export const Sidebar = () => {
+// The frame both sidebars share: brand and a collapse button, optional search, the navigation, and the tools
+// and user menu at the foot. It scrolls on its own when the list is longer than the screen.
+const SidebarFrame = ({
+  home,
+  search,
+  nav,
+  tools,
+  menu,
+}: {
+  home: string;
+  search: boolean;
+  nav: (rail: boolean) => ReactNode;
+  tools: ReactNode;
+  menu: ReactNode;
+}) => {
   const { title } = useConfigurationContext();
-  const { pathname } = useLocation();
   const [rail, setRail] = useCollapsed();
-  const owner = useIsPlatformOwner();
-  const active = sectionFor(pathname);
-  const { total: unread } = useGetList("messenger_inbox", {
-    filter: { unread: true },
-    pagination: { page: 1, perPage: 1 },
-  });
-  const { total: newComments } = useGetList("page_comments", {
-    filter: { status: "new" },
-    pagination: { page: 1, perPage: 1 },
-  });
-  const inboxCount = (unread ?? 0) + (newComments ?? 0);
-  useAppBadge(inboxCount);
-
-  const isActive = (to: string) => !!matchPath(`${to}/*`, pathname);
-
   return (
     <aside
       data-slot="sidebar"
@@ -294,7 +290,7 @@ export const Sidebar = () => {
       >
         {rail ? null : (
           <Link
-            to="/"
+            to={home}
             aria-label={title}
             className="flex min-w-0 items-center rounded-lg py-1 pl-1"
           >
@@ -316,56 +312,22 @@ export const Sidebar = () => {
         </button>
       </div>
 
-      <div
-        className={cn("shrink-0 pb-2", rail ? "flex justify-center" : "px-3")}
-      >
-        <GlobalSearchButton
-          variant={rail ? "icon" : "labelled"}
-          className={rail ? undefined : "w-full md:w-full lg:w-full"}
-        />
-      </div>
+      {search ? (
+        <div
+          className={cn("shrink-0 pb-2", rail ? "flex justify-center" : "px-3")}
+        >
+          <GlobalSearchButton
+            variant={rail ? "icon" : "labelled"}
+            className={rail ? undefined : "w-full md:w-full lg:w-full"}
+          />
+        </div>
+      ) : null}
 
       <nav
         aria-label="Main"
         className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-3 pb-3 [scrollbar-width:thin]"
       >
-        {SECTIONS.map(({ path, label }) => (
-          <NavLink
-            key={path}
-            to={path}
-            label={label}
-            Icon={SECTION_ICONS[path]}
-            active={active === path}
-            rail={rail}
-            badge={path === "/messenger_inbox" ? inboxCount : undefined}
-          />
-        ))}
-        {GROUPS.map((group) => (
-          <Gate key={group.title} access={group.access}>
-            <div className="mt-3 flex shrink-0 flex-col gap-0.5">
-              {rail ? (
-                <div aria-hidden className="mx-auto mb-1 h-px w-6 bg-border" />
-              ) : (
-                <p className="px-2.5 pt-1 pb-1 text-xs font-medium text-muted-foreground">
-                  {group.title}
-                </p>
-              )}
-              {group.items
-                .filter((item) => !item.ownerOnly || owner)
-                .map((item) => (
-                  <Gate key={item.to} access={item.access}>
-                    <NavLink
-                      to={item.to}
-                      label={item.label}
-                      Icon={item.Icon}
-                      active={isActive(item.to)}
-                      rail={rail}
-                    />
-                  </Gate>
-                ))}
-            </div>
-          </Gate>
-        ))}
+        {nav(rail)}
       </nav>
 
       <div
@@ -375,16 +337,133 @@ export const Sidebar = () => {
         )}
       >
         <div className={cn("flex items-center gap-1", rail && "flex-col")}>
+          {tools}
+        </div>
+        {menu}
+      </div>
+    </aside>
+  );
+};
+
+export const Sidebar = () => {
+  const { pathname } = useLocation();
+  const owner = useIsPlatformOwner();
+  const active = sectionFor(pathname);
+  const { total: unread } = useGetList("messenger_inbox", {
+    filter: { unread: true },
+    pagination: { page: 1, perPage: 1 },
+  });
+  const { total: newComments } = useGetList("page_comments", {
+    filter: { status: "new" },
+    pagination: { page: 1, perPage: 1 },
+  });
+  const inboxCount = (unread ?? 0) + (newComments ?? 0);
+  useAppBadge(inboxCount);
+
+  const isActive = (to: string) => !!matchPath(`${to}/*`, pathname);
+
+  return (
+    <SidebarFrame
+      home="/"
+      search
+      tools={
+        <>
           <RefreshButton />
           <ThemeQuickToggle />
-        </div>
+        </>
+      }
+      menu={
         <UserMenu>
           <ProfileMenu />
           <CanAccess resource="configuration" action="edit">
             <SettingsMenu />
           </CanAccess>
         </UserMenu>
-      </div>
-    </aside>
+      }
+      nav={(rail) => (
+        <>
+          {SECTIONS.map(({ path, label }) => (
+            <NavLink
+              key={path}
+              to={path}
+              label={label}
+              Icon={SECTION_ICONS[path]}
+              active={active === path}
+              rail={rail}
+              badge={path === "/messenger_inbox" ? inboxCount : undefined}
+            />
+          ))}
+          {GROUPS.map((group) => (
+            <Gate key={group.title} access={group.access}>
+              <div className="mt-3 flex shrink-0 flex-col gap-0.5">
+                {rail ? (
+                  <div
+                    aria-hidden
+                    className="mx-auto mb-1 h-px w-6 bg-border"
+                  />
+                ) : (
+                  <p className="px-2.5 pt-1 pb-1 text-xs font-medium text-muted-foreground">
+                    {group.title}
+                  </p>
+                )}
+                {group.items
+                  .filter((item) => !item.ownerOnly || owner)
+                  .map((item) => (
+                    <Gate key={item.to} access={item.access}>
+                      <NavLink
+                        to={item.to}
+                        label={item.label}
+                        Icon={item.Icon}
+                        active={isActive(item.to)}
+                        rail={rail}
+                      />
+                    </Gate>
+                  ))}
+              </div>
+            </Gate>
+          ))}
+        </>
+      )}
+    />
+  );
+};
+
+// What an accountant sees: the finance pages only, in the same sidebar.
+const ACCOUNTANT_ITEMS: Item[] = [
+  { to: "/accountant", label: "Accountant's pack", Icon: PackageCheck },
+  { to: "/owed", label: "Owed and owing", Icon: HandCoins },
+  { to: "/invoices", label: "Invoices", Icon: Receipt },
+  { to: "/bills", label: "Bills", Icon: Wallet },
+  { to: "/money", label: "Money book", Icon: BookOpen },
+  { to: "/reports", label: "Reports", Icon: ChartColumn },
+];
+
+export const AccountantSidebar = () => {
+  const { pathname } = useLocation();
+  return (
+    <SidebarFrame
+      home="/accountant"
+      search={false}
+      tools={<ThemeQuickToggle />}
+      menu={
+        <UserMenu>
+          <ProfileMenu />
+        </UserMenu>
+      }
+      nav={(rail) => (
+        <>
+          {ACCOUNTANT_ITEMS.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              label={item.label}
+              Icon={item.Icon}
+              active={!!matchPath(`${item.to}/*`, pathname)}
+              rail={rail}
+            />
+          ))}
+        </>
+      )}
+    />
   );
 };

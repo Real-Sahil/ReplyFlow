@@ -16,8 +16,8 @@ import { useConfigurationContext } from "../root/ConfigurationContext";
 import { BreathingBackground } from "./BreathingBackground";
 import { PointerLight } from "./PointerLight";
 import { PasswordGate } from "./PasswordGate";
-import { AccountantToolbar, RecordBackLink } from "./Header";
-import { Sidebar } from "./Sidebar";
+import { RecordBackLink } from "./Header";
+import { AccountantSidebar, Sidebar } from "./Sidebar";
 import { ScreenReady } from "./ScreenReady";
 
 export const Layout = ({ children }: { children: ReactNode }) => {
@@ -29,24 +29,16 @@ export const Layout = ({ children }: { children: ReactNode }) => {
   const claimant = useIsClaimant();
   return (
     <DataImportProvider>
-      <div
-        className={
-          claimant || accountant ? "min-h-screen" : "flex min-h-screen"
-        }
-      >
+      <div className={claimant ? "min-h-screen" : "flex min-h-screen"}>
         <BreathingBackground />
         <PointerLight />
         <ScreenReady />
         <AccountantGuard />
         <ClaimantGuard />
         <PasswordGate />
-        {claimant || accountant ? null : <Sidebar />}
+        {claimant ? null : accountant ? <AccountantSidebar /> : <Sidebar />}
         <div className="min-w-0 flex-1">
-          {claimant ? (
-            <ClaimantBar />
-          ) : accountant ? (
-            <AccountantToolbar />
-          ) : null}
+          {claimant ? <ClaimantBar /> : null}
           <main
             className="mx-auto min-w-0 max-w-6xl px-4 py-6 md:px-6 md:py-8"
             id="main-content"
