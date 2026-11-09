@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 
+import { bestSlots } from "../posts/bestTime";
 import { getSupabaseClient } from "../providers/supabase/supabase";
 import { linkedInPostUrl } from "./useLinkedIn";
 import { useLinkedInPages } from "./useLinkedInPages";
@@ -128,6 +129,57 @@ const Overview = ({ orgId }: { orgId: string }) => {
         <p className="text-xs text-muted-foreground">
           Totals across all of the Page's posts, as LinkedIn reports them. A
           figure shown as a dash means LinkedIn did not return it for this Page.
+        </p>
+      </CardContent>
+    </Card>
+  );
+};
+
+// The days and hours this Page's own posts did best, read on the London clock. LinkedIn Pages post less often
+// than Facebook ones, so two posts in a slot is enough to mention it, and the card says how many posts it
+// is based on.
+const BestTimes = ({ orgId }: { orgId: string }) => {
+  const q = useQuery({
+    queryKey: ["linkedin_page", orgId, "best_times"],
+    retry: false,
+    queryFn: () =>
+      call<{ posts: { published_at: string; engagement: number }[] }>({
+        action: "best_times",
+        org_id: orgId,
+      }),
+  });
+  if (q.error) return <Problem error={q.error as ActivityError} />;
+  if (q.isPending)
+    return <p className="text-sm text-muted-foreground">Asking LinkedIn…</p>;
+  const { posts } = q.data;
+  const { slots, enough } = bestSlots(posts, 3, 2);
+  return (
+    <Card>
+      <CardContent className="flex flex-col gap-2">
+        <h2 className="font-medium">Best times to post</h2>
+        {enough ? (
+          <ul className="flex flex-col gap-1 text-sm">
+            {slots.map((slot) => (
+              <li key={`${slot.day}-${slot.hour}`}>
+                <span className="font-medium">
+                  {slot.day} around {String(slot.hour).padStart(2, "0")}:00
+                </span>
+                <span className="ml-2 text-muted-foreground">
+                  {(slot.average * 100).toFixed(1)}% engagement across{" "}
+                  {slot.posts} posts
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Not enough posts yet. Once at least two of your posts have gone out
+            around the same day and hour, the best times show here.
+          </p>
+        )}
+        <p className="text-xs text-muted-foreground">
+          Based on {posts.length} recent {posts.length === 1 ? "post" : "posts"}{" "}
+          with results. A small sample, so treat it as a hint.
         </p>
       </CardContent>
     </Card>
@@ -377,6 +429,7 @@ export const LinkedInPagesPage = () => {
             <h2 className="font-medium">{pages[0].name}</h2>
           )}
           <Overview orgId={orgId} />
+          <BestTimes orgId={orgId} />
           <Posts orgId={orgId} canReply />
         </>
       )}

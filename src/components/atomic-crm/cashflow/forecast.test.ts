@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   addDays,
+  adsWeeklyEstimate,
   balanceAgeDays,
   buildForecast,
   type ForecastInput,
@@ -235,5 +236,55 @@ describe("double counting and leaving lines out", () => {
       key: "customer:3",
       reason: "left_out",
     });
+  });
+});
+
+describe("LinkedIn ads in the forecast", () => {
+  const adsInput = {
+    openingPence: 100000,
+    today: "2026-11-09",
+    days: 30,
+    planned: [],
+    bills: [],
+    owed: [],
+    lateCustomerDays: null,
+  };
+  it("puts the weekly estimate out every seven days", () => {
+    const f = buildForecast({ ...adsInput, adsWeeklyPence: 7000 });
+    const ads = f.flows.filter((x) => x.source === "ads");
+    expect(ads.map((x) => x.date)).toEqual([
+      "2026-11-16",
+      "2026-11-23",
+      "2026-11-30",
+      "2026-12-07",
+    ]);
+    expect(f.endBalance).toBe(100000 - 4 * 7000);
+  });
+  it("adds nothing without an estimate", () => {
+    expect(buildForecast(adsInput).flows).toHaveLength(0);
+    expect(
+      buildForecast({ ...adsInput, adsWeeklyPence: null }).flows,
+    ).toHaveLength(0);
+  });
+});
+
+describe("adsWeeklyEstimate", () => {
+  const days = (n: number, spend: number, currency = "GBP") =>
+    Array.from({ length: n }, (_, i) => ({
+      day: `2026-11-${String(8 - i).padStart(2, "0")}`,
+      spend,
+      currency,
+    }));
+  it("works out a typical week from the last fourteen days", () => {
+    // 14 days at 10.00 is 140.00, so a week is 70.00 (7,000 pence)
+    expect(adsWeeklyEstimate(days(8, 17.5), "GBP", "2026-11-09")).toBe(7000);
+  });
+  it("needs at least seven days of figures", () => {
+    expect(adsWeeklyEstimate(days(5, 20), "GBP", "2026-11-09")).toBeNull();
+  });
+  it("refuses figures in another currency", () => {
+    expect(
+      adsWeeklyEstimate(days(8, 20, "USD"), "GBP", "2026-11-09"),
+    ).toBeNull();
   });
 });

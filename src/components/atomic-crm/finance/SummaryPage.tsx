@@ -79,6 +79,83 @@ const plural = (n: number, one: string, many: string) =>
   `${n} ${n === 1 ? one : many}`;
 
 // The owner's weekly read. The latest week is shown in full; earlier weeks are kept below.
+// The week's LinkedIn: ad spend, views and clicks (saved by the daily LinkedIn check, shown only when the business has
+// connected LinkedIn for ads) and how many posts ReplyFlow sent to LinkedIn. Nothing shows when there is nothing.
+const LinkedInWeek = ({ from, to }: { from: string; to: string }) => {
+  const { data } = useQuery({
+    queryKey: ["summary_linkedin", from, to],
+    retry: false,
+    queryFn: async () => {
+      const client = getSupabaseClient();
+      const until = new Date(Date.parse(to) + 86_400_000).toISOString();
+      const [spend, mine, pages] = await Promise.all([
+        client
+          .from("linkedin_ad_spend")
+          .select("spend, impressions, clicks, currency")
+          .gte("day", from)
+          .lte("day", to),
+        client
+          .from("linkedin_posts")
+          .select("id", { count: "exact", head: true })
+          .is("removed_at", null)
+          .gte("posted_at", from)
+          .lt("posted_at", until),
+        client
+          .from("linkedin_page_posts")
+          .select("id", { count: "exact", head: true })
+          .is("removed_at", null)
+          .gte("posted_at", from)
+          .lt("posted_at", until),
+      ]);
+      const rows = spend.data ?? [];
+      return {
+        spend: rows.reduce((t, r) => t + Number(r.spend), 0),
+        impressions: rows.reduce((t, r) => t + Number(r.impressions), 0),
+        clicks: rows.reduce((t, r) => t + Number(r.clicks), 0),
+        currencies: [...new Set(rows.map((r) => String(r.currency ?? "")))],
+        hasSpend: rows.length > 0,
+        posts: (mine.count ?? 0) + (pages.count ?? 0),
+      };
+    },
+  });
+  if (!data || (!data.hasSpend && data.posts === 0)) return null;
+  // Spend is in the ad account's own currency; with more than one currency a single total would be wrong.
+  const one = data.currencies.length === 1 ? data.currencies[0] : null;
+  const spend =
+    data.hasSpend && one
+      ? new Intl.NumberFormat("en-GB", {
+          style: "currency",
+          currency: one,
+        }).format(data.spend)
+      : null;
+  return (
+    <section className="flex flex-col gap-2">
+      <h2 className="px-1 text-sm font-semibold text-muted-foreground">
+        LinkedIn
+      </h2>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <Tile
+          to="/linkedin_ads"
+          label="Ad spend"
+          value={spend ?? "–"}
+          detail={
+            data.hasSpend
+              ? spend
+                ? `${data.impressions.toLocaleString("en-GB")} views, ${data.clicks.toLocaleString("en-GB")} clicks`
+                : "Several currencies: see the ads report"
+              : "LinkedIn ads not connected"
+          }
+        />
+        <Tile
+          label="Posts to LinkedIn"
+          value={String(data.posts)}
+          detail="Sent from ReplyFlow this week"
+        />
+      </div>
+    </section>
+  );
+};
+
 export const SummaryPage = () => {
   const notify = useNotify();
   const queryClient = useQueryClient();
@@ -218,6 +295,8 @@ export const SummaryPage = () => {
               warn={d.customers_waiting_count > 0}
             />
           </div>
+
+          <LinkedInWeek from={latest.week_from} to={latest.week_to} />
 
           {earlier.length > 0 ? (
             <section className="flex flex-col gap-2">

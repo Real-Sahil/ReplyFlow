@@ -15,7 +15,9 @@ import { useOwedByCustomers } from "../finance/useOwed";
 import { todayIso } from "../importer/engine";
 import { getSupabaseClient } from "../providers/supabase/supabase";
 import { formatPence } from "../quotes/quoteMath";
-import { balanceAgeDays, buildForecast } from "./forecast";
+import { useConfigurationContext } from "../root/ConfigurationContext";
+import { adsWeeklyEstimate, balanceAgeDays, buildForecast } from "./forecast";
+import { useLinkedInAdSpend } from "./useLinkedInAdSpend";
 import { CASH_BALANCE_KEY, useCashBalance } from "./useCashBalance";
 import {
   exclusionKeys,
@@ -125,6 +127,28 @@ export const CashFlowPage = () => {
   const exclusions = useExclusions(isAdmin);
   const invoicedMonths = useInvoicedMonths(isAdmin);
   const { leaveOut, putBack } = useLeaveOut();
+  const { currency: businessCurrency } = useConfigurationContext();
+  const adSpend = useLinkedInAdSpend(isAdmin);
+  const adsEstimate = useMemo(
+    () => adsWeeklyEstimate(adSpend.data ?? [], businessCurrency, today),
+    [adSpend.data, businessCurrency, today],
+  );
+  // Whether to count LinkedIn advertising in the forecast. A choice for this browser; on by default.
+  const [includeAds, setIncludeAds] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem("replyflow.cashflow.ads") !== "off";
+    } catch {
+      return true;
+    }
+  });
+  const chooseAds = (on: boolean) => {
+    setIncludeAds(on);
+    try {
+      localStorage.setItem("replyflow.cashflow.ads", on ? "on" : "off");
+    } catch {
+      // not remembered, still works
+    }
+  };
 
   const forecast = useMemo(() => {
     if (!balance.data) return null;
@@ -134,6 +158,7 @@ export const CashFlowPage = () => {
       days,
       leftOut: exclusionKeys(exclusions.data ?? []),
       invoiced: invoicedMonths.data ?? new Set<string>(),
+      adsWeeklyPence: includeAds ? adsEstimate : null,
       planned: (planned.data ?? []).map((e) => ({
         id: e.id,
         recurring_item_id: e.recurring_item_id,
@@ -170,6 +195,8 @@ export const CashFlowPage = () => {
     days,
     lateDays,
     today,
+    includeAds,
+    adsEstimate,
   ]);
 
   if (!identity) return null;
@@ -324,6 +351,16 @@ export const CashFlowPage = () => {
                   <option value="30">30 days</option>
                   <option value="never">Do not count them</option>
                 </select>
+                {adsEstimate ? (
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={includeAds}
+                      onChange={(e) => chooseAds(e.target.checked)}
+                    />
+                    Count LinkedIn ads (about {formatPence(adsEstimate)} a week)
+                  </label>
+                ) : null}
                 {forecast.leftOutPence > 0 ? (
                   <span className="text-muted-foreground">
                     {formatPence(forecast.leftOutPence)} of late payments is
@@ -354,7 +391,9 @@ export const CashFlowPage = () => {
                             ? "Bill"
                             : f.source === "customer"
                               ? "Customer"
-                              : "Planned"}
+                              : f.source === "ads"
+                                ? "LinkedIn ads"
+                                : "Planned"}
                           {f.late ? " · already late" : ""}
                         </p>
                       </div>

@@ -3,6 +3,9 @@ import { describe, expect, it } from "vitest";
 import {
   commentsUrl,
   parseComments,
+  parsePerPost,
+  perPostStatsUrls,
+  postResults,
   parsePeople,
   peopleUrl,
   personIds,
@@ -180,5 +183,60 @@ describe("commenters' names", () => {
   });
   it("copes with nothing", () => {
     expect(parsePeople({})).toEqual({});
+  });
+});
+
+describe("per-post results", () => {
+  it("asks for shares and ugcPosts separately", () => {
+    const urls = perPostStatsUrls("12", [
+      "urn:li:share:1",
+      "urn:li:ugcPost:2",
+      "urn:li:share:3",
+    ]);
+    expect(urls).toHaveLength(2);
+    expect(urls[0]).toContain(
+      "shares=List(urn%3Ali%3Ashare%3A1,urn%3Ali%3Ashare%3A3)",
+    );
+    expect(urls[1]).toContain("ugcPosts=List(urn%3Ali%3AugcPost%3A2)");
+    expect(perPostStatsUrls("12", [])).toEqual([]);
+  });
+  it("reads each post's engagement, using LinkedIn's figure or working it out", () => {
+    const out = parsePerPost({
+      elements: [
+        { share: "urn:li:share:1", totalShareStatistics: { engagement: 0.05 } },
+        {
+          ugcPost: "urn:li:ugcPost:2",
+          totalShareStatistics: {
+            impressionCount: 100,
+            clickCount: 2,
+            likeCount: 3,
+            commentCount: 0,
+            shareCount: 0,
+          },
+        },
+        {
+          share: "urn:li:share:3",
+          totalShareStatistics: { impressionCount: 0 },
+        },
+        { share: "bad" },
+      ],
+    });
+    expect(out["urn:li:share:1"]).toBe(0.05);
+    expect(out["urn:li:ugcPost:2"]).toBeCloseTo(0.05);
+    expect(out["urn:li:share:3"]).toBeUndefined();
+    expect(Object.keys(out)).toHaveLength(2);
+  });
+  it("keeps posts that have both a date and a result", () => {
+    const results = postResults(
+      [
+        { urn: "urn:li:share:1", text: "", publishedAt: 1_700_000_000_000 },
+        { urn: "urn:li:share:2", text: "", publishedAt: null },
+        { urn: "urn:li:share:3", text: "", publishedAt: 1_700_000_000_000 },
+      ],
+      { "urn:li:share:1": 0.04, "urn:li:share:2": 0.1 },
+    );
+    expect(results).toEqual([
+      { published_at: "2023-11-14T22:13:20.000Z", engagement: 0.04 },
+    ]);
   });
 });

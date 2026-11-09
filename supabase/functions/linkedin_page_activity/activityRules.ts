@@ -188,3 +188,67 @@ export const parsePeople = (json: {
   }
   return people;
 };
+
+// ---- Per-post results, for the best time to post ---------------------------------------------------------
+// LinkedIn returns results for named posts when asked with the post's own kind of id: shares and ugcPosts are
+// separate lists. At most twenty at a time.
+
+export const STATS_BATCH = 20;
+
+export const perPostStatsUrls = (
+  orgId: string,
+  postUrns: string[],
+): string[] => {
+  const shares = postUrns
+    .filter((u) => u.startsWith("urn:li:share:"))
+    .slice(0, STATS_BATCH);
+  const ugc = postUrns
+    .filter((u) => u.startsWith("urn:li:ugcPost:"))
+    .slice(0, STATS_BATCH);
+  const base = `${BASE}/organizationalEntityShareStatistics?q=organizationalEntity&organizationalEntity=${enc(orgUrn(orgId))}`;
+  const list = (urns: string[]) => `List(${urns.map(enc).join(",")})`;
+  return [
+    ...(shares.length ? [`${base}&shares=${list(shares)}`] : []),
+    ...(ugc.length ? [`${base}&ugcPosts=${list(ugc)}`] : []),
+  ];
+};
+
+// Each post's engagement (reactions, comments, shares and clicks as a share of the views). LinkedIn's own figure
+// is used when it gives one, otherwise it is worked out; a post with no views has none.
+export const parsePerPost = (json: {
+  elements?: Record<string, unknown>[];
+}): Record<string, number> => {
+  const out: Record<string, number> = {};
+  for (const e of json.elements ?? []) {
+    const urn = String(e.share ?? e.ugcPost ?? "");
+    if (!validPostUrn(urn)) continue;
+    const t = (e.totalShareStatistics ?? {}) as Record<string, unknown>;
+    const impressions = num(t.impressionCount);
+    const engagement =
+      typeof t.engagement === "number"
+        ? t.engagement
+        : impressions > 0
+          ? (num(t.clickCount) +
+              num(t.likeCount) +
+              num(t.commentCount) +
+              num(t.shareCount)) /
+            impressions
+          : null;
+    if (engagement !== null) out[urn] = engagement;
+  }
+  return out;
+};
+
+export type PostResult = { published_at: string; engagement: number };
+
+// Joins the posts to their results, keeping only posts that have both a date and a result.
+export const postResults = (
+  posts: Post[],
+  engagement: Record<string, number>,
+): PostResult[] =>
+  posts
+    .filter((p) => p.publishedAt !== null && engagement[p.urn] !== undefined)
+    .map((p) => ({
+      published_at: new Date(p.publishedAt as number).toISOString(),
+      engagement: engagement[p.urn],
+    }));

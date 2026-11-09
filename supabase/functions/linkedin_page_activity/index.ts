@@ -6,6 +6,7 @@
 // POST { action: "comments", org_id, post_urn }
 // POST { action: "reply", org_id, post_urn, text, parent_comment? }
 // POST { action: "analytics", org_id }
+// POST { action: "best_times", org_id }: the Page's recent posts with when they went out and how they did
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { AuthMiddleware, UserMiddleware } from "../_shared/authentication.ts";
@@ -18,6 +19,9 @@ import {
   followersUrl,
   parseComments,
   parsePeople,
+  parsePerPost,
+  perPostStatsUrls,
+  postResults,
   peopleUrl,
   personIds,
   parseFollowers,
@@ -101,7 +105,11 @@ Deno.serve((req: Request) =>
           return createErrorResponse(400, "Invalid request");
         }
         const action = String(input.action);
-        if (!["posts", "comments", "reply", "analytics"].includes(action)) {
+        if (
+          !["posts", "comments", "reply", "analytics", "best_times"].includes(
+            action,
+          )
+        ) {
           return createErrorResponse(400, "Unknown action");
         }
         const orgId = String(input.org_id ?? "");
@@ -144,6 +152,23 @@ Deno.serve((req: Request) =>
         try {
           if (action === "posts") {
             return ok({ posts: parsePosts(await call(t, postsUrl(orgId))) });
+          }
+          if (action === "best_times") {
+            const posts = parsePosts(await call(t, postsUrl(orgId)));
+            const engagement: Record<string, number> = {};
+            for (const url of perPostStatsUrls(
+              orgId,
+              posts.map((p) => p.urn),
+            )) {
+              // One list failing should not hide the other.
+              Object.assign(
+                engagement,
+                await call(t, url)
+                  .then(parsePerPost)
+                  .catch(() => ({})),
+              );
+            }
+            return ok({ posts: postResults(posts, engagement) });
           }
           if (action === "analytics") {
             // Followers and post totals are separate calls; one failing should not hide the other.

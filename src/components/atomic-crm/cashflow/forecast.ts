@@ -31,7 +31,7 @@ export type CustomerOwes = {
   owed_pence: number;
 };
 
-export type FlowSource = "planned" | "bill" | "customer";
+export type FlowSource = "planned" | "bill" | "customer" | "ads";
 export type Flow = {
   // "planned:12", "bill:5" or "customer:7" (an order), so a line can be left out and put back.
   key?: string;
@@ -67,6 +67,10 @@ export type ForecastInput = {
   // "<repeating item id>:<YYYY-MM>" for each month an invoice has been issued for a repeating retainer, so
   // that month's planned entry is not counted as well as the invoice.
   invoiced?: Set<string>;
+  // What LinkedIn advertising costs in a typical week, worked out from recent real spend. When given, that
+  // amount goes out every seven days. It is an estimate of money not yet committed, and the person can switch
+  // it off.
+  adsWeeklyPence?: number | null;
 };
 
 export type Forecast = {
@@ -183,6 +187,17 @@ export const buildForecast = (input: ForecastInput): Forecast => {
         late: false,
       });
   }
+  if (input.adsWeeklyPence && input.adsWeeklyPence > 0) {
+    for (let n = 7; n <= days; n += 7) {
+      flows.push({
+        date: addDays(today, n),
+        pence: -input.adsWeeklyPence,
+        label: "LinkedIn ads (estimate from recent spend)",
+        source: "ads",
+        late: false,
+      });
+    }
+  }
   flows.sort((a, b) => a.date.localeCompare(b.date) || b.pence - a.pence);
 
   const out: Day[] = [];
@@ -233,3 +248,23 @@ export const balanceAgeDays = (asAt: string, today: string) =>
       new Date(`${asAt}T00:00:00Z`).getTime()) /
       86_400_000,
   );
+
+// A typical week of LinkedIn ad spend, from the daily figures of the fourteen days before today, in pence.
+// Returns null when there is too little to go on (under seven days of figures) or when any figure is in a
+// different currency from the business's, because adding those would be wrong.
+export const adsWeeklyEstimate = (
+  rows: { day: string; spend: number; currency: string }[],
+  businessCurrency: string,
+  today: string,
+): number | null => {
+  const from = addDays(today, -14);
+  const recent = rows.filter((r) => r.day >= from && r.day < today);
+  const days = new Set(recent.map((r) => r.day));
+  if (days.size < 7) return null;
+  if (recent.some((r) => r.currency && r.currency !== businessCurrency)) {
+    return null;
+  }
+  const total = recent.reduce((t, r) => t + r.spend, 0);
+  const pence = Math.round((total / 14) * 7 * 100);
+  return pence > 0 ? pence : null;
+};

@@ -23,6 +23,7 @@ export type Slot = {
 export const bestSlots = (
   posts: PastPost[],
   count = 3,
+  minPosts = MIN_POSTS_PER_SLOT,
 ): { slots: Slot[]; enough: boolean } => {
   const buckets = new Map<
     string,
@@ -41,7 +42,7 @@ export const bestSlots = (
     buckets.set(key, bucket);
   }
   const slots = [...buckets.values()]
-    .filter((b) => b.posts >= MIN_POSTS_PER_SLOT)
+    .filter((b) => b.posts >= minPosts)
     .map((b) => ({
       day: b.day,
       hour: b.hour,
