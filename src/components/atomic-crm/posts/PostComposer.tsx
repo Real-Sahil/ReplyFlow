@@ -22,7 +22,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
 import { ProductPicker } from "../contacts/MessengerConversation";
+import { listPages } from "../facebook/metaPages";
+import { DestinationsCard } from "./DestinationsCard";
+import { useQuery } from "@tanstack/react-query";
 import { PagePicker } from "./PagePicker";
+import {
+  rememberChoice,
+  sendDestination,
+  syncDestinations,
+} from "./destinationActions";
+import { type Action, type Wording } from "./destinations";
+import { useDestinations } from "./useDestinations";
 import { formatPrice } from "../products/formatPrice";
 import { storagePath } from "../providers/supabase/organisationFolder";
 import { useBusinessSettings } from "../finance/useBusinessSettings";
@@ -139,6 +149,17 @@ export const PostComposer = () => {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [product, setProduct] = useState<Product | null>(null);
+  // Where the post goes besides Facebook, and the words used there (see DestinationsCard).
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [wording, setWording] = useState<Wording>({
+    mode: "written",
+    text: "",
+  });
+  const { forPost, refetch: refetchDestinations } = useDestinations();
+  const { data: facebookPages = [] } = useQuery({
+    queryKey: ["meta_pages"],
+    queryFn: listPages,
+  });
 
   const localPreview = useMemo(
     () => (file ? URL.createObjectURL(file) : null),
@@ -169,17 +190,17 @@ export const PostComposer = () => {
     ? ["draft", "failed", "approved"].includes(status)
     : status === "approved";
 
-  const chooseFile = (picked: File | undefined) => {
-    if (!picked) return;
-    if (!MEDIA_TYPES.includes(picked.type)) {
+  const chooseFile = (chosen: File | undefined) => {
+    if (!chosen) return;
+    if (!MEDIA_TYPES.includes(chosen.type)) {
       notify("Use a JPEG or PNG photo.", { type: "error" });
       return;
     }
-    if (picked.size > MAX_MEDIA_BYTES) {
+    if (chosen.size > MAX_MEDIA_BYTES) {
       notify("Photos must be 8 MB or smaller.", { type: "error" });
       return;
     }
-    setFile(picked);
+    setFile(chosen);
   };
 
   // Uploads the chosen photo to the private bucket and returns its path.
@@ -245,9 +266,38 @@ export const PostComposer = () => {
     }
   };
 
-  const run = async (
-    action: "draft" | "submit" | "approve" | "publish" | "schedule",
-  ) => {
+  // Saves where the post goes besides Facebook, waiting for the planned time when the post is being scheduled.
+  const syncAfterSave = async (id: number, action: Action) => {
+    await syncDestinations({
+      postId: id,
+      existing: forPost(id),
+      wanted: picked,
+      wording,
+      action,
+      whenIso: when ? new Date(when).toISOString() : null,
+    });
+    rememberChoice(picked);
+    await refetchDestinations();
+  };
+
+  // After Facebook has the post, sends it to each LinkedIn destination now and says how each went.
+  const sendNow = async (id: number) => {
+    let good = 0;
+    const problems: string[] = [];
+    for (const key of picked) {
+      const result = await sendDestination(id, key, "publish");
+      if (result.ok) good++;
+      else problems.push(result.text);
+    }
+    await refetchDestinations();
+    if (good)
+      notify(`Posted to ${good} LinkedIn ${good === 1 ? "place" : "places"}`);
+    for (const problem of problems) {
+      notify(`LinkedIn: ${problem}`, { type: "warning" });
+    }
+  };
+
+  const run = async (action: Action) => {
     if (action !== "draft" && !message.trim()) {
       notify("Write something first.", { type: "error" });
       return;
@@ -259,6 +309,7 @@ export const PostComposer = () => {
     setBusy(true);
     try {
       const id = await save();
+      await syncAfterSave(id, action);
       if (action === "draft") {
         notify("Draft saved");
         redirect("list", "page_posts");
@@ -293,6 +344,7 @@ export const PostComposer = () => {
         } else {
           await callPublish(id, "publish");
           notify("Posted to your Page");
+          if (picked.size) await sendNow(id);
         }
       } catch (error) {
         notify((error as Error).message, { type: "error" });
@@ -330,12 +382,6 @@ export const PostComposer = () => {
             onChange={setPageId}
             disabled={!editable}
           />
-          <p className="text-xs text-muted-foreground">
-            This editor posts to Facebook. To send the post to LinkedIn as well
-            (your profile or a company Page), approve it, then choose{" "}
-            <span className="font-medium">Post to…</span> on it in the Posts
-            list.
-          </p>
           <Textarea
             rows={7}
             maxLength={8000}
@@ -439,6 +485,23 @@ export const PostComposer = () => {
               Facebook schedules between 10 minutes and 30 days ahead.
             </span>
           </label>
+
+          <DestinationsCard
+            postId={record?.id}
+            picked={picked}
+            onPicked={setPicked}
+            wording={wording}
+            onWording={setWording}
+            message={message}
+            productId={productId}
+            readOnly={!editable}
+            wordingLocked={status === "approved" && !isAdmin}
+            facebookName={
+              facebookPages.find((p) => p.page_id === pageId)?.name ||
+              facebookPages.find((p) => p.is_default)?.name ||
+              "Your Facebook Page"
+            }
+          />
 
           <div className="flex flex-wrap gap-2 border-t pt-4">
             {editable && (

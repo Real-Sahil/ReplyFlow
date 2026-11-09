@@ -160,6 +160,7 @@ const GROUPS: Group[] = [
     title: "Account",
     items: [
       { to: "/settings", label: "Settings", Icon: Settings, access: "config" },
+      { to: "/channels", label: "Accounts", Icon: Plug },
       { to: "/profile", label: "My profile", Icon: User },
       { to: "/linkedin", label: "LinkedIn", Icon: Linkedin },
       {

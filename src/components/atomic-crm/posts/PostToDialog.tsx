@@ -1,15 +1,7 @@
-import { useCallback, useState, type ReactNode } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useGetIdentity, useNotify } from "ra-core";
-import {
-  Check,
-  Copy,
-  ExternalLink,
-  Facebook,
-  Linkedin,
-  Send,
-  Sparkles,
-} from "lucide-react";
+import { ExternalLink, Facebook, Linkedin, RotateCw, Send } from "lucide-react";
 import { Link } from "react-router";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,128 +11,116 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
 
 import { listPages } from "../facebook/metaPages";
-import {
-  daysLeft,
-  linkedInPostUrl,
-  photoNote,
-  useLinkedIn,
-} from "../linkedin/useLinkedIn";
-import { useLinkedInPages } from "../linkedin/useLinkedInPages";
-import { getSupabaseClient } from "../providers/supabase/supabase";
-import { AiWriting } from "./AiWriting";
+import { linkedInPostUrl } from "../linkedin/useLinkedIn";
+import { ChannelRow } from "./ChannelRow";
+import { LinkedInWording } from "./LinkedInWording";
+import { sendDestination, syncDestinations } from "./destinationActions";
+import { wordingFrom, type DestinationRow, type Wording } from "./destinations";
 import type { PostRow } from "./postStatus";
+import { useChannels, useDestinations } from "./useDestinations";
 
-// What reads well on LinkedIn; the server allows up to 3,000.
-const COMFORTABLE = 1300;
-
-type Outcome = { ok: boolean; text: string };
-
-const failure = async (
-  error: { context?: { json?: () => Promise<unknown> } },
-  fallback: string,
-) => {
-  const body = (await error.context?.json?.().catch(() => ({}))) as
-    | { message?: string }
-    | undefined;
-  return body?.message ?? fallback;
-};
-
-const Section = ({
-  icon,
-  title,
-  children,
-}: {
-  icon: ReactNode;
-  title: string;
-  children: ReactNode;
-}) => (
-  <section className="flex flex-col gap-1">
-    <h3 className="flex items-center gap-2 text-sm font-semibold">
-      {icon} {title}
-    </h3>
-    <ul className="divide-y rounded-lg border">{children}</ul>
-  </section>
-);
-
-const Row = ({
-  checked,
-  onCheck,
-  title,
-  sub,
-  disabled,
-  action,
-}: {
-  checked?: boolean;
-  onCheck?: (on: boolean) => void;
-  title: string;
-  sub: ReactNode;
-  disabled?: boolean;
-  action?: ReactNode;
-}) => (
-  <li className="flex items-center justify-between gap-3 px-3 py-2">
-    <label className="flex min-w-0 items-center gap-3">
-      {onCheck ? (
-        <input
-          type="checkbox"
-          className="size-4 shrink-0"
-          checked={!!checked}
-          disabled={disabled}
-          onChange={(e) => onCheck(e.target.checked)}
-        />
-      ) : (
-        <span className="size-4 shrink-0" aria-hidden />
-      )}
-      <span className="min-w-0">
-        <span className="block truncate text-sm font-medium">{title}</span>
-        <span className="block text-xs text-muted-foreground">{sub}</span>
-      </span>
-    </label>
-    <div className="flex shrink-0 items-center gap-1">{action}</div>
-  </li>
-);
-
-// One place that says where a post goes. Facebook shows where the post stands (it is posted or scheduled from
-// the editor, which also picks the Page and the time); LinkedIn lists your profile and each connected company
-// Page, so the post can be sent to any of them, with the post's own words or a LinkedIn version from the AI writer.
+// Where a post goes, from the Posts list: the same destinations as the editor, for a post that is approved or
+// already out. A post can be sent to another channel later, tried again after a failure, or taken down. The
+// choices are saved on the post, so they are what was approved.
 export const PostToDialog = ({ post }: { post: PostRow }) => {
   const notify = useNotify();
   const { identity } = useGetIdentity();
   const isAdmin = !!(identity as { administrator?: boolean } | undefined)
     ?.administrator;
-  const { member, sent: onProfile, refetch: refetchProfile } = useLinkedIn();
-  const { pages, sent: onPages, refetch: refetchPages } = useLinkedInPages();
+  const { data: channels = [] } = useChannels();
+  const { forPost, refetch } = useDestinations();
   const { data: facebookPages = [] } = useQuery({
     queryKey: ["meta_pages"],
     queryFn: listPages,
   });
+  const rows = forPost(post.id);
 
   const [open, setOpen] = useState(false);
   const [picked, setPicked] = useState<Set<string>>(new Set());
-  const [version, setVersion] = useState<"written" | "linkedin">("written");
-  const [text, setText] = useState("");
-  const [writing, setWriting] = useState(false);
+  const [wording, setWording] = useState<Wording>({
+    mode: "written",
+    text: "",
+  });
   const [busy, setBusy] = useState(false);
-  const [outcomes, setOutcomes] = useState<Record<string, Outcome>>({});
 
-  const profileUrn = onProfile.find((s) => s.post_id === post.id)?.urn ?? null;
-  const pageUrn = (orgId: string) =>
-    onPages.find((s) => s.post_id === post.id && s.org_id === orgId)?.urn ??
-    null;
-  const profileExpired = !!member && daysLeft(member.expires_at) === 0;
+  const linkedin = channels.filter((c) => c.platform === "linkedin");
+  const rowFor = (key: string): DestinationRow | undefined =>
+    rows.find((r) => r.channel_key === key);
 
   const facebookPage =
-    facebookPages.find(
-      (p) => p.page_id === (post as { page_id?: string | null }).page_id,
-    ) ?? facebookPages.find((p) => p.is_default);
+    facebookPages.find((p) => p.page_id === post.page_id) ??
+    facebookPages.find((p) => p.is_default);
   const facebookState =
     post.status === "published" && post.fb_post_id
       ? "On Facebook"
       : post.status === "scheduled"
         ? "Scheduled on Facebook"
         : "Not on Facebook yet";
+
+  const openDialog = () => {
+    setPicked(
+      new Set(
+        rows
+          .filter((r) => r.state !== "removed" && r.state !== "published")
+          .map((r) => r.channel_key),
+      ),
+    );
+    setWording(wordingFrom(rows));
+    setOpen(true);
+  };
+
+  const finish = async (good: number, problems: string[]) => {
+    await refetch();
+    if (good) {
+      notify(`Done for ${good} ${good === 1 ? "place" : "places"}`);
+    }
+    for (const problem of problems) {
+      notify(`LinkedIn: ${problem}`, { type: "warning" });
+    }
+  };
+
+  // Saves the choices (so they are on the post), then sends each ticked destination now.
+  const postNow = async () => {
+    setBusy(true);
+    try {
+      await syncDestinations({
+        postId: post.id,
+        existing: rows,
+        wanted: new Set([
+          ...picked,
+          ...rows
+            .filter((r) => r.state === "published")
+            .map((r) => r.channel_key),
+        ]),
+        wording,
+        action: "publish",
+        whenIso: null,
+      });
+      let good = 0;
+      const problems: string[] = [];
+      for (const key of picked) {
+        const result = await sendDestination(post.id, key, "publish");
+        if (result.ok) good++;
+        else problems.push(result.text);
+      }
+      await finish(good, problems);
+      setPicked(new Set());
+    } catch (e) {
+      notify((e as { message?: string }).message ?? "Could not save", {
+        type: "error",
+      });
+    }
+    setBusy(false);
+  };
+
+  const act = async (key: string, action: "publish" | "remove") => {
+    setBusy(true);
+    const result = await sendDestination(post.id, key, action);
+    await finish(result.ok ? 1 : 0, result.ok ? [] : [result.text]);
+    setBusy(false);
+  };
 
   const toggle = (key: string, on: boolean) =>
     setPicked((current) => {
@@ -150,118 +130,11 @@ export const PostToDialog = ({ post }: { post: PostRow }) => {
       return next;
     });
 
-  const write = useCallback(async () => {
-    setWriting(true);
-    const { data, error } = await getSupabaseClient().functions.invoke<{
-      data: { message: string };
-    }>("post_autopilot", {
-      method: "POST",
-      body: {
-        channel: "linkedin",
-        message: post.message,
-        product_id: post.product_id,
-      },
-    });
-    setWriting(false);
-    if (error) {
-      notify(await failure(error, "The AI writer could not write this one"), {
-        type: "error",
-      });
-      return false;
-    }
-    setText(data?.data?.message ?? "");
-    return true;
-  }, [post.message, post.product_id, notify]);
-
-  const chooseVersion = async (next: "written" | "linkedin") => {
-    setVersion(next);
-    if (next === "linkedin" && !text) await write();
-  };
-
-  const send = async (key: string, action: "publish" | "remove") => {
-    const isProfile = key === "profile";
-    const orgId = key.replace("page:", "");
-    const { data, error } = await getSupabaseClient().functions.invoke<{
-      data: { photo?: string };
-    }>(isProfile ? "linkedin_post" : "linkedin_page_post", {
-      method: "POST",
-      body: {
-        id: post.id,
-        action,
-        ...(isProfile ? {} : { org_id: orgId }),
-        ...(action === "publish" && version === "linkedin" && isAdmin
-          ? { message: text }
-          : {}),
-      },
-    });
-    if (error) {
-      return {
-        ok: false,
-        text: await failure(error, "Could not reach LinkedIn"),
-      };
-    }
-    return {
-      ok: true,
-      text:
-        action === "publish"
-          ? `Posted${photoNote(data?.data?.photo)}`
-          : "Removed",
-    };
-  };
-
-  const run = async (keys: string[], action: "publish" | "remove") => {
-    setBusy(true);
-    const results: Record<string, Outcome> = {};
-    for (const key of keys) {
-      results[key] = await send(key, action);
-    }
-    setOutcomes((o) => ({ ...o, ...results }));
-    setPicked(new Set());
-    refetchProfile();
-    refetchPages();
-    setBusy(false);
-    const good = Object.values(results).filter((r) => r.ok).length;
-    const bad = keys.length - good;
-    notify(
-      bad === 0
-        ? action === "publish"
-          ? `Posted to ${good} ${good === 1 ? "place" : "places"}`
-          : "Removed"
-        : `${good} done, ${bad} could not be completed. See the list.`,
-      { type: bad ? "warning" : "success" },
-    );
-  };
-
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(text);
-      notify("Copied");
-    } catch {
-      notify("Could not copy. Select the text and copy it by hand.", {
-        type: "warning",
-      });
-    }
-  };
-
-  const outcome = (key: string) =>
-    outcomes[key]?.text ? (
-      <span className={outcomes[key].ok ? "text-primary" : "text-destructive"}>
-        {" "}
-        · {outcomes[key].text}
-      </span>
-    ) : null;
-
-  const editedNeedsAdmin = version === "linkedin" && !isAdmin;
-  const canPost =
-    picked.size > 0 &&
-    !busy &&
-    !writing &&
-    !editedNeedsAdmin &&
-    (version === "written" || text.trim().length > 0);
+  const wordingLocked = !isAdmin && post.status !== "pending_review";
 
   return (
     <>
-      <Button size="sm" variant="outline" onClick={() => setOpen(true)}>
+      <Button size="sm" variant="outline" onClick={openDialog}>
         <Send /> Post to…
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
@@ -273,254 +146,132 @@ export const PostToDialog = ({ post }: { post: PostRow }) => {
             </DialogDescription>
           </DialogHeader>
 
-          <Section icon={<Facebook className="size-4" />} title="Facebook">
-            <Row
-              title={facebookPage?.name || "Your Facebook Page"}
-              sub={facebookState}
-              action={
-                <>
-                  {post.fb_post_id ? (
-                    <Button asChild size="sm" variant="ghost">
-                      <a
-                        href={`https://www.facebook.com/${post.fb_post_id}`}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        <ExternalLink /> View
-                      </a>
-                    </Button>
-                  ) : null}
-                  {post.status !== "published" &&
-                  post.status !== "scheduled" ? (
-                    <Button asChild size="sm" variant="ghost">
-                      <Link to={`/page_posts/${post.id}`}>Open editor</Link>
-                    </Button>
-                  ) : null}
-                </>
-              }
-            />
-            <li className="px-3 py-2 text-xs text-muted-foreground">
-              Facebook is posted or scheduled, and its Page and time chosen, in
-              the post's editor.
-            </li>
-          </Section>
+          <section className="flex flex-col gap-1">
+            <h3 className="flex items-center gap-2 text-sm font-semibold">
+              <Facebook className="size-4" /> Facebook
+            </h3>
+            <div className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium">
+                  {facebookPage?.name || "Your Facebook Page"}
+                </p>
+                <p className="text-xs text-muted-foreground">{facebookState}</p>
+              </div>
+              <div className="flex shrink-0 gap-1">
+                {post.fb_post_id ? (
+                  <Button asChild size="sm" variant="ghost">
+                    <a
+                      href={`https://www.facebook.com/${post.fb_post_id}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      <ExternalLink /> View
+                    </a>
+                  </Button>
+                ) : null}
+                {post.status !== "published" && post.status !== "scheduled" ? (
+                  <Button asChild size="sm" variant="ghost">
+                    <Link to={`/page_posts/${post.id}`}>Open editor</Link>
+                  </Button>
+                ) : null}
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Facebook's Page and time are chosen in the editor.
+            </p>
+          </section>
 
-          <Section icon={<Linkedin className="size-4" />} title="LinkedIn">
-            {member ? (
-              profileUrn ? (
-                <Row
-                  title={`Your profile (${member.name || "you"})`}
-                  sub={<>On your profile{outcome("profile")}</>}
-                  action={
-                    <>
-                      <Button asChild size="sm" variant="ghost">
-                        <a
-                          href={linkedInPostUrl(profileUrn)}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          <ExternalLink /> View
-                        </a>
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        disabled={busy}
-                        onClick={() => void run(["profile"], "remove")}
-                      >
-                        Remove
-                      </Button>
-                    </>
-                  }
-                />
-              ) : (
-                <Row
-                  checked={picked.has("profile")}
-                  onCheck={(on) => toggle("profile", on)}
-                  disabled={profileExpired}
-                  title={`Your profile (${member.name || "you"})`}
-                  sub={
-                    profileExpired ? (
-                      <>
-                        Connection expired.{" "}
-                        <Link to="/linkedin" className="underline">
-                          Connect again
-                        </Link>
-                      </>
-                    ) : (
-                      <>Not posted yet{outcome("profile")}</>
-                    )
-                  }
-                />
-              )
+          <section className="flex flex-col gap-1">
+            <h3 className="flex items-center gap-2 text-sm font-semibold">
+              <Linkedin className="size-4" /> LinkedIn
+            </h3>
+            {linkedin.length ? (
+              <ul className="divide-y rounded-lg border">
+                {linkedin.map((channel) => {
+                  const row = rowFor(channel.channel_key);
+                  const posted = row?.state === "published";
+                  return (
+                    <ChannelRow
+                      key={channel.channel_key}
+                      channel={channel}
+                      row={row}
+                      checked={picked.has(channel.channel_key)}
+                      onCheck={(on) => toggle(channel.channel_key, on)}
+                      locked={busy}
+                      actions={
+                        posted && row?.external_id ? (
+                          <>
+                            <Button asChild size="sm" variant="ghost">
+                              <a
+                                href={linkedInPostUrl(row.external_id)}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                <ExternalLink /> View
+                              </a>
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              disabled={busy}
+                              onClick={() =>
+                                void act(channel.channel_key, "remove")
+                              }
+                            >
+                              Take down
+                            </Button>
+                          </>
+                        ) : row?.state === "failed" ? (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            disabled={busy}
+                            onClick={() =>
+                              void act(channel.channel_key, "publish")
+                            }
+                          >
+                            <RotateCw /> Try again
+                          </Button>
+                        ) : null
+                      }
+                    />
+                  );
+                })}
+              </ul>
             ) : (
-              <Row
-                title="Your profile"
-                sub={
-                  <>
-                    Not connected.{" "}
-                    <Link to="/linkedin" className="underline">
-                      Connect LinkedIn
-                    </Link>
-                  </>
-                }
-              />
-            )}
-
-            {pages.map((page) => {
-              const key = `page:${page.org_id}`;
-              const urn = pageUrn(page.org_id);
-              const expired = daysLeft(page.expires_at) === 0;
-              return urn ? (
-                <Row
-                  key={key}
-                  title={page.name}
-                  sub={<>On this Page{outcome(key)}</>}
-                  action={
-                    <>
-                      <Button asChild size="sm" variant="ghost">
-                        <a
-                          href={linkedInPostUrl(urn)}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          <ExternalLink /> View
-                        </a>
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        disabled={busy}
-                        onClick={() => void run([key], "remove")}
-                      >
-                        Remove
-                      </Button>
-                    </>
-                  }
-                />
-              ) : (
-                <Row
-                  key={key}
-                  checked={picked.has(key)}
-                  onCheck={(on) => toggle(key, on)}
-                  disabled={expired}
-                  title={page.name}
-                  sub={
-                    expired ? (
-                      <>
-                        Connection expired.{" "}
-                        <Link to="/linkedin" className="underline">
-                          Connect again
-                        </Link>
-                      </>
-                    ) : (
-                      <>Company Page · not posted yet{outcome(key)}</>
-                    )
-                  }
-                />
-              );
-            })}
-            {!pages.length ? (
-              <li className="px-3 py-2 text-xs text-muted-foreground">
-                No company Page connected. An administrator can connect one on
-                the{" "}
-                <Link to="/linkedin" className="underline">
-                  LinkedIn screen
+              <p className="text-xs text-muted-foreground">
+                No LinkedIn account is connected.{" "}
+                <Link to="/channels" className="underline">
+                  Connect one under Accounts
                 </Link>
                 .
-              </li>
-            ) : null}
-            <li className="px-3 py-2 text-xs text-muted-foreground">
-              LinkedIn posts go out straight away; they cannot be scheduled.
-            </li>
-          </Section>
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              LinkedIn posts go out straight away from here. To post at a set
+              time, plan it in the editor.
+            </p>
+          </section>
 
-          <section className="flex flex-col gap-2">
-            <h3 className="text-sm font-semibold">What to post on LinkedIn</h3>
-            <div className="flex flex-wrap gap-4 text-sm">
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name={`version-${post.id}`}
-                  checked={version === "written"}
-                  onChange={() => void chooseVersion("written")}
-                />
-                The post as written
-              </label>
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name={`version-${post.id}`}
-                  checked={version === "linkedin"}
-                  onChange={() => void chooseVersion("linkedin")}
-                />
-                A LinkedIn version from the AI writer
-              </label>
-            </div>
-            {version === "linkedin" ? (
-              writing ? (
-                <p className="text-sm text-muted-foreground">
-                  <AiWriting label="Writing the LinkedIn version…" />
-                </p>
-              ) : (
-                <>
-                  <Textarea
-                    aria-label="LinkedIn version"
-                    rows={7}
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
-                  />
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span
-                      className={
-                        text.length > COMFORTABLE
-                          ? "text-xs text-destructive"
-                          : "text-xs text-muted-foreground"
-                      }
-                    >
-                      {text.length.toLocaleString("en-GB")} characters
-                    </span>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      disabled={busy}
-                      onClick={() => void write()}
-                    >
-                      <Sparkles /> Write again
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      disabled={!text}
-                      onClick={() => void copy()}
-                    >
-                      <Copy /> Copy
-                    </Button>
-                  </div>
-                  {!isAdmin ? (
-                    <p className="text-xs text-muted-foreground">
-                      Only an administrator can post an edited version. Copy it
-                      and ask one to post it, or choose "The post as written".
-                    </p>
-                  ) : null}
-                </>
-              )
-            ) : null}
+          <section className="flex flex-col gap-1">
+            <h3 className="text-sm font-semibold">Words for LinkedIn</h3>
+            <LinkedInWording
+              value={wording}
+              onChange={setWording}
+              postMessage={post.message}
+              productId={post.product_id}
+              locked={wordingLocked}
+              name={`dialog-${post.id}`}
+            />
           </section>
 
           <div className="flex flex-wrap items-center justify-end gap-2 border-t pt-3">
             <Button variant="ghost" onClick={() => setOpen(false)}>
-              {Object.values(outcomes).some((o) => o.ok) ? (
-                <>
-                  <Check /> Done
-                </>
-              ) : (
-                "Close"
-              )}
+              Close
             </Button>
             <Button
-              disabled={!canPost}
-              onClick={() => void run([...picked], "publish")}
+              disabled={picked.size === 0 || busy}
+              onClick={() => void postNow()}
             >
               <Send />
               {picked.size === 0

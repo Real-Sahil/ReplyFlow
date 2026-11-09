@@ -191,13 +191,13 @@ verify_jwt = false
 verify_jwt = false
 [functions.linkedin_connect]
 verify_jwt = false
-[functions.linkedin_post]
-verify_jwt = false
 [functions.linkedin_ads]
 verify_jwt = false
 [functions.linkedin_pages_connect]
 verify_jwt = false
-[functions.linkedin_page_post]
+[functions.destination_publish]
+verify_jwt = false
+[functions.destination_run]
 verify_jwt = false
 [functions.linkedin_page_activity]
 verify_jwt = false

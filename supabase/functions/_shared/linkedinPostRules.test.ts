@@ -7,7 +7,7 @@ import {
   personUrn,
   postBody,
   tooLong,
-} from "./postRules.ts";
+} from "./linkedinPostRules.ts";
 
 describe("commentaryFor", () => {
   it("escapes the characters LinkedIn treats as formatting", () => {

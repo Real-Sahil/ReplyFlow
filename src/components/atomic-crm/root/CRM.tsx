@@ -165,6 +165,10 @@ const LinkedInPagesPage = lazyScreen(
   () => import("../linkedin/LinkedInPagesPage"),
   "LinkedInPagesPage",
 );
+const ChannelsPage = lazyScreen(
+  () => import("../channels/ChannelsPage"),
+  "ChannelsPage",
+);
 const TransactionsPage = lazyScreen(
   () => import("../orders/TransactionsPage"),
   "TransactionsPage",
@@ -379,6 +383,7 @@ const DesktopAdmin = (
         <Route path={ProfilePage.path} element={<ProfilePage />} />
         <Route path={SettingsPage.path} element={<SettingsPage />} />
         <Route path="/facebook" element={<FacebookConnectionPage />} />
+        <Route path="/channels" element={<ChannelsPage />} />
         <Route path="/linkedin" element={<LinkedInConnectionPage />} />
         <Route path="/linkedin_ads" element={<LinkedInAdsPage />} />
         <Route path="/linkedin_pages" element={<LinkedInPagesPage />} />
@@ -457,6 +462,7 @@ const MobileInvoices = asMobileScreen("Invoices", InvoicesPage);
 const MobileOwed = asMobileScreen("Owed and owing", OwedPage);
 const MobileSummary = asMobileScreen("Weekly summary", SummaryPage);
 const MobileFacebook = asMobileScreen("Facebook", FacebookConnectionPage);
+const MobileChannels = asMobileScreen("Accounts", ChannelsPage);
 const MobileLinkedIn = asMobileScreen("LinkedIn", LinkedInConnectionPage);
 const MobileLinkedInAds = asMobileScreen("LinkedIn ads", LinkedInAdsPage);
 const MobileLinkedInPages = asMobileScreen("LinkedIn Pages", LinkedInPagesPage);
@@ -586,6 +592,7 @@ const MobileAdmin = (
           <Route path={ProfilePage.path} element={<MobileProfile />} />
           <Route path={ImportPage.path} element={<MobileImport />} />
           <Route path="/facebook" element={<MobileFacebook />} />
+          <Route path="/channels" element={<MobileChannels />} />
           <Route path="/linkedin" element={<MobileLinkedIn />} />
           <Route path="/linkedin_ads" element={<MobileLinkedInAds />} />
           <Route path="/linkedin_pages" element={<MobileLinkedInPages />} />

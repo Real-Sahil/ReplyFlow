@@ -88,22 +88,16 @@ const LinkedInWeek = ({ from, to }: { from: string; to: string }) => {
     queryFn: async () => {
       const client = getSupabaseClient();
       const until = new Date(Date.parse(to) + 86_400_000).toISOString();
-      const [spend, mine, pages] = await Promise.all([
+      const [spend, sent] = await Promise.all([
         client
           .from("linkedin_ad_spend")
           .select("spend, impressions, clicks, currency")
           .gte("day", from)
           .lte("day", to),
         client
-          .from("linkedin_posts")
+          .from("post_destinations")
           .select("id", { count: "exact", head: true })
-          .is("removed_at", null)
-          .gte("posted_at", from)
-          .lt("posted_at", until),
-        client
-          .from("linkedin_page_posts")
-          .select("id", { count: "exact", head: true })
-          .is("removed_at", null)
+          .eq("state", "published")
           .gte("posted_at", from)
           .lt("posted_at", until),
       ]);
@@ -114,7 +108,7 @@ const LinkedInWeek = ({ from, to }: { from: string; to: string }) => {
         clicks: rows.reduce((t, r) => t + Number(r.clicks), 0),
         currencies: [...new Set(rows.map((r) => String(r.currency ?? "")))],
         hasSpend: rows.length > 0,
-        posts: (mine.count ?? 0) + (pages.count ?? 0),
+        posts: sent.count ?? 0,
       };
     },
   });

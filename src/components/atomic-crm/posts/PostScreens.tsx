@@ -16,7 +16,9 @@ import { getSupabaseClient } from "../providers/supabase/supabase";
 import { AutopilotPanel } from "./AutopilotPanel";
 import { PostCalendar } from "./PostCalendar";
 import { PostComposer } from "./PostComposer";
+import { DestinationChips } from "./DestinationChips";
 import { PostToDialog } from "./PostToDialog";
+import { useChannels, useDestinations } from "./useDestinations";
 import { PlanWithAi } from "./PlanWithAi";
 import { PostPipeline } from "./PostPipeline";
 import { PostStatusBadge, type PostRow } from "./postStatus";
@@ -161,6 +163,8 @@ const ListView = ({
 }) => {
   const notify = useNotify();
   const [busyId, setBusyId] = useState<number | null>(null);
+  const { data: channels = [] } = useChannels();
+  const { forPost } = useDestinations();
 
   const remove = async (post: PostRow) => {
     setBusyId(post.id);
@@ -248,6 +252,19 @@ const ListView = ({
                     )}
                   </span>
                 </p>
+                <div className="mt-1">
+                  <DestinationChips
+                    rows={forPost(post.id)}
+                    channels={channels}
+                    facebook={
+                      post.fb_post_id
+                        ? { name: "Facebook", state: "On Facebook" }
+                        : post.status === "scheduled"
+                          ? { name: "Facebook", state: "Scheduled on Facebook" }
+                          : null
+                    }
+                  />
+                </div>
               </div>
 
               <div className="col-span-2 text-sm md:col-span-1">

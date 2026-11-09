@@ -536,6 +536,13 @@ const MoreSheet = ({
             onPick={onOpenChange}
           />
           <MoreRow
+            to="/channels"
+            label="Accounts"
+            detail="Facebook and LinkedIn connections"
+            Icon={Plug}
+            onPick={onOpenChange}
+          />
+          <MoreRow
             to="/linkedin"
             label="LinkedIn"
             detail="Post to your own profile"
