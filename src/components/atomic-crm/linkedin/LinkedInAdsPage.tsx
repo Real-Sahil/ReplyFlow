@@ -267,7 +267,7 @@ export const LinkedInAdsPage = () => (
     <CanAccess
       resource="configuration"
       action="edit"
-      fallback={
+      accessDenied={
         <p className="text-sm text-muted-foreground">
           Only administrators can see ad results.
         </p>
