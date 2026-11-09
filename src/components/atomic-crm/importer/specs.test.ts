@@ -71,7 +71,7 @@ describe("mapRows with the claims sheet", () => {
     expect(r.rows[1].errors[0]).toMatch(/same as row 2/);
     expect(r.rows[2].errors).toHaveLength(0);
   });
-  it("refuses a date a year ago and amounts over £5,000", () => {
+  it("refuses a date a year ago and amounts over 5,000", () => {
     const r = mapRows(
       [
         ["Date", "Amount", "What for"],
@@ -80,7 +80,7 @@ describe("mapRows with the claims sheet", () => {
       spec,
     );
     expect(r.rows[0].errors.join(" ")).toMatch(/more than a year/);
-    expect(r.rows[0].errors.join(" ")).toMatch(/£5,000/);
+    expect(r.rows[0].errors.join(" ")).toMatch(/up to 5,000/);
   });
 });
 

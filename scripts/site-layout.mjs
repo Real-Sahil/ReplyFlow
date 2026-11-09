@@ -25,4 +25,4 @@ if (!existsSync(app)) {
   renameSync(index, app);
 }
 copyFileSync(home, index);
-console.log("site-layout: website at /, app at /app");
+console.warn("site-layout: website at /, app at /app");
