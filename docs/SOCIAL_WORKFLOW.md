@@ -67,16 +67,32 @@ A post has one planned time. Every destination follows it unless it has its own.
 * **Page screens** (LinkedIn Pages, ads): always say which Page or account they are showing, with a chooser when
   more than one is connected.
 
+## How a post's status follows its destinations
+
+A post's own status still starts with the human steps: draft, waiting for review, approved. After approval it
+follows its destinations, and only forwards:
+
+* approved or failed → **scheduled** when any destination is waiting for its time;
+* approved or failed → **published** when something is out and nothing chosen is left unsent;
+* scheduled → **published** when what was waiting has gone out (a LinkedIn destination does; a Facebook one stays
+  "scheduled" as it always has, because Facebook publishes it itself);
+* a published post stays published; if every destination is taken down, a scheduled or published post goes back to
+  a draft, as taking a post off Facebook always did.
+
+The database does this itself whenever a destination changes, so it holds whichever part of the app made the change.
+
 ## Stages
 
-1. **Built now.** Channels view, destinations (LinkedIn first), versions of the words, LinkedIn scheduling,
-   the Accounts screen, the editor card, chips in the list and the Post to… dialog. Facebook stays as the post's
-   main destination, using the Page chosen in the editor.
-2. **Next.** Facebook becomes an ordinary destination as well. That allows a post to go to several Facebook Pages
-   at once, and a post that goes to LinkedIn only. The post's overall status is then worked out from its
-   destinations instead of being Facebook's status. Until then a post always has Facebook as its main destination.
-3. **After.** One place to read comments and results across channels, with the same chooser; saved defaults per
-   business for which channels a new post starts with.
+1. **Built.** Channels view, destinations, versions of the words, LinkedIn scheduling, the Accounts screen,
+   the editor card, chips in the list and the Post to… dialog.
+2. **Built.** Facebook is an ordinary destination. A post can go to several Facebook Pages at once, or to LinkedIn
+   only, or any mix; Facebook's Pages are tick boxes beside LinkedIn's. `post_publish` posts to every Facebook
+   Page ticked (or one, with `page_id`) and records each Page's own result. Posts made before this are given their
+   Facebook destination when the migration runs, and the autopilot, which knows nothing of destinations, still
+   works: a post with no destinations uses the one Page it names, or the default Page.
+3. **Next.** One place to read comments and results across channels, with the same chooser; saved defaults per
+   business for which channels a new post starts with; Facebook's own scheduled posts marked published once their
+   time has passed.
 
 ## Known limits
 
@@ -84,3 +100,6 @@ A post has one planned time. Every destination follows it unless it has its own.
 * LinkedIn tokens last about 60 days and cannot be renewed in the background, so connections must be renewed.
   The daily check warns administrators three days before.
 * Editing an approved post does not send it back for approval; that is how posts already worked.
+* Facebook's schedule is set from the editor for every ticked Page at once, not per Page.
+* A Facebook post that Facebook publishes at its scheduled time stays marked scheduled in ReplyFlow; nothing yet
+  tells ReplyFlow it went out.

@@ -4,9 +4,11 @@ import {
   health,
   overrideFor,
   planDestinations,
+  platformOf,
   stateText,
   stateTone,
   targetState,
+  valuesFor,
   wordingFrom,
   type DestinationRow,
 } from "./destinations";
@@ -119,5 +121,39 @@ describe("wording", () => {
     expect(overrideFor({ mode: "linkedin", text: " Hi " })).toBe("Hi");
     expect(overrideFor({ mode: "written", text: "Hi" })).toBeNull();
     expect(overrideFor({ mode: "linkedin", text: "  " })).toBeNull();
+  });
+});
+
+describe("platformOf and valuesFor", () => {
+  const when = "2026-11-20T10:00:00.000Z";
+  const words = { mode: "linkedin" as const, text: "LinkedIn words" };
+  it("knows the platform of a channel", () => {
+    expect(platformOf("facebook:page:1")).toBe("facebook");
+    expect(platformOf("linkedin:profile:2")).toBe("linkedin");
+    expect(platformOf("x:y:3")).toBeNull();
+  });
+  it("sends a Facebook Page the post's own words and never marks it scheduled itself", () => {
+    expect(valuesFor("facebook:page:1", "schedule", when, words)).toEqual({
+      text_override: null,
+      state: "planned",
+      scheduled_for: null,
+    });
+  });
+  it("gives a LinkedIn destination the LinkedIn words and the schedule", () => {
+    expect(valuesFor("linkedin:page:1", "schedule", when, words)).toEqual({
+      text_override: "LinkedIn words",
+      state: "scheduled",
+      scheduled_for: when,
+    });
+    expect(
+      valuesFor("linkedin:page:1", "publish", when, {
+        mode: "written",
+        text: "",
+      }),
+    ).toEqual({
+      text_override: null,
+      state: "planned",
+      scheduled_for: null,
+    });
   });
 });

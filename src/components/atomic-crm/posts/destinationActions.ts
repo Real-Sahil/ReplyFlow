@@ -1,8 +1,8 @@
 import { getSupabaseClient } from "../providers/supabase/supabase";
 import {
-  overrideFor,
   planDestinations,
-  targetState,
+  platformOf,
+  valuesFor,
   type Action,
   type DestinationRow,
   type Wording,
@@ -22,8 +22,6 @@ export const syncDestinations = async (args: {
   const { postId, existing, wanted, wording, action, whenIso } = args;
   const client = getSupabaseClient();
   const plan = planDestinations(existing, wanted);
-  const target = targetState(action, whenIso);
-  const text_override = overrideFor(wording);
 
   for (const row of plan.remove) {
     const { error } = await client
@@ -37,8 +35,7 @@ export const syncDestinations = async (args: {
       plan.add.map((channel_key) => ({
         post_id: postId,
         channel_key,
-        text_override,
-        ...target,
+        ...valuesFor(channel_key, action, whenIso, wording),
       })),
     );
     if (error) throw error;
@@ -46,7 +43,7 @@ export const syncDestinations = async (args: {
   for (const row of plan.keep) {
     const { error } = await client
       .from("post_destinations")
-      .update({ text_override, ...target })
+      .update(valuesFor(row.channel_key, action, whenIso, wording))
       .eq("id", row.id);
     if (error) throw error;
   }
@@ -60,6 +57,13 @@ export const sendDestination = async (
   channelKey: string,
   action: "publish" | "remove",
 ): Promise<SendResult> => {
+  if (platformOf(channelKey) === "facebook") {
+    return sendFacebook(
+      postId,
+      channelKey.replace("facebook:page:", ""),
+      action,
+    );
+  }
   const { data, error } = await getSupabaseClient().functions.invoke<{
     data: { photo?: string };
   }>("destination_publish", {
@@ -103,4 +107,24 @@ export const rememberChoice = (keys: Set<string>) => {
   } catch {
     // not remembered, still works
   }
+};
+
+// Posts the post to one Facebook Page now, or takes it down from there, through the server (which holds the Page
+// tokens). Facebook's own schedule is set from the editor, for every Page at once.
+export const sendFacebook = async (
+  postId: number,
+  pageId: string,
+  action: "publish" | "remove",
+): Promise<SendResult> => {
+  const { error } = await getSupabaseClient().functions.invoke("post_publish", {
+    method: "POST",
+    body: { id: postId, action, page_id: pageId },
+  });
+  if (error) {
+    const body = (await error.context?.json?.().catch(() => ({}))) as
+      | { message?: string }
+      | undefined;
+    return { ok: false, text: body?.message ?? "Could not reach Facebook" };
+  }
+  return { ok: true, text: action === "publish" ? "Posted" : "Taken down" };
 };

@@ -22,10 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
 import { ProductPicker } from "../contacts/MessengerConversation";
-import { listPages } from "../facebook/metaPages";
 import { DestinationsCard } from "./DestinationsCard";
-import { useQuery } from "@tanstack/react-query";
-import { PagePicker } from "./PagePicker";
 import {
   rememberChoice,
   sendDestination,
@@ -133,9 +130,6 @@ export const PostComposer = () => {
     ?.administrator;
 
   const [message, setMessage] = useState(record?.message ?? "");
-  const [pageId, setPageId] = useState<string>(
-    (record as { page_id?: string | null } | undefined)?.page_id ?? "",
-  );
   const [productId, setProductId] = useState<number | null>(
     record?.product_id ?? null,
   );
@@ -156,10 +150,13 @@ export const PostComposer = () => {
     text: "",
   });
   const { forPost, refetch: refetchDestinations } = useDestinations();
-  const { data: facebookPages = [] } = useQuery({
-    queryKey: ["meta_pages"],
-    queryFn: listPages,
-  });
+  // The first Facebook Page chosen is also kept on the post (page_id), for the parts that still read it.
+  const firstFacebookPage =
+    [...picked]
+      .find((k) => k.startsWith("facebook:page:"))
+      ?.replace("facebook:page:", "") ?? null;
+  const facebookChosen = firstFacebookPage !== null;
+  const linkedInChosen = [...picked].some((k) => k.startsWith("linkedin:"));
 
   const localPreview = useMemo(
     () => (file ? URL.createObjectURL(file) : null),
@@ -217,7 +214,7 @@ export const PostComposer = () => {
 
   const values = async () => ({
     message: message.trim(),
-    page_id: pageId || null,
+    page_id: firstFacebookPage,
     product_id: productId,
     image_url: imageUrl.trim() || null,
     alt_text: altText.trim() || null,
@@ -285,6 +282,7 @@ export const PostComposer = () => {
     let good = 0;
     const problems: string[] = [];
     for (const key of picked) {
+      if (!key.startsWith("linkedin:")) continue;
       const result = await sendDestination(id, key, "publish");
       if (result.ok) good++;
       else problems.push(result.text);
@@ -304,6 +302,10 @@ export const PostComposer = () => {
     }
     if (action === "schedule" && !when) {
       notify("Choose when it should go out.", { type: "error" });
+      return;
+    }
+    if ((action === "publish" || action === "schedule") && picked.size === 0) {
+      notify("Choose where it should go.", { type: "error" });
       return;
     }
     setBusy(true);
@@ -328,9 +330,15 @@ export const PostComposer = () => {
       if (action === "approve") {
         await setStatus("approved");
         // A post planned in a slot goes to Facebook on approval; no second click.
-        if (when) {
+        if (when && facebookChosen) {
           await callPublish(id, "schedule", new Date(when).toISOString());
-          notify("Approved and scheduled on Facebook");
+          notify(
+            linkedInChosen
+              ? "Approved and scheduled on Facebook and LinkedIn"
+              : "Approved and scheduled on Facebook",
+          );
+        } else if (when && linkedInChosen) {
+          notify("Approved and scheduled on LinkedIn");
         } else {
           notify("Approved. It can now be posted or scheduled.");
         }
@@ -339,12 +347,22 @@ export const PostComposer = () => {
       }
       try {
         if (action === "schedule") {
-          await callPublish(id, "schedule", new Date(when).toISOString());
-          notify("Scheduled on Facebook");
+          if (facebookChosen) {
+            await callPublish(id, "schedule", new Date(when).toISOString());
+          }
+          notify(
+            facebookChosen && linkedInChosen
+              ? "Scheduled on Facebook and LinkedIn"
+              : facebookChosen
+                ? "Scheduled on Facebook"
+                : "Scheduled on LinkedIn",
+          );
         } else {
-          await callPublish(id, "publish");
-          notify("Posted to your Page");
-          if (picked.size) await sendNow(id);
+          if (facebookChosen) {
+            await callPublish(id, "publish");
+            notify("Posted to Facebook");
+          }
+          if (linkedInChosen) await sendNow(id);
         }
       } catch (error) {
         notify((error as Error).message, { type: "error" });
@@ -377,11 +395,6 @@ export const PostComposer = () => {
                 : "already on Facebook."}
             </p>
           )}
-          <PagePicker
-            value={pageId}
-            onChange={setPageId}
-            disabled={!editable}
-          />
           <Textarea
             rows={7}
             maxLength={8000}
@@ -488,6 +501,10 @@ export const PostComposer = () => {
 
           <DestinationsCard
             postId={record?.id}
+            legacyPageId={
+              (record as { page_id?: string | null } | undefined)?.page_id ??
+              null
+            }
             picked={picked}
             onPicked={setPicked}
             wording={wording}
@@ -496,11 +513,6 @@ export const PostComposer = () => {
             productId={productId}
             readOnly={!editable}
             wordingLocked={status === "approved" && !isAdmin}
-            facebookName={
-              facebookPages.find((p) => p.page_id === pageId)?.name ||
-              facebookPages.find((p) => p.is_default)?.name ||
-              "Your Facebook Page"
-            }
           />
 
           <div className="flex flex-wrap gap-2 border-t pt-4">

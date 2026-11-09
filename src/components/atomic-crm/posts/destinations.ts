@@ -120,3 +120,27 @@ export const wordingFrom = (rows: DestinationRow[]): Wording => {
 
 export const overrideFor = (w: Wording): string | null =>
   w.mode === "linkedin" && w.text.trim() ? w.text.trim() : null;
+
+export const platformOf = (key: string): "facebook" | "linkedin" | null =>
+  key.startsWith("facebook:")
+    ? "facebook"
+    : key.startsWith("linkedin:")
+      ? "linkedin"
+      : null;
+
+// What is saved for one destination. A Facebook Page always posts the post's own words and waits to be sent
+// (Facebook holds its own schedule, set by the server once Facebook accepts it); a LinkedIn destination carries
+// the LinkedIn wording and, when the post is being scheduled, waits for its time.
+export const valuesFor = (
+  key: string,
+  action: Action,
+  whenIso: string | null,
+  wording: Wording,
+): {
+  text_override: string | null;
+  state: "planned" | "scheduled";
+  scheduled_for: string | null;
+} =>
+  platformOf(key) === "facebook"
+    ? { text_override: null, state: "planned", scheduled_for: null }
+    : { text_override: overrideFor(wording), ...targetState(action, whenIso) };

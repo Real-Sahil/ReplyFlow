@@ -32,6 +32,8 @@ Deno.serve(async (req: Request) => {
       "id, organisation_id, post_id, channel_key, owner_sale_id, text_override",
     )
     .eq("state", "scheduled")
+    // Facebook holds its own scheduled posts; only LinkedIn destinations are posted from here.
+    .like("channel_key", "linkedin:%")
     .lte("scheduled_for", new Date().toISOString())
     .order("scheduled_for", { ascending: true })
     .limit(MAX_PER_RUN);

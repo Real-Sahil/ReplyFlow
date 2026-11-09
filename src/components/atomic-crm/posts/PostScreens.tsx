@@ -152,6 +152,19 @@ const EvergreenToggle = ({
   );
 };
 
+// Whether a post is on Facebook (or waiting there): only then does the list offer to take it down from Facebook.
+// A post that is only on LinkedIn is managed in the Post to… dialog.
+const onFacebook = (
+  post: PostRow,
+  rows: { channel_key: string; state: string }[],
+) =>
+  !!post.fb_post_id ||
+  rows.some(
+    (r) =>
+      r.channel_key.startsWith("facebook:") &&
+      ["published", "scheduled"].includes(r.state),
+  );
+
 const ListView = ({
   posts,
   refetch,
@@ -257,11 +270,18 @@ const ListView = ({
                     rows={forPost(post.id)}
                     channels={channels}
                     facebook={
-                      post.fb_post_id
-                        ? { name: "Facebook", state: "On Facebook" }
-                        : post.status === "scheduled"
-                          ? { name: "Facebook", state: "Scheduled on Facebook" }
-                          : null
+                      forPost(post.id).some((r) =>
+                        r.channel_key.startsWith("facebook:"),
+                      )
+                        ? null
+                        : post.fb_post_id
+                          ? { name: "Facebook", state: "On Facebook" }
+                          : post.status === "scheduled"
+                            ? {
+                                name: "Facebook",
+                                state: "Scheduled on Facebook",
+                              }
+                            : null
                     }
                   />
                 </div>
@@ -297,23 +317,24 @@ const ListView = ({
                       </a>
                     </Button>
                   )}
-                  {["approved", "published"].includes(post.status) && (
-                    <PostToDialog post={post} />
-                  )}
+                  {["approved", "scheduled", "published"].includes(
+                    post.status,
+                  ) && <PostToDialog post={post} />}
                   {post.status === "published" && (
                     <EvergreenToggle post={post} onChanged={refetch} />
                   )}
                   {(post.status === "scheduled" ||
-                    post.status === "published") && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      disabled={busyId === post.id}
-                      onClick={() => remove(post)}
-                    >
-                      {cancelLabel(post.status)}
-                    </Button>
-                  )}
+                    post.status === "published") &&
+                    onFacebook(post, forPost(post.id)) && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        disabled={busyId === post.id}
+                        onClick={() => remove(post)}
+                      >
+                        {cancelLabel(post.status)}
+                      </Button>
+                    )}
                 </div>
               </div>
             </li>

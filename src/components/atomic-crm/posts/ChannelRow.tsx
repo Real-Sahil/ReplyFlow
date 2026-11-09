@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Linkedin } from "lucide-react";
+import { Facebook, Linkedin } from "lucide-react";
 import { Link } from "react-router";
 
 import { cn } from "@/lib/utils";
@@ -37,6 +37,8 @@ export const ChannelRow = ({
   actions?: ReactNode;
 }) => {
   const posted = row?.state === "published";
+  const facebook = channel.platform === "facebook";
+  const Icon = facebook ? Facebook : Linkedin;
   const expired = health(channel.expires_at) === "expired";
   const soon = health(channel.expires_at) === "soon";
   return (
@@ -53,15 +55,16 @@ export const ChannelRow = ({
             onChange={(e) => onCheck(e.target.checked)}
           />
         )}
-        <Linkedin
-          className="size-4 shrink-0 text-muted-foreground"
-          aria-hidden
-        />
+        <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
         <span className="min-w-0">
           <span className="block truncate text-sm font-medium">
-            {channel.name || "LinkedIn"}
+            {channel.name || (facebook ? "Facebook Page" : "LinkedIn")}
             <span className="ml-2 text-xs font-normal text-muted-foreground">
-              {channel.kind === "profile" ? "your profile" : "company Page"}
+              {channel.kind === "profile"
+                ? "your profile"
+                : facebook
+                  ? "Facebook Page"
+                  : "company Page"}
             </span>
           </span>
           <span

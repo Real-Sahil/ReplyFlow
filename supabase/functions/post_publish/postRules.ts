@@ -58,3 +58,121 @@ export const buildGraphRequest = (
     },
   };
 };
+
+// ---- Which Facebook Pages a call acts on ---------------------------------------------------------------------
+// A post's Facebook Pages are its destinations (channel 'facebook:page:<id>'). A post made before destinations
+// existed has none, and falls back to the one Page it names, or the business's default Page.
+
+export type FbDestination = {
+  id: number;
+  channel_key: string;
+  state: string;
+  external_id: string | null;
+};
+
+export const facebookPageId = (key: string): string | null =>
+  /^facebook:page:(\d{1,25})$/.exec(key)?.[1] ?? null;
+
+export type Target = {
+  // Null only for a post with no destinations and no Page named: the default Page is then used.
+  pageId: string | null;
+  destinationId: number | null;
+  externalId: string | null;
+};
+
+export type TargetResult =
+  | { ok: true; targets: Target[]; legacy: boolean }
+  | { ok: false; status: number; message: string; code?: string };
+
+export const pickTargets = (args: {
+  action: "publish" | "schedule" | "remove";
+  rows: FbDestination[];
+  // The post has destinations of any platform (so one with none for Facebook is not meant to go there).
+  anyDestinations: boolean;
+  legacyPageId: string | null;
+  legacyFbPostId: string | null;
+  legacyStatus: string;
+  onlyPage?: string | null;
+}): TargetResult => {
+  const { action, rows, anyDestinations, onlyPage } = args;
+  const mine = rows
+    .map((r) => ({ row: r, pageId: facebookPageId(r.channel_key) }))
+    .filter((r) => r.pageId && (!onlyPage || r.pageId === onlyPage));
+
+  if (action === "remove") {
+    const live = mine.filter(
+      (r) =>
+        ["published", "scheduled"].includes(r.row.state) && r.row.external_id,
+    );
+    if (live.length) {
+      return {
+        ok: true,
+        legacy: false,
+        targets: live.map((r) => ({
+          pageId: r.pageId,
+          destinationId: r.row.id,
+          externalId: r.row.external_id,
+        })),
+      };
+    }
+    if (rows.length === 0 && args.legacyFbPostId) {
+      return {
+        ok: true,
+        legacy: true,
+        targets: [
+          {
+            pageId: args.legacyPageId,
+            destinationId: null,
+            externalId: args.legacyFbPostId,
+          },
+        ],
+      };
+    }
+    return { ok: false, status: 409, message: "This post is not on Facebook" };
+  }
+
+  const open = mine.filter((r) => ["planned", "failed"].includes(r.row.state));
+  if (open.length) {
+    return {
+      ok: true,
+      legacy: false,
+      targets: open.map((r) => ({
+        pageId: r.pageId,
+        destinationId: r.row.id,
+        externalId: null,
+      })),
+    };
+  }
+  if (rows.length === 0) {
+    if (anyDestinations) {
+      return {
+        ok: false,
+        status: 409,
+        message: "No Facebook Page is chosen for this post.",
+        code: "no_page",
+      };
+    }
+    if (
+      args.legacyStatus === "published" ||
+      (args.legacyStatus === "scheduled" && args.legacyFbPostId)
+    ) {
+      return {
+        ok: false,
+        status: 409,
+        message: "This post is already on Facebook",
+      };
+    }
+    return {
+      ok: true,
+      legacy: true,
+      targets: [
+        { pageId: args.legacyPageId, destinationId: null, externalId: null },
+      ],
+    };
+  }
+  return {
+    ok: false,
+    status: 409,
+    message: "This post is already on Facebook",
+  };
+};

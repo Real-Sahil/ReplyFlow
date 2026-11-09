@@ -25,7 +25,7 @@ export const DestinationChips = ({
 }: {
   rows: DestinationRow[];
   channels: Channel[];
-  // Facebook is the post's main destination until it becomes an ordinary one.
+  // For a post made before destinations existed, until its Facebook destination has been created.
   facebook?: { name: string; state: string } | null;
 }) => {
   const visible = rows.filter((r) => r.state !== "removed");
@@ -46,6 +46,9 @@ export const DestinationChips = ({
       ) : null}
       {visible.map((row) => {
         const channel = channels.find((c) => c.channel_key === row.channel_key);
+        const Icon = row.channel_key.startsWith("facebook:")
+          ? Facebook
+          : Linkedin;
         return (
           <span
             key={row.id}
@@ -55,10 +58,13 @@ export const DestinationChips = ({
             )}
             title={stateText(row)}
           >
-            <Linkedin className="size-3" aria-hidden />
+            <Icon className="size-3" aria-hidden />
             {channel?.kind === "profile"
               ? "Your profile"
-              : (channel?.name ?? "LinkedIn Page")}
+              : (channel?.name ??
+                (row.channel_key.startsWith("facebook:")
+                  ? "Facebook Page"
+                  : "LinkedIn Page"))}
           </span>
         );
       })}

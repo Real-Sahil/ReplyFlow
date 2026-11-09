@@ -19,7 +19,13 @@ import {
 } from "../_shared/metaCircuit.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { createErrorResponse } from "../_shared/utils.ts";
-import { buildGraphRequest, validateSchedule } from "./postRules.ts";
+import {
+  buildGraphRequest,
+  pickTargets,
+  validateSchedule,
+  type FbDestination,
+  type Target,
+} from "./postRules.ts";
 
 const GRAPH = "https://graph.facebook.com/v21.0";
 
@@ -110,7 +116,12 @@ const publish = async (
     return createErrorResponse(403, "Not allowed to publish posts");
   }
 
-  let input: { id?: number; action?: unknown; scheduled_for?: string };
+  let input: {
+    id?: number;
+    action?: unknown;
+    scheduled_for?: string;
+    page_id?: string;
+  };
   try {
     input = await req.json();
   } catch {
@@ -146,8 +157,10 @@ const publish = async (
   // Agents publish only approved posts. Administrators may also publish
   // their own drafts directly.
   if (input.action !== "remove") {
+    // A post whose LinkedIn destination is waiting for its time shows as scheduled, and may still be sent to
+    // Facebook; whether Facebook already has it is decided from its destinations below.
     const publishable =
-      post.status === "approved" ||
+      ["approved", "scheduled"].includes(post.status) ||
       (sale?.administrator &&
         ["draft", "failed", "approved"].includes(post.status));
     if (!publishable) {
@@ -165,47 +178,124 @@ const publish = async (
     post.organisation_id !== undefined
       ? Number(post.organisation_id)
       : undefined;
-  const chosen = await choosePage(
-    post.page_id ? String(post.page_id) : null,
-    post.organisation_id !== undefined
-      ? Number(post.organisation_id)
-      : undefined,
+  if (postOrganisation === undefined) {
+    return createErrorResponse(500, "This post has no business");
+  }
+  const onlyPage =
+    typeof input.page_id === "string" && /^\d{1,25}$/.test(input.page_id)
+      ? input.page_id
+      : null;
+
+  // The post's Facebook Pages are its destinations. A post made before destinations existed has none, and uses
+  // the one Page it names, or the business's default Page.
+  const { data: allDestinations } = await supabaseAdmin
+    .from("post_destinations")
+    .select("id, channel_key, state, external_id")
+    .eq("post_id", post.id);
+  const rows = ((allDestinations ?? []) as FbDestination[]).filter((d) =>
+    d.channel_key.startsWith("facebook:"),
   );
-  const token = chosen.token;
-  if (!token) {
-    return createErrorResponse(503, "Facebook access is not set up yet", {
-      code: "not_configured",
-    });
+  const picked = pickTargets({
+    action: input.action as "publish" | "schedule" | "remove",
+    rows,
+    anyDestinations: (allDestinations ?? []).length > 0,
+    legacyPageId: post.page_id ? String(post.page_id) : null,
+    legacyFbPostId: post.fb_post_id ? String(post.fb_post_id) : null,
+    legacyStatus: String(post.status),
+    onlyPage,
+  });
+  if (!picked.ok) {
+    return createErrorResponse(
+      picked.status,
+      picked.message,
+      picked.code ? { code: picked.code } : {},
+    );
   }
 
-  try {
-    if (input.action === "remove") {
-      if (!post.fb_post_id) {
-        return createErrorResponse(409, "This post is not on Facebook");
-      }
-      await graph(postOrganisation, token, "DELETE", post.fb_post_id);
-      await supabaseAdmin
-        .from("page_posts")
-        .update({ status: "draft", fb_post_id: null, published_at: null })
-        .eq("id", post.id);
-      return ok({ status: "draft" });
+  // Each target's Page and token. A destination's Page must be one of this business's connected Pages.
+  const resolved: (Target & { pageId: string; token: string })[] = [];
+  for (const target of picked.targets) {
+    let pageId = target.pageId;
+    let token: string | null = null;
+    if (pageId) {
+      const { data: owned } = await supabaseAdmin
+        .from("meta_pages")
+        .select("page_id")
+        .eq("page_id", pageId)
+        .eq("organisation_id", postOrganisation)
+        .maybeSingle();
+      // A post made before destinations existed names its Page itself, so it is trusted as before.
+      token = owned || picked.legacy ? await getPageTokenFor(pageId) : null;
+    } else {
+      const fallback = await choosePage(null, postOrganisation);
+      pageId = fallback.pageId;
+      token = fallback.token;
     }
-
-    if (
-      post.status === "published" ||
-      (post.status === "scheduled" && post.fb_post_id)
-    ) {
-      return createErrorResponse(409, "This post is already on Facebook");
+    if (!token) {
+      return createErrorResponse(503, "Facebook access is not set up yet", {
+        code: "not_configured",
+      });
     }
-    const page = chosen.pageId;
-    if (!page) {
+    if (!pageId) {
       return createErrorResponse(
         503,
         "The Facebook Page is not known yet. Connect Facebook first.",
-        {
-          code: "no_page",
-        },
+        { code: "no_page" },
       );
+    }
+    resolved.push({ ...target, pageId, token });
+  }
+
+  // Saves how one Page went, on its destination (made now if a post from before destinations has none).
+  const record = async (
+    target: { pageId: string; destinationId: number | null },
+    patch: Record<string, unknown>,
+  ) => {
+    if (target.destinationId !== null) {
+      await supabaseAdmin
+        .from("post_destinations")
+        .update(patch)
+        .eq("id", target.destinationId);
+    } else {
+      await supabaseAdmin.from("post_destinations").upsert(
+        {
+          organisation_id: postOrganisation,
+          post_id: post.id,
+          channel_key: `facebook:page:${target.pageId}`,
+          ...patch,
+        },
+        { onConflict: "post_id,channel_key" },
+      );
+    }
+  };
+
+  try {
+    if (input.action === "remove") {
+      for (const t of resolved) {
+        await graph(postOrganisation, t.token, "DELETE", String(t.externalId));
+        await record(t, { state: "removed" });
+      }
+      // Back to a draft only when nothing is left out anywhere (on LinkedIn too); otherwise the post stays.
+      const { data: left } = await supabaseAdmin
+        .from("post_destinations")
+        .select("channel_key, state, external_id")
+        .eq("post_id", post.id)
+        .in("state", ["published", "scheduled"]);
+      const facebookLeft = (left ?? []).find((d) =>
+        String(d.channel_key).startsWith("facebook:"),
+      );
+      if (!left?.length) {
+        await supabaseAdmin
+          .from("page_posts")
+          .update({ status: "draft", fb_post_id: null, published_at: null })
+          .eq("id", post.id);
+        return ok({ status: "draft" });
+      }
+      await supabaseAdmin
+        .from("page_posts")
+        .update({ fb_post_id: facebookLeft?.external_id ?? null })
+        .eq("id", post.id);
+      return ok({ status: post.status });
     }
 
     let scheduleUnix: number | undefined;
@@ -227,41 +317,68 @@ const publish = async (
         return createErrorResponse(
           500,
           "Could not prepare the photo for Facebook",
-          {
-            code: "media_unavailable",
-          },
+          { code: "media_unavailable" },
         );
       }
       imageUrl = signed.signedUrl;
     }
-    const request = buildGraphRequest(
-      page,
-      { ...post, image_url: imageUrl },
-      scheduleUnix,
-    );
-    let result;
-    try {
-      result = await graph(
-        postOrganisation,
-        token,
-        "POST",
-        request.path,
-        request.body,
-      );
-    } catch (error) {
-      // A block is not a failed post: leave the post as it was so it can be retried after clearing.
-      if (!(error instanceof MetaBlockedError)) {
-        await supabaseAdmin
-          .from("page_posts")
-          .update({
-            status: "failed",
-            error: (error as Error).message.slice(0, 500),
-          })
-          .eq("id", post.id);
+
+    // Each Page in turn. One failing does not stop the others; a block (Facebook refusing the app for now) does.
+    const results: { page_id: string; ok: boolean; error?: string }[] = [];
+    let firstId: string | null = null;
+    let firstError: unknown = null;
+    for (const t of resolved) {
+      try {
+        const request = buildGraphRequest(
+          t.pageId,
+          { ...post, image_url: imageUrl },
+          scheduleUnix,
+        );
+        const result = await graph(
+          postOrganisation,
+          t.token,
+          "POST",
+          request.path,
+          request.body,
+        );
+        const fbId = (result.post_id ?? result.id) as string | undefined;
+        firstId = firstId ?? fbId ?? null;
+        await record(t, {
+          state: scheduleUnix ? "scheduled" : "published",
+          external_id: fbId ?? null,
+          scheduled_for: scheduleUnix ? scheduledFor : null,
+          posted_at: scheduleUnix ? null : new Date().toISOString(),
+          error: null,
+        });
+        results.push({ page_id: t.pageId, ok: true });
+      } catch (error) {
+        if (error instanceof MetaBlockedError) throw error;
+        firstError = firstError ?? error;
+        await record(t, {
+          state: "failed",
+          error: (error as Error).message.slice(0, 300),
+        });
+        results.push({
+          page_id: t.pageId,
+          ok: false,
+          error: (error as Error).message.slice(0, 300),
+        });
       }
-      throw error;
     }
-    const fbId = (result.post_id ?? result.id) as string | undefined;
+
+    const succeeded = results.filter((r) => r.ok).length;
+    if (succeeded === 0) {
+      await supabaseAdmin
+        .from("page_posts")
+        .update({
+          status: "failed",
+          error: String(
+            (firstError as Error)?.message ?? "Facebook rejected the request",
+          ).slice(0, 500),
+        })
+        .eq("id", post.id);
+      throw firstError;
+    }
     await supabaseAdmin
       .from("page_posts")
       .update(
@@ -269,20 +386,21 @@ const publish = async (
           ? {
               status: "scheduled",
               scheduled_for: scheduledFor,
-              fb_post_id: fbId ?? null,
+              fb_post_id: firstId,
               error: null,
             }
           : {
               status: "published",
               published_at: new Date().toISOString(),
-              fb_post_id: fbId ?? null,
+              fb_post_id: firstId,
               error: null,
             },
       )
       .eq("id", post.id);
     return ok({
       status: scheduleUnix ? "scheduled" : "published",
-      fb_post_id: fbId,
+      fb_post_id: firstId,
+      pages: results,
     });
   } catch (error) {
     if (error instanceof MetaBlockedError) {

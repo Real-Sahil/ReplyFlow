@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { useGetIdentity, useNotify } from "ra-core";
 import { ExternalLink, Facebook, Linkedin, RotateCw, Send } from "lucide-react";
 import { Link } from "react-router";
@@ -12,16 +11,21 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-import { listPages } from "../facebook/metaPages";
 import { linkedInPostUrl } from "../linkedin/useLinkedIn";
+import { getSupabaseClient } from "../providers/supabase/supabase";
 import { ChannelRow } from "./ChannelRow";
 import { LinkedInWording } from "./LinkedInWording";
 import { sendDestination, syncDestinations } from "./destinationActions";
-import { wordingFrom, type DestinationRow, type Wording } from "./destinations";
+import {
+  platformOf,
+  wordingFrom,
+  type DestinationRow,
+  type Wording,
+} from "./destinations";
 import type { PostRow } from "./postStatus";
 import { useChannels, useDestinations } from "./useDestinations";
 
-// Where a post goes, from the Posts list: the same destinations as the editor, for a post that is approved or
+// Where a post goes, from the Posts list: the same Facebook Pages and LinkedIn accounts as the editor, for a post that is approved or
 // already out. A post can be sent to another channel later, tried again after a failure, or taken down. The
 // choices are saved on the post, so they are what was approved.
 export const PostToDialog = ({ post }: { post: PostRow }) => {
@@ -31,10 +35,6 @@ export const PostToDialog = ({ post }: { post: PostRow }) => {
     ?.administrator;
   const { data: channels = [] } = useChannels();
   const { forPost, refetch } = useDestinations();
-  const { data: facebookPages = [] } = useQuery({
-    queryKey: ["meta_pages"],
-    queryFn: listPages,
-  });
   const rows = forPost(post.id);
 
   const [open, setOpen] = useState(false);
@@ -45,25 +45,16 @@ export const PostToDialog = ({ post }: { post: PostRow }) => {
   });
   const [busy, setBusy] = useState(false);
 
+  const facebook = channels.filter((c) => c.platform === "facebook");
   const linkedin = channels.filter((c) => c.platform === "linkedin");
   const rowFor = (key: string): DestinationRow | undefined =>
     rows.find((r) => r.channel_key === key);
-
-  const facebookPage =
-    facebookPages.find((p) => p.page_id === post.page_id) ??
-    facebookPages.find((p) => p.is_default);
-  const facebookState =
-    post.status === "published" && post.fb_post_id
-      ? "On Facebook"
-      : post.status === "scheduled"
-        ? "Scheduled on Facebook"
-        : "Not on Facebook yet";
 
   const openDialog = () => {
     setPicked(
       new Set(
         rows
-          .filter((r) => r.state !== "removed" && r.state !== "published")
+          .filter((r) => r.state === "planned" || r.state === "failed")
           .map((r) => r.channel_key),
       ),
     );
@@ -77,7 +68,7 @@ export const PostToDialog = ({ post }: { post: PostRow }) => {
       notify(`Done for ${good} ${good === 1 ? "place" : "places"}`);
     }
     for (const problem of problems) {
-      notify(`LinkedIn: ${problem}`, { type: "warning" });
+      notify(problem, { type: "warning" });
     }
   };
 
@@ -85,15 +76,11 @@ export const PostToDialog = ({ post }: { post: PostRow }) => {
   const postNow = async () => {
     setBusy(true);
     try {
+      // Only the channels ticked are touched: anything else already scheduled or posted is left exactly as it is.
       await syncDestinations({
         postId: post.id,
-        existing: rows,
-        wanted: new Set([
-          ...picked,
-          ...rows
-            .filter((r) => r.state === "published")
-            .map((r) => r.channel_key),
-        ]),
+        existing: rows.filter((r) => picked.has(r.channel_key)),
+        wanted: picked,
         wording,
         action: "publish",
         whenIso: null,
@@ -117,6 +104,21 @@ export const PostToDialog = ({ post }: { post: PostRow }) => {
 
   const act = async (key: string, action: "publish" | "remove") => {
     setBusy(true);
+    const row = rowFor(key);
+    // A LinkedIn post waiting for its time is cancelled by setting it back to planned; nothing is on LinkedIn yet.
+    if (
+      action === "remove" &&
+      row?.state === "scheduled" &&
+      platformOf(key) === "linkedin"
+    ) {
+      const { error } = await getSupabaseClient()
+        .from("post_destinations")
+        .update({ state: "planned" })
+        .eq("id", row.id);
+      await finish(error ? 0 : 1, error ? ["Could not cancel it"] : []);
+      setBusy(false);
+      return;
+    }
     const result = await sendDestination(post.id, key, action);
     await finish(result.ok ? 1 : 0, result.ok ? [] : [result.text]);
     setBusy(false);
@@ -129,6 +131,56 @@ export const PostToDialog = ({ post }: { post: PostRow }) => {
       else next.delete(key);
       return next;
     });
+
+  // One row of the list for a channel, with what can be done to it: see it, take it down, or try again.
+  const rowOf = (channel: (typeof channels)[number]) => {
+    const row = rowFor(channel.channel_key);
+    const posted = row?.state === "published";
+    const isFacebook = channel.platform === "facebook";
+    const viewUrl =
+      row?.external_id &&
+      (isFacebook
+        ? `https://www.facebook.com/${row.external_id}`
+        : linkedInPostUrl(row.external_id));
+    return (
+      <ChannelRow
+        key={channel.channel_key}
+        channel={channel}
+        row={row}
+        checked={picked.has(channel.channel_key)}
+        onCheck={(on) => toggle(channel.channel_key, on)}
+        locked={busy || row?.state === "scheduled"}
+        actions={
+          (posted || row?.state === "scheduled") && viewUrl ? (
+            <>
+              <Button asChild size="sm" variant="ghost">
+                <a href={viewUrl} target="_blank" rel="noreferrer">
+                  <ExternalLink /> View
+                </a>
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={busy}
+                onClick={() => void act(channel.channel_key, "remove")}
+              >
+                {row?.state === "scheduled" ? "Cancel" : "Take down"}
+              </Button>
+            </>
+          ) : row?.state === "failed" ? (
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={busy}
+              onClick={() => void act(channel.channel_key, "publish")}
+            >
+              <RotateCw /> Try again
+            </Button>
+          ) : null
+        }
+      />
+    );
+  };
 
   const wordingLocked = !isAdmin && post.status !== "pending_review";
 
@@ -150,34 +202,22 @@ export const PostToDialog = ({ post }: { post: PostRow }) => {
             <h3 className="flex items-center gap-2 text-sm font-semibold">
               <Facebook className="size-4" /> Facebook
             </h3>
-            <div className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2">
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium">
-                  {facebookPage?.name || "Your Facebook Page"}
-                </p>
-                <p className="text-xs text-muted-foreground">{facebookState}</p>
-              </div>
-              <div className="flex shrink-0 gap-1">
-                {post.fb_post_id ? (
-                  <Button asChild size="sm" variant="ghost">
-                    <a
-                      href={`https://www.facebook.com/${post.fb_post_id}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      <ExternalLink /> View
-                    </a>
-                  </Button>
-                ) : null}
-                {post.status !== "published" && post.status !== "scheduled" ? (
-                  <Button asChild size="sm" variant="ghost">
-                    <Link to={`/page_posts/${post.id}`}>Open editor</Link>
-                  </Button>
-                ) : null}
-              </div>
-            </div>
+            {facebook.length ? (
+              <ul className="divide-y rounded-lg border">
+                {facebook.map(rowOf)}
+              </ul>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                No Facebook Page is connected.{" "}
+                <Link to="/channels" className="underline">
+                  Connect one under Accounts
+                </Link>
+                .
+              </p>
+            )}
             <p className="text-xs text-muted-foreground">
-              Facebook's Page and time are chosen in the editor.
+              From here a Facebook post goes out straight away. To schedule it
+              on Facebook, use the editor.
             </p>
           </section>
 
@@ -187,56 +227,7 @@ export const PostToDialog = ({ post }: { post: PostRow }) => {
             </h3>
             {linkedin.length ? (
               <ul className="divide-y rounded-lg border">
-                {linkedin.map((channel) => {
-                  const row = rowFor(channel.channel_key);
-                  const posted = row?.state === "published";
-                  return (
-                    <ChannelRow
-                      key={channel.channel_key}
-                      channel={channel}
-                      row={row}
-                      checked={picked.has(channel.channel_key)}
-                      onCheck={(on) => toggle(channel.channel_key, on)}
-                      locked={busy}
-                      actions={
-                        posted && row?.external_id ? (
-                          <>
-                            <Button asChild size="sm" variant="ghost">
-                              <a
-                                href={linkedInPostUrl(row.external_id)}
-                                target="_blank"
-                                rel="noreferrer"
-                              >
-                                <ExternalLink /> View
-                              </a>
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              disabled={busy}
-                              onClick={() =>
-                                void act(channel.channel_key, "remove")
-                              }
-                            >
-                              Take down
-                            </Button>
-                          </>
-                        ) : row?.state === "failed" ? (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            disabled={busy}
-                            onClick={() =>
-                              void act(channel.channel_key, "publish")
-                            }
-                          >
-                            <RotateCw /> Try again
-                          </Button>
-                        ) : null
-                      }
-                    />
-                  );
-                })}
+                {linkedin.map(rowOf)}
               </ul>
             ) : (
               <p className="text-xs text-muted-foreground">
@@ -253,17 +244,19 @@ export const PostToDialog = ({ post }: { post: PostRow }) => {
             </p>
           </section>
 
-          <section className="flex flex-col gap-1">
-            <h3 className="text-sm font-semibold">Words for LinkedIn</h3>
-            <LinkedInWording
-              value={wording}
-              onChange={setWording}
-              postMessage={post.message}
-              productId={post.product_id}
-              locked={wordingLocked}
-              name={`dialog-${post.id}`}
-            />
-          </section>
+          {linkedin.length ? (
+            <section className="flex flex-col gap-1">
+              <h3 className="text-sm font-semibold">Words for LinkedIn</h3>
+              <LinkedInWording
+                value={wording}
+                onChange={setWording}
+                postMessage={post.message}
+                productId={post.product_id}
+                locked={wordingLocked}
+                name={`dialog-${post.id}`}
+              />
+            </section>
+          ) : null}
 
           <div className="flex flex-wrap items-center justify-end gap-2 border-t pt-3">
             <Button variant="ghost" onClick={() => setOpen(false)}>
