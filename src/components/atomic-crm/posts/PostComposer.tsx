@@ -330,6 +330,12 @@ export const PostComposer = () => {
             onChange={setPageId}
             disabled={!editable}
           />
+          <p className="text-xs text-muted-foreground">
+            This editor posts to Facebook. To send the post to LinkedIn as well
+            (your profile or a company Page), approve it, then choose{" "}
+            <span className="font-medium">Post to…</span> on it in the Posts
+            list.
+          </p>
           <Textarea
             rows={7}
             maxLength={8000}

@@ -20,7 +20,7 @@ export const PagePicker = ({
   if (pages.length < 2) return null;
   return (
     <div className="flex flex-col gap-1">
-      <Label htmlFor="post-page">Post to</Label>
+      <Label htmlFor="post-page">Facebook Page</Label>
       <select
         id="post-page"
         className="h-9 rounded-md border bg-transparent px-3 text-sm"

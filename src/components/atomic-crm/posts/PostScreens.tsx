@@ -12,15 +12,11 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-import { LinkedInWriter } from "../linkedin/LinkedInWriter";
-import {
-  LinkedInPagePostButtons,
-  LinkedInPostButton,
-} from "../linkedin/LinkedInPostButton";
 import { getSupabaseClient } from "../providers/supabase/supabase";
 import { AutopilotPanel } from "./AutopilotPanel";
 import { PostCalendar } from "./PostCalendar";
 import { PostComposer } from "./PostComposer";
+import { PostToDialog } from "./PostToDialog";
 import { PlanWithAi } from "./PlanWithAi";
 import { PostPipeline } from "./PostPipeline";
 import { PostStatusBadge, type PostRow } from "./postStatus";
@@ -285,15 +281,7 @@ const ListView = ({
                     </Button>
                   )}
                   {["approved", "published"].includes(post.status) && (
-                    <>
-                      <LinkedInWriter
-                        postId={post.id}
-                        message={post.message}
-                        productId={post.product_id}
-                      />
-                      <LinkedInPostButton postId={post.id} />
-                      <LinkedInPagePostButtons postId={post.id} />
-                    </>
+                    <PostToDialog post={post} />
                   )}
                   {post.status === "published" && (
                     <EvergreenToggle post={post} onChanged={refetch} />

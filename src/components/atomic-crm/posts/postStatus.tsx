@@ -19,6 +19,7 @@ export type PostRow = {
   scheduled_for: string | null;
   published_at: string | null;
   fb_post_id: string | null;
+  page_id?: string | null;
   error: string | null;
   submitted_at: string | null;
   approved_at: string | null;
