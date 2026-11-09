@@ -9,7 +9,7 @@ import { corsHeaders, OptionsMiddleware } from "../_shared/cors.ts";
 import { getUserSale } from "../_shared/getUserSale.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { createErrorResponse } from "../_shared/utils.ts";
-import { postBody, tooLong } from "./postRules.ts";
+import { personUrn, postBody, tooLong } from "./postRules.ts";
 
 const API = "https://api.linkedin.com/rest/posts";
 // LinkedIn versions its API by month and retires each version after about a year. If posts start failing
@@ -165,7 +165,11 @@ Deno.serve((req: Request) =>
             method: "POST",
             headers: headers(String(token)),
             body: JSON.stringify(
-              postBody(member.member_id, post.message, post.link_url),
+              postBody(
+                personUrn(member.member_id),
+                post.message,
+                post.link_url,
+              ),
             ),
             signal: AbortSignal.timeout(15000),
           });

@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { CanAccess, useNotify } from "ra-core";
-import { ChartColumn, Link2, Unplug } from "lucide-react";
+import { Building2, ChartColumn, Link2, Unplug } from "lucide-react";
 import { Link } from "react-router";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
 import { getSupabaseClient } from "../providers/supabase/supabase";
 import { daysLeft, hasAdsScope, useLinkedIn } from "./useLinkedIn";
+import { useLinkedInPages } from "./useLinkedInPages";
 
 const REASONS: Record<string, string> = {
   cancelled: "Connecting was cancelled, so nothing changed.",
@@ -14,6 +15,8 @@ const REASONS: Record<string, string> = {
   scope:
     "LinkedIn did not give ReplyFlow permission to read your name. Connect again and allow it.",
   failed: "LinkedIn could not be connected. Try again in a moment.",
+  page_taken:
+    "That LinkedIn Page is already connected to another business, so it was not added.",
 };
 
 const call = async (
@@ -33,6 +36,22 @@ const call = async (
   return data?.data as { url?: string } | undefined;
 };
 
+const callPages = async (
+  body: { action: "start" } | { action: "disconnect"; org_id: string },
+) => {
+  const { data, error } = await getSupabaseClient().functions.invoke(
+    "linkedin_pages_connect",
+    { method: "POST", body },
+  );
+  if (error) {
+    const details = (await error.context?.json?.().catch(() => ({}))) as
+      | { message?: string }
+      | undefined;
+    throw new Error(details?.message ?? "Could not reach LinkedIn right now.");
+  }
+  return data?.data as { url?: string } | undefined;
+};
+
 // LinkedIn sends the person back to /#/linkedin?connected=1 (or ?connect=cancelled and so on).
 const outcome = () =>
   new URLSearchParams(window.location.hash.split("?")[1] ?? "");
@@ -40,12 +59,29 @@ const outcome = () =>
 export const LinkedInConnectionPage = () => {
   const notify = useNotify();
   const { member, loading, refetch } = useLinkedIn();
+  const pages = useLinkedInPages();
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     const params = outcome();
-    if (!params.has("connected") && !params.has("connect")) return;
-    if (params.get("connected")) {
+    if (
+      !params.has("connected") &&
+      !params.has("connect") &&
+      !params.has("pages")
+    )
+      return;
+    if (params.has("pages")) {
+      const n = Number(params.get("pages") ?? 0);
+      notify(
+        n === 0
+          ? "LinkedIn is connected, but that account does not administer any company Pages."
+          : n === 1
+            ? "LinkedIn Page connected"
+            : `${n} LinkedIn Pages connected`,
+        n === 0 ? { type: "warning" } : undefined,
+      );
+      pages.refetch();
+    } else if (params.get("connected")) {
       notify("LinkedIn connected");
       refetch();
     } else {
@@ -68,6 +104,30 @@ export const LinkedInConnectionPage = () => {
       notify((e as Error).message, { type: "error" });
       setBusy(false);
     }
+  };
+
+  const connectPages = async () => {
+    setBusy(true);
+    try {
+      const result = await callPages({ action: "start" });
+      if (!result?.url) throw new Error("Could not start the connection.");
+      window.location.href = result.url;
+    } catch (e) {
+      notify((e as Error).message, { type: "error" });
+      setBusy(false);
+    }
+  };
+
+  const disconnectPage = async (orgId: string) => {
+    setBusy(true);
+    try {
+      await callPages({ action: "disconnect", org_id: orgId });
+      notify("LinkedIn Page disconnected");
+      pages.refetch();
+    } catch (e) {
+      notify((e as Error).message, { type: "error" });
+    }
+    setBusy(false);
   };
 
   const disconnect = async () => {
@@ -163,6 +223,62 @@ export const LinkedInConnectionPage = () => {
                   <Link2 /> Connect for ads reports
                 </Button>
               )}
+            </div>
+          </CardContent>
+        </Card>
+      </CanAccess>
+
+      <CanAccess resource="configuration" action="edit">
+        <Card>
+          <CardContent className="flex flex-col gap-4">
+            <div>
+              <h2 className="font-medium">Company Page</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Post to your business's LinkedIn Page, not just to your own
+                profile. Any member of staff can then post an approved post to
+                the Page from the Posts screen. You need to be an administrator
+                of the Page on LinkedIn.
+              </p>
+            </div>
+            {pages.pages.length ? (
+              <ul className="flex flex-col gap-2 text-sm">
+                {pages.pages.map((page) => {
+                  const left = daysLeft(page.expires_at);
+                  return (
+                    <li
+                      key={page.org_id}
+                      className="flex flex-wrap items-center justify-between gap-2"
+                    >
+                      <span>
+                        <span className="font-medium">{page.name}</span>
+                        <span className="ml-2 text-muted-foreground">
+                          {left === 0
+                            ? "expired: connect again"
+                            : left <= 7
+                              ? `stops working in ${left} ${left === 1 ? "day" : "days"}`
+                              : `works for about ${left} more days`}
+                        </span>
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        disabled={busy}
+                        onClick={() => disconnectPage(page.org_id)}
+                      >
+                        <Unplug /> Disconnect
+                      </Button>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p className="text-sm font-medium">No Page connected</p>
+            )}
+            <div>
+              <Button disabled={busy} onClick={connectPages}>
+                <Building2 />
+                {pages.pages.length ? "Connect again" : "Connect a Page"}
+              </Button>
             </div>
           </CardContent>
         </Card>

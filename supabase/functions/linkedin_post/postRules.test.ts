@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { commentaryFor, MAX_LENGTH, postBody, tooLong } from "./postRules.ts";
+import {
+  commentaryFor,
+  MAX_LENGTH,
+  organizationUrn,
+  personUrn,
+  postBody,
+  tooLong,
+} from "./postRules.ts";
 
 describe("commentaryFor", () => {
   it("escapes the characters LinkedIn treats as formatting", () => {
@@ -27,9 +34,14 @@ describe("tooLong", () => {
 
 describe("postBody", () => {
   it("posts publicly as the person", () => {
-    const body = postBody("abc123", "Hi", null);
+    const body = postBody(personUrn("abc123"), "Hi", null);
     expect(body.author).toBe("urn:li:person:abc123");
     expect(body.visibility).toBe("PUBLIC");
     expect(body.lifecycleState).toBe("PUBLISHED");
+  });
+  it("can post as a company Page", () => {
+    expect(postBody(organizationUrn("42"), "Hi", null).author).toBe(
+      "urn:li:organization:42",
+    );
   });
 });

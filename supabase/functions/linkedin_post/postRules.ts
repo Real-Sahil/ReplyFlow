@@ -19,12 +19,17 @@ export const tooLong = (message: string, link: string | null) =>
   [message.trim(), link?.trim() ?? ""].filter(Boolean).join("\n\n").length >
   MAX_LENGTH;
 
+export const personUrn = (memberId: string) => `urn:li:person:${memberId}`;
+export const organizationUrn = (orgId: string) =>
+  `urn:li:organization:${orgId}`;
+
+// The author is a person (their own profile) or an organisation (a company Page).
 export const postBody = (
-  memberId: string,
+  authorUrn: string,
   message: string,
   link: string | null,
 ) => ({
-  author: `urn:li:person:${memberId}`,
+  author: authorUrn,
   commentary: commentaryFor(message, link),
   visibility: "PUBLIC",
   distribution: {
