@@ -13,7 +13,7 @@ const REASONS: Record<string, string> = {
   cancelled: "Connecting was cancelled, so nothing changed.",
   expired: "That link has expired. Press Connect to start again.",
   scope:
-    "LinkedIn did not give ReplyFlow permission to read your name. Connect again and allow it.",
+    "LinkedIn did not give ReplyFlow the permission it asked for. For a company Page, this usually means LinkedIn has not approved Community Management access for ReplyFlow yet. For ads, the LinkedIn account may have no role on your ad account.",
   failed: "LinkedIn could not be connected. Try again in a moment.",
   page_taken:
     "That LinkedIn Page is already connected to another business, so it was not added.",
