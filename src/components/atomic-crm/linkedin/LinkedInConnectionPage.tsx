@@ -85,8 +85,11 @@ export const LinkedInConnectionPage = () => {
       notify("LinkedIn connected");
       refetch();
     } else {
-      notify(REASONS[params.get("connect") ?? ""] ?? REASONS.failed, {
+      const reason = REASONS[params.get("connect") ?? ""] ?? REASONS.failed;
+      const detail = (params.get("detail") ?? "").slice(0, 200);
+      notify(detail ? `${reason} LinkedIn said: "${detail}"` : reason, {
         type: "warning",
+        autoHideDuration: detail ? 20000 : undefined,
       });
     }
     window.history.replaceState(null, "", "#/linkedin");

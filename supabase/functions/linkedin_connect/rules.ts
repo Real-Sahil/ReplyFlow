@@ -46,7 +46,20 @@ export const outcomeFor = (error: string | null): string => {
   if (!error) return "connect=failed";
   if (error === "user_cancelled_login" || error === "user_cancelled_authorize")
     return "connect=cancelled";
-  if (error === "unauthorized_scope_error" || error === "access_denied")
+  if (
+    error === "unauthorized_scope_error" ||
+    error === "invalid_scope_error" ||
+    error === "access_denied"
+  )
     return "connect=scope";
   return "connect=failed";
 };
+
+// LinkedIn's own words for why it refused, shown to the administrator. It comes from outside, so it is cut to
+// plain characters and a short length before it is put in an address.
+export const detailFor = (description: string | null | undefined) =>
+  String(description ?? "")
+    .replace(/[^A-Za-z0-9 .,'():_-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 200);

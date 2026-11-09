@@ -17,6 +17,7 @@ import { createErrorResponse } from "../_shared/utils.ts";
 import { signState, verifyState } from "../meta_connect/state.ts";
 import {
   authorizeUrl,
+  detailFor,
   expiryFrom,
   nonceFor,
   outcomeFor,
@@ -39,7 +40,13 @@ const back = (query: string) =>
 
 const callback = async (url: URL) => {
   const error = url.searchParams.get("error");
-  if (error) return back(outcomeFor(error));
+  if (error) {
+    const detail = detailFor(url.searchParams.get("error_description"));
+    console.error("LinkedIn refused the connection", error, detail);
+    return back(
+      `${outcomeFor(error)}${detail ? `&detail=${encodeURIComponent(detail)}` : ""}`,
+    );
+  }
 
   const secret = Deno.env.get("LINKEDIN_CLIENT_SECRET") ?? "";
   const state = url.searchParams.get("state") ?? "";

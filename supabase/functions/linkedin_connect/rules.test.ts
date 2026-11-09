@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   authorizeUrl,
+  detailFor,
   expiryFrom,
   hasAdsScope,
   nonceFor,
@@ -44,6 +45,7 @@ describe("outcomeFor", () => {
   it("maps LinkedIn's errors to a short list", () => {
     expect(outcomeFor("user_cancelled_login")).toBe("connect=cancelled");
     expect(outcomeFor("unauthorized_scope_error")).toBe("connect=scope");
+    expect(outcomeFor("invalid_scope_error")).toBe("connect=scope");
     expect(outcomeFor("something_else")).toBe("connect=failed");
     expect(outcomeFor(null)).toBe("connect=failed");
   });
@@ -77,5 +79,18 @@ describe("purpose", () => {
     );
     expect(hasAdsScope("openid profile w_member_social")).toBe(false);
     expect(hasAdsScope(null)).toBe(false);
+  });
+});
+
+describe("detailFor", () => {
+  it("keeps LinkedIn's sentence, drops odd characters and cuts it short", () => {
+    expect(detailFor("The requested permission scope is not valid")).toBe(
+      "The requested permission scope is not valid",
+    );
+    expect(detailFor("<script>alert(1)</script>")).toBe(
+      "script alert(1) script",
+    );
+    expect(detailFor("a".repeat(500))).toHaveLength(200);
+    expect(detailFor(null)).toBe("");
   });
 });

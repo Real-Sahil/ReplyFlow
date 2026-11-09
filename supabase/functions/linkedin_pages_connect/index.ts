@@ -14,7 +14,11 @@ import { corsHeaders, OptionsMiddleware } from "../_shared/cors.ts";
 import { getUserSale } from "../_shared/getUserSale.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { createErrorResponse } from "../_shared/utils.ts";
-import { expiryFrom, outcomeFor } from "../linkedin_connect/rules.ts";
+import {
+  detailFor,
+  expiryFrom,
+  outcomeFor,
+} from "../linkedin_connect/rules.ts";
 import { signState, verifyState } from "../meta_connect/state.ts";
 import { orgIdsFromAcls, pageName, pagesAuthorizeUrl } from "./rules.ts";
 
@@ -52,7 +56,13 @@ const get = async (token: string, url: string) => {
 
 const callback = async (url: URL) => {
   const error = url.searchParams.get("error");
-  if (error) return back(outcomeFor(error));
+  if (error) {
+    const detail = detailFor(url.searchParams.get("error_description"));
+    console.error("LinkedIn refused the connection", error, detail);
+    return back(
+      `${outcomeFor(error)}${detail ? `&detail=${encodeURIComponent(detail)}` : ""}`,
+    );
+  }
 
   const secret = Deno.env.get("LINKEDIN_PAGES_CLIENT_SECRET") ?? "";
   const saleId = await verifyState(
