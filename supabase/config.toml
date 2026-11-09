@@ -189,6 +189,10 @@ verify_jwt = false
 verify_jwt = false
 [functions.meta_connect]
 verify_jwt = false
+[functions.linkedin_connect]
+verify_jwt = false
+[functions.linkedin_post]
+verify_jwt = false
 
 [functions.onboard]
 verify_jwt = false
