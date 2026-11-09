@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  buildRewritePrompt,
   buildUserPrompt,
   checkDraft,
+  checkRewrite,
+  linkedinSystemPromptFor,
   nextFreeSlots,
   parseDraft,
   type ProductFacts,
@@ -268,5 +271,33 @@ describe("prices in other currencies", () => {
       original_price_pence: null,
     } as never;
     expect(JSON.parse(buildUserPrompt(sofa, usd)).price).toBe("$799");
+  });
+});
+
+describe("LinkedIn rewrite", () => {
+  const product: ProductFacts = {
+    ...sofa,
+    price_pence: 1250,
+    original_price_pence: null,
+  };
+
+  it("asks for no emoji, hashtags or links and passes the original post on", () => {
+    const system = linkedinSystemPromptFor("Acme");
+    expect(system).toContain("LinkedIn");
+    expect(system).toContain("No emoji. No hashtags.");
+    expect(JSON.parse(buildRewritePrompt("Hello", null)).original_post).toBe(
+      "Hello",
+    );
+  });
+  it("refuses a link, a long post and a price that was not in the original", () => {
+    expect(checkRewrite("See https://x.test", "Hi", null).ok).toBe(false);
+    expect(checkRewrite("a".repeat(1301), "Hi", null).ok).toBe(false);
+    expect(checkRewrite("Now only $9", "Candle $12.50", null).ok).toBe(false);
+  });
+  it("accepts a price that was in the original or is the product's", () => {
+    expect(
+      checkRewrite("We sell it for $12.50", "Candle $12.50", null).ok,
+    ).toBe(true);
+    expect(checkRewrite("It is $12.50", "A candle", product).ok).toBe(true);
   });
 });

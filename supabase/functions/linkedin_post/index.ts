@@ -39,7 +39,7 @@ Deno.serve((req: Request) =>
         if (!sale || sale.disabled || sale.role === "viewer") {
           return createErrorResponse(403, "Not allowed to publish posts");
         }
-        let input: { id?: number; action?: string };
+        let input: { id?: number; action?: string; message?: string };
         try {
           input = await req.json();
         } catch {
@@ -154,7 +154,20 @@ Deno.serve((req: Request) =>
               { code: "not_approved" },
             );
           }
-          if (tooLong(post.message, post.link_url)) {
+          // An edited or AI-written version may be posted only by an administrator, who vets what goes out
+          // under the business's name; everyone else posts the approved text as it is.
+          const text =
+            typeof input.message === "string" && input.message.trim()
+              ? input.message.trim()
+              : post.message;
+          if (text !== post.message && !sale.administrator) {
+            return createErrorResponse(
+              403,
+              "Only an administrator can post an edited version.",
+              { code: "admin_only_edit" },
+            );
+          }
+          if (tooLong(text, post.link_url)) {
             return createErrorResponse(
               422,
               "This post is too long for LinkedIn (3,000 characters at most).",
@@ -167,7 +180,7 @@ Deno.serve((req: Request) =>
             body: JSON.stringify(
               postBody(
                 personUrn(member.member_id),
-                post.message,
+                text,
                 post.link_url,
               ),
             ),

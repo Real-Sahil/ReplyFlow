@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
+import { LinkedInWriter } from "../linkedin/LinkedInWriter";
 import {
   LinkedInPagePostButtons,
   LinkedInPostButton,
@@ -285,6 +286,11 @@ const ListView = ({
                   )}
                   {["approved", "published"].includes(post.status) && (
                     <>
+                      <LinkedInWriter
+                        postId={post.id}
+                        message={post.message}
+                        productId={post.product_id}
+                      />
                       <LinkedInPostButton postId={post.id} />
                       <LinkedInPagePostButtons postId={post.id} />
                     </>

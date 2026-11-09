@@ -21,10 +21,13 @@ import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { createErrorResponse } from "../_shared/utils.ts";
 import {
   buildCurationPrompt,
+  buildRewritePrompt,
   buildUserPrompt,
   checkDraft,
+  checkRewrite,
   curationPromptFor,
   isImageContentType,
+  linkedinSystemPromptFor,
   nextFreeSlots,
   parseDraft,
   parsePicks,
@@ -345,22 +348,75 @@ const suggest = async (
     return createErrorResponse(403, "Not allowed to write posts");
   }
 
-  let input: { product_id?: unknown };
+  let input: { product_id?: unknown; channel?: unknown; message?: unknown };
   try {
     input = await req.json();
   } catch {
     return createErrorResponse(400, "Invalid request");
   }
-  if (!Number.isInteger(input.product_id)) {
-    return createErrorResponse(400, "A product is required");
+  const linkedin = input.channel === "linkedin";
+  const original =
+    typeof input.message === "string" ? input.message.trim() : "";
+  // A LinkedIn rewrite starts from the post's own words and may have no product; a plain caption needs one.
+  if (linkedin ? !original : !Number.isInteger(input.product_id)) {
+    return createErrorResponse(
+      400,
+      linkedin ? "A post to rewrite is required" : "A product is required",
+    );
+  }
+  if (original.length > 8000) {
+    return createErrorResponse(400, "That post is too long to rewrite");
   }
 
-  const { data: product } = await supabaseAdmin
-    .from("products")
-    .select(PRODUCT_FIELDS)
-    .eq("id", input.product_id)
-    .eq("organisation_id", sale.organisation_id)
-    .maybeSingle();
+  let product: ProductFacts | null = null;
+  if (Number.isInteger(input.product_id)) {
+    const { data } = await supabaseAdmin
+      .from("products")
+      .select(PRODUCT_FIELDS)
+      .eq("id", input.product_id)
+      .eq("organisation_id", sale.organisation_id)
+      .maybeSingle();
+    if (!data) return createErrorResponse(404, "Product not found");
+    product = data as ProductFacts;
+  }
+
+  if (linkedin) {
+    try {
+      const organisationId = Number(sale.organisation_id);
+      const businessName = await businessNameOf(organisationId);
+      const format = await getMoneyFormat(organisationId);
+      const message = parseDraft(
+        await groqChat(
+          linkedinSystemPromptFor(businessName, format),
+          buildRewritePrompt(original, product, format),
+          600,
+        ),
+      );
+      if (!message) {
+        throw new DraftRejected("The AI writer did not return a usable post.");
+      }
+      const check = checkRewrite(message, original, product, format);
+      if (!check.ok) throw new DraftRejected(check.reason);
+      return json({ data: { message } });
+    } catch (error) {
+      if (error instanceof NotConfigured) {
+        return createErrorResponse(503, (error as Error).message, {
+          code: "not_configured",
+        });
+      }
+      if (error instanceof DraftRejected) {
+        return createErrorResponse(422, (error as Error).message, {
+          code: "draft_rejected",
+        });
+      }
+      if (error instanceof GroqError) {
+        return createErrorResponse(502, (error as Error).message, {
+          code: "ai_unavailable",
+        });
+      }
+      throw error;
+    }
+  }
   if (!product) return createErrorResponse(404, "Product not found");
 
   try {
@@ -368,7 +424,7 @@ const suggest = async (
     return json({
       data: {
         message: await draftFor(
-          product as ProductFacts,
+          product,
           businessName,
           Number(sale.organisation_id),
         ),

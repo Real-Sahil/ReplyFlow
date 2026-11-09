@@ -334,3 +334,65 @@ export const parseSelection = (input: unknown): number[] | null => {
   if (new Set(ids).size !== ids.length) return null;
   return ids;
 };
+
+// ---- LinkedIn ----------------------------------------------------------------------------------------
+// The same writer, asked to put an existing post (or a product's facts) in the voice that suits LinkedIn.
+
+export const LINKEDIN_MAX_CHARS = 1300;
+
+export const linkedinSystemPromptFor = (
+  businessName?: string | null,
+  format: MoneyFormat = DEFAULT_MONEY_FORMAT,
+) =>
+  [
+    `You write LinkedIn posts for ${nameForPrompt(businessName) ?? "a business"}, a UK business.`,
+    "You are given an original post and, sometimes, a product as JSON. Rewrite the post for LinkedIn.",
+    "Rules:",
+    "- British English. Professional but human, in the first person plural (we). No slang.",
+    "- Two short paragraphs at most, with a plain opening line that says what this is. Aim for under 900 characters.",
+    "- Use only the facts in the JSON. Never invent materials, sizes, delivery times, stock levels, offers, customers or results.",
+    `- If a price appears, quote it exactly as given, in ${format.currency}, e.g. ${formatMoney(49900, format, { whole: true })}. Do not quote any other price.`,
+    "- Do not include a web link. The link is attached separately.",
+    "- No emoji. No hashtags.",
+    'Reply with only a JSON object: {"message": "<the post>"}.',
+  ].join("\n");
+
+export const buildRewritePrompt = (
+  original: string,
+  product: ProductFacts | null,
+  format: MoneyFormat = DEFAULT_MONEY_FORMAT,
+) =>
+  JSON.stringify({
+    original_post: original,
+    product: product ? JSON.parse(buildUserPrompt(product, format)) : null,
+  });
+
+// A rewrite must not add a link, an emoji or hashtag, run long, or quote a price that was not already in the
+// original post or the product. Anything else fails and nothing is shown.
+export const checkRewrite = (
+  rewrite: string,
+  original: string,
+  product: ProductFacts | null,
+  format: MoneyFormat = DEFAULT_MONEY_FORMAT,
+): { ok: true } | { ok: false; reason: string } => {
+  if (/https?:\/\/|www\./i.test(rewrite)) {
+    return { ok: false, reason: "The LinkedIn version contains a link." };
+  }
+  if (rewrite.length > LINKEDIN_MAX_CHARS) {
+    return { ok: false, reason: "The LinkedIn version is too long." };
+  }
+  const allowed = [
+    ...pricesIn(original),
+    ...[product?.price_pence, product?.original_price_pence]
+      .filter((p): p is number => p != null)
+      .map((p) => p / 100),
+  ];
+  const stray = pricesIn(rewrite).find((amount) => !allowed.includes(amount));
+  if (stray !== undefined) {
+    return {
+      ok: false,
+      reason: `The LinkedIn version quotes ${formatMoney(Math.round(stray * 100), format, { whole: true })}, which is not a price in the original post.`,
+    };
+  }
+  return { ok: true };
+};
