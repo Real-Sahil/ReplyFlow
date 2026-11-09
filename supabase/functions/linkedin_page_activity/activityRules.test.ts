@@ -1,0 +1,121 @@
+import { describe, expect, it } from "vitest";
+
+import {
+  commentsUrl,
+  parseComments,
+  parseFollowers,
+  parsePosts,
+  parseShareStats,
+  postsUrl,
+  replyBody,
+  validCommentUrn,
+  validPostUrn,
+  validReply,
+} from "./activityRules.ts";
+
+describe("urls", () => {
+  it("percent-encode each urn", () => {
+    expect(postsUrl("12")).toContain("author=urn%3Ali%3Aorganization%3A12");
+    expect(commentsUrl("urn:li:share:9")).toContain(
+      "/socialActions/urn%3Ali%3Ashare%3A9/comments",
+    );
+  });
+});
+
+describe("urn checks", () => {
+  it("accept LinkedIn's shapes and nothing else", () => {
+    expect(validPostUrn("urn:li:share:123")).toBe(true);
+    expect(validPostUrn("urn:li:ugcPost:123")).toBe(true);
+    expect(validPostUrn("urn:li:share:123/../x")).toBe(false);
+    expect(validPostUrn(5)).toBe(false);
+    expect(validCommentUrn("urn:li:comment:(urn:li:activity:1,2)")).toBe(true);
+    expect(validCommentUrn("urn:li:comment:(x,2)")).toBe(false);
+  });
+});
+
+describe("parsePosts", () => {
+  it("keeps posts with a valid urn, newest data first as given", () => {
+    const posts = parsePosts({
+      elements: [
+        { id: "urn:li:share:1", commentary: "Hello", publishedAt: 100 },
+        { id: "bad", commentary: "x" },
+      ],
+    });
+    expect(posts).toEqual([
+      { urn: "urn:li:share:1", text: "Hello", publishedAt: 100 },
+    ]);
+  });
+});
+
+describe("parseComments", () => {
+  const json = {
+    elements: [
+      {
+        $URN: "urn:li:comment:(urn:li:share:1,22)",
+        actor: "urn:li:person:abc",
+        message: { text: "Nice" },
+        created: { time: 200 },
+      },
+      {
+        $URN: "urn:li:comment:(urn:li:share:1,21)",
+        actor: "urn:li:organization:12",
+        message: { text: "Thanks" },
+        created: { time: 100 },
+      },
+    ],
+  };
+  it("orders oldest first and marks the Page's own replies", () => {
+    const comments = parseComments(json, "12");
+    expect(comments.map((c) => c.text)).toEqual(["Thanks", "Nice"]);
+    expect(comments[0].fromPage).toBe(true);
+    expect(comments[1].fromPage).toBe(false);
+  });
+});
+
+describe("replyBody", () => {
+  it("replies as the Page, and to a comment when one is given", () => {
+    const body = replyBody(
+      "12",
+      "urn:li:share:1",
+      "Thanks",
+      "urn:li:comment:(urn:li:share:1,22)",
+    );
+    expect(body.actor).toBe("urn:li:organization:12");
+    expect(body.object).toBe("urn:li:share:1");
+    expect(body.parentComment).toContain("urn:li:comment:");
+    expect(replyBody("12", "urn:li:share:1", "x")).not.toHaveProperty(
+      "parentComment",
+    );
+  });
+  it("accepts a sensible reply only", () => {
+    expect(validReply("Thanks!")).toBe(true);
+    expect(validReply("   ")).toBe(false);
+    expect(validReply("a".repeat(1251))).toBe(false);
+  });
+});
+
+describe("parseShareStats and parseFollowers", () => {
+  it("reads the totals and works out engagement when LinkedIn does not", () => {
+    const stats = parseShareStats({
+      elements: [
+        {
+          totalShareStatistics: {
+            impressionCount: 1000,
+            clickCount: 20,
+            likeCount: 30,
+            commentCount: 5,
+            shareCount: 5,
+          },
+        },
+      ],
+    });
+    expect(stats.impressions).toBe(1000);
+    expect(stats.engagementRate).toBeCloseTo(0.06);
+  });
+  it("copes with nothing", () => {
+    expect(parseShareStats({}).impressions).toBe(0);
+    expect(parseShareStats({}).engagementRate).toBeNull();
+    expect(parseFollowers({ firstDegreeSize: 42 })).toBe(42);
+    expect(parseFollowers({})).toBe(0);
+  });
+});

@@ -496,6 +496,13 @@ const MoreSheet = ({
               onPick={onOpenChange}
             />
             <MoreRow
+              to="/linkedin_pages"
+              label="LinkedIn Pages"
+              detail="Page results and comments"
+              Icon={Linkedin}
+              onPick={onOpenChange}
+            />
+            <MoreRow
               to="/linkedin_ads"
               label="LinkedIn ads"
               detail="What your campaigns spent and got"

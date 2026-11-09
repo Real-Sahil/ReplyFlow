@@ -5,6 +5,7 @@ import { Link } from "react-router";
 import { Card, CardContent } from "@/components/ui/card";
 
 import { getSupabaseClient } from "../providers/supabase/supabase";
+import { useConfigurationContext } from "../root/ConfigurationContext";
 
 type Account = { id: string; name: string; currency: string; status: string };
 type Row = {
@@ -56,12 +57,10 @@ const RANGES = [
   { label: "Last 12 months", days: 365 },
 ];
 
-// The account's own currency, as LinkedIn reports it; never assumed.
+// The ad account's own currency as LinkedIn reports it. If LinkedIn gives none, the business's own
+// currency is used, never a guess.
 const money = (value: number, currency: string) =>
-  new Intl.NumberFormat("en-GB", {
-    style: "currency",
-    currency: currency || "USD",
-  }).format(value);
+  new Intl.NumberFormat("en-GB", { style: "currency", currency }).format(value);
 const count = (value: number) => value.toLocaleString("en-GB");
 const percent = (value: number | null) =>
   value === null ? "–" : `${(value * 100).toFixed(2)}%`;
@@ -87,6 +86,7 @@ const Problem = ({ error }: { error: AdsError }) => (
 );
 
 const AdsReport = () => {
+  const { currency: businessCurrency } = useConfigurationContext();
   const [accountId, setAccountId] = useState<string | null>(null);
   const [days, setDays] = useState(30);
 
@@ -130,6 +130,10 @@ const AdsReport = () => {
   }
 
   const data = report.data;
+  const currency =
+    data?.currency ||
+    list.find((a) => a.id === chosen)?.currency ||
+    businessCurrency;
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-3">
@@ -179,10 +183,7 @@ const AdsReport = () => {
         <>
           <Card>
             <CardContent className="grid grid-cols-2 gap-4 md:grid-cols-5">
-              <Stat
-                label="Spent"
-                value={money(data.totals.spend, data.currency)}
-              />
+              <Stat label="Spent" value={money(data.totals.spend, currency)} />
               <Stat label="Views" value={count(data.totals.impressions)} />
               <Stat label="Clicks" value={count(data.totals.clicks)} />
               <Stat label="Click rate" value={percent(data.totals.ctr)} />
@@ -191,7 +192,7 @@ const AdsReport = () => {
                 value={
                   data.totals.costPerClick === null
                     ? "–"
-                    : money(data.totals.costPerClick, data.currency)
+                    : money(data.totals.costPerClick, currency)
                 }
               />
             </CardContent>
@@ -218,7 +219,7 @@ const AdsReport = () => {
                       </div>
                     </td>
                     <td className="px-4 py-2.5 text-right tabular-nums">
-                      {money(r.spend, data.currency)}
+                      {money(r.spend, currency)}
                     </td>
                     <td className="px-4 py-2.5 text-right tabular-nums">
                       {count(r.impressions)}
@@ -232,7 +233,7 @@ const AdsReport = () => {
                     <td className="px-4 py-2.5 text-right tabular-nums">
                       {r.costPerClick === null
                         ? "–"
-                        : money(r.costPerClick, data.currency)}
+                        : money(r.costPerClick, currency)}
                     </td>
                   </tr>
                 ))}

@@ -199,6 +199,8 @@ verify_jwt = false
 verify_jwt = false
 [functions.linkedin_page_post]
 verify_jwt = false
+[functions.linkedin_page_activity]
+verify_jwt = false
 
 [functions.onboard]
 verify_jwt = false
