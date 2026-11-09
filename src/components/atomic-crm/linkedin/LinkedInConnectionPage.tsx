@@ -20,34 +20,19 @@ const REASONS: Record<string, string> = {
 };
 
 const call = async (
-  action: "start" | "disconnect",
-  purpose?: "post" | "ads",
+  action: "start" | "disconnect" | "disconnect_page",
+  purpose?: "post" | "ads" | "pages",
+  orgId?: string,
 ) => {
   const { data, error } = await getSupabaseClient().functions.invoke(
     "linkedin_connect",
-    { method: "POST", body: { action, purpose } },
+    { method: "POST", body: { action, purpose, org_id: orgId } },
   );
   if (error) {
     const body = (await error.context?.json?.().catch(() => ({}))) as
       | { message?: string }
       | undefined;
     throw new Error(body?.message ?? "Could not reach LinkedIn right now.");
-  }
-  return data?.data as { url?: string } | undefined;
-};
-
-const callPages = async (
-  body: { action: "start" } | { action: "disconnect"; org_id: string },
-) => {
-  const { data, error } = await getSupabaseClient().functions.invoke(
-    "linkedin_pages_connect",
-    { method: "POST", body },
-  );
-  if (error) {
-    const details = (await error.context?.json?.().catch(() => ({}))) as
-      | { message?: string }
-      | undefined;
-    throw new Error(details?.message ?? "Could not reach LinkedIn right now.");
   }
   return data?.data as { url?: string } | undefined;
 };
@@ -112,7 +97,7 @@ export const LinkedInConnectionPage = () => {
   const connectPages = async () => {
     setBusy(true);
     try {
-      const result = await callPages({ action: "start" });
+      const result = await call("start", "pages");
       if (!result?.url) throw new Error("Could not start the connection.");
       window.location.href = result.url;
     } catch (e) {
@@ -124,7 +109,7 @@ export const LinkedInConnectionPage = () => {
   const disconnectPage = async (orgId: string) => {
     setBusy(true);
     try {
-      await callPages({ action: "disconnect", org_id: orgId });
+      await call("disconnect_page", undefined, orgId);
       notify("LinkedIn Page disconnected");
       pages.refetch();
     } catch (e) {

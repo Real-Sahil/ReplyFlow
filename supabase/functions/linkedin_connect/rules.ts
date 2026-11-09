@@ -1,20 +1,30 @@
 // The parts of connecting LinkedIn that need no network, kept apart so they can be tested.
 
-export type Purpose = "post" | "ads";
+export type Purpose = "post" | "ads" | "pages";
 
 export const LINKEDIN_SCOPES = "openid profile w_member_social";
 // Reading the business's ad accounts and their results. Asked for only by an administrator who wants the
 // ads report, so a person who just wants to post is never asked for it.
 export const ADS_SCOPES = `${LINKEDIN_SCOPES} r_ads r_ads_reporting`;
 
+// Listing the company Pages a person administers, and reading and posting as those Pages.
+export const PAGES_SCOPES =
+  "r_organization_admin r_organization_social w_organization_social";
+
 export const scopesFor = (purpose: Purpose) =>
-  purpose === "ads" ? ADS_SCOPES : LINKEDIN_SCOPES;
+  purpose === "ads"
+    ? ADS_SCOPES
+    : purpose === "pages"
+      ? PAGES_SCOPES
+      : LINKEDIN_SCOPES;
 
 // The purpose travels inside the signed state's nonce, so it cannot be changed on the way back.
 export const nonceFor = (purpose: Purpose, random: string) =>
-  `${purpose === "ads" ? "a" : "p"}${random}`;
-export const purposeFromState = (state: string): Purpose =>
-  state.split(".")[2]?.startsWith("a") ? "ads" : "post";
+  `${purpose === "ads" ? "a" : purpose === "pages" ? "g" : "p"}${random}`;
+export const purposeFromState = (state: string): Purpose => {
+  const first = state.split(".")[2]?.[0];
+  return first === "a" ? "ads" : first === "g" ? "pages" : "post";
+};
 
 export const hasAdsScope = (scopes: string | null | undefined) =>
   (scopes ?? "").split(/[ ,]+/).includes("r_ads_reporting");

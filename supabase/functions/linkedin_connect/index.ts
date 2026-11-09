@@ -15,6 +15,7 @@ import { getUserSale } from "../_shared/getUserSale.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { createErrorResponse } from "../_shared/utils.ts";
 import { signState, verifyState } from "../meta_connect/state.ts";
+import { orgIdsFromAcls, pageName } from "../linkedin_pages_connect/rules.ts";
 import {
   authorizeUrl,
   detailFor,
@@ -38,6 +39,69 @@ const ok = (data: unknown) =>
 const back = (query: string) =>
   Response.redirect(`${APP_URL}/app#/linkedin?${query}`, 302);
 
+// LinkedIn versions its API by month and retires each version after about a year. If calls start failing
+// with a "version not active" message in the logs, set LINKEDIN_API_VERSION to a newer month (YYYYMM).
+const LINKEDIN_VERSION = Deno.env.get("LINKEDIN_API_VERSION") ?? "202605";
+
+const getLinkedIn = async (token: string, url: string) => {
+  const response = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "LinkedIn-Version": LINKEDIN_VERSION,
+      "X-Restli-Protocol-Version": "2.0.0",
+    },
+    signal: AbortSignal.timeout(10000),
+  });
+  const json = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    console.error("LinkedIn call failed", response.status, json?.message);
+    throw new Error(`LinkedIn ${response.status}`);
+  }
+  return json;
+};
+
+// Saves the company Pages this person administers, each with the token, for their business. Only an
+// administrator may do this, and a Page already connected to another business is skipped.
+const savePages = async (
+  saleId: string,
+  organisationId: number,
+  accessToken: string,
+  expiresAt: string,
+) => {
+  const acls = await getLinkedIn(
+    accessToken,
+    "https://api.linkedin.com/rest/organizationAcls?q=roleAssignee&role=ADMINISTRATOR&state=APPROVED&count=100",
+  );
+  const orgIds = orgIdsFromAcls(acls);
+  if (orgIds.length === 0) return back("pages=0");
+  let saved = 0;
+  let taken = 0;
+  for (const orgId of orgIds) {
+    const details = await getLinkedIn(
+      accessToken,
+      `https://api.linkedin.com/rest/organizations/${orgId}`,
+    ).catch(() => ({}));
+    const { error } = await supabaseAdmin.rpc("linkedin_page_store", {
+      p_organisation_id: organisationId,
+      p_org_id: orgId,
+      p_name: pageName(details, orgId),
+      p_token: accessToken,
+      p_expires_at: expiresAt,
+      p_sale_id: Number(saleId),
+    });
+    if (error) {
+      if (error.code === "42501") {
+        taken++;
+        continue;
+      }
+      throw new Error(error.message);
+    }
+    saved++;
+  }
+  if (saved === 0) return back("connect=page_taken");
+  return back(`pages=${saved}${taken ? `&taken=${taken}` : ""}`);
+};
+
 const callback = async (url: URL) => {
   const error = url.searchParams.get("error");
   if (error) {
@@ -59,10 +123,13 @@ const callback = async (url: URL) => {
   try {
     const { data: sale } = await supabaseAdmin
       .from("sales")
-      .select("organisation_id, disabled")
+      .select("organisation_id, disabled, administrator")
       .eq("id", Number(saleId))
       .maybeSingle();
     if (!sale?.organisation_id || sale.disabled) return back("connect=failed");
+    if (purpose === "pages" && !sale.administrator) {
+      return back("connect=failed");
+    }
 
     const tokenResponse = await fetch(
       "https://www.linkedin.com/oauth/v2/accessToken",
@@ -83,6 +150,15 @@ const callback = async (url: URL) => {
     if (!tokenResponse.ok || !token.access_token) {
       console.error("LinkedIn token exchange failed", tokenResponse.status);
       return back("connect=failed");
+    }
+
+    if (purpose === "pages") {
+      return await savePages(
+        saleId,
+        Number(sale.organisation_id),
+        String(token.access_token),
+        expiryFrom(Date.now(), token.expires_in).toISOString(),
+      );
     }
 
     // Who the person is on LinkedIn. Posting needs their LinkedIn id.
@@ -146,6 +222,21 @@ Deno.serve((req: Request) => {
           return createErrorResponse(400, "Invalid request");
         }
 
+        if (input.action === "disconnect_page") {
+          if (!sale.administrator) {
+            return createErrorResponse(403, "Only administrators can do that");
+          }
+          const orgId = String((input as { org_id?: string }).org_id ?? "");
+          if (!/^\d{1,20}$/.test(orgId)) {
+            return createErrorResponse(400, "A Page is required");
+          }
+          await supabaseAdmin.rpc("linkedin_page_forget", {
+            p_organisation_id: Number(sale.organisation_id),
+            p_org_id: orgId,
+          });
+          return ok({ disconnected: true });
+        }
+
         if (input.action === "disconnect") {
           await supabaseAdmin.rpc("linkedin_member_forget", {
             p_organisation_id: Number(sale.organisation_id),
@@ -166,11 +257,16 @@ Deno.serve((req: Request) => {
           );
         }
         // Ad results show what the business spends, so only an administrator may ask for them.
-        const purpose: Purpose = input.purpose === "ads" ? "ads" : "post";
-        if (purpose === "ads" && !sale.administrator) {
+        const purpose: Purpose =
+          input.purpose === "ads" || input.purpose === "pages"
+            ? input.purpose
+            : "post";
+        if (purpose !== "post" && !sale.administrator) {
           return createErrorResponse(
             403,
-            "Only administrators can connect LinkedIn ads",
+            purpose === "ads"
+              ? "Only administrators can connect LinkedIn ads"
+              : "Only administrators can connect LinkedIn Pages",
           );
         }
         const nonce = nonceFor(

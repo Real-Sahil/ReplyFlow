@@ -73,6 +73,24 @@ describe("purpose", () => {
       "post",
     );
   });
+  it("asks for the Page permissions, and no profile or ads ones, for pages", () => {
+    const scope =
+      new URL(
+        authorizeUrl({
+          clientId: "a",
+          redirectUri: "https://x.test/cb",
+          state: "s",
+          purpose: "pages",
+        }),
+      ).searchParams.get("scope") ?? "";
+    expect(scope).toContain("r_organization_admin");
+    expect(scope).toContain("w_organization_social");
+    expect(scope).not.toContain("r_ads");
+    expect(scope).not.toContain("w_member_social");
+    expect(purposeFromState(`5.999.${nonceFor("pages", "abc")}.sig`)).toBe(
+      "pages",
+    );
+  });
   it("tells whether a token carries the ads reporting permission", () => {
     expect(hasAdsScope("openid,profile,w_member_social,r_ads_reporting")).toBe(
       true,
