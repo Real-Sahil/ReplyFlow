@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { daysLeft, linkedInPostUrl } from "./useLinkedIn";
+import { daysLeft, hasAdsScope, linkedInPostUrl } from "./useLinkedIn";
 
 describe("daysLeft", () => {
   const now = new Date("2026-11-09T12:00:00Z").getTime();
@@ -18,5 +18,15 @@ describe("linkedInPostUrl", () => {
     expect(linkedInPostUrl("urn:li:share:123")).toBe(
       "https://www.linkedin.com/feed/update/urn%3Ali%3Ashare%3A123/",
     );
+  });
+});
+
+describe("hasAdsScope", () => {
+  it("is true only when the ads reporting permission is there", () => {
+    expect(hasAdsScope("openid,profile,w_member_social,r_ads_reporting")).toBe(
+      true,
+    );
+    expect(hasAdsScope("openid profile w_member_social")).toBe(false);
+    expect(hasAdsScope(undefined)).toBe(false);
   });
 });

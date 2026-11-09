@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { useNotify } from "ra-core";
-import { Link2, Unplug } from "lucide-react";
+import { CanAccess, useNotify } from "ra-core";
+import { ChartColumn, Link2, Unplug } from "lucide-react";
+import { Link } from "react-router";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
 import { getSupabaseClient } from "../providers/supabase/supabase";
-import { daysLeft, useLinkedIn } from "./useLinkedIn";
+import { daysLeft, hasAdsScope, useLinkedIn } from "./useLinkedIn";
 
 const REASONS: Record<string, string> = {
   cancelled: "Connecting was cancelled, so nothing changed.",
@@ -15,10 +16,13 @@ const REASONS: Record<string, string> = {
   failed: "LinkedIn could not be connected. Try again in a moment.",
 };
 
-const call = async (action: "start" | "disconnect") => {
+const call = async (
+  action: "start" | "disconnect",
+  purpose?: "post" | "ads",
+) => {
   const { data, error } = await getSupabaseClient().functions.invoke(
     "linkedin_connect",
-    { method: "POST", body: { action } },
+    { method: "POST", body: { action, purpose } },
   );
   if (error) {
     const body = (await error.context?.json?.().catch(() => ({}))) as
@@ -54,10 +58,10 @@ export const LinkedInConnectionPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const connect = async () => {
+  const connect = async (purpose: "post" | "ads" = "post") => {
     setBusy(true);
     try {
-      const result = await call("start");
+      const result = await call("start", purpose);
       if (!result?.url) throw new Error("Could not start the connection.");
       window.location.href = result.url;
     } catch (e) {
@@ -115,7 +119,7 @@ export const LinkedInConnectionPage = () => {
           )}
 
           <div className="flex flex-wrap gap-2">
-            <Button disabled={busy} onClick={connect}>
+            <Button disabled={busy} onClick={() => connect("post")}>
               <Link2 />
               {member ? "Connect again" : "Connect LinkedIn"}
             </Button>
@@ -133,6 +137,36 @@ export const LinkedInConnectionPage = () => {
           </p>
         </CardContent>
       </Card>
+
+      <CanAccess resource="configuration" action="edit">
+        <Card>
+          <CardContent className="flex flex-col gap-4">
+            <div>
+              <h2 className="font-medium">Ads report</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                See what your LinkedIn campaigns spent and what they got: views,
+                clicks and cost per click. It is read-only: ReplyFlow never
+                creates or changes an ad. This needs an extra permission, so you
+                connect again once, with a LinkedIn account that can see your ad
+                account.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {member && hasAdsScope(member.scopes) && !expired ? (
+                <Button asChild>
+                  <Link to="/linkedin_ads">
+                    <ChartColumn /> Open the ads report
+                  </Link>
+                </Button>
+              ) : (
+                <Button disabled={busy} onClick={() => connect("ads")}>
+                  <Link2 /> Connect for ads reports
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </CanAccess>
     </div>
   );
 };

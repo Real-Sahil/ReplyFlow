@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { authorizeUrl, expiryFrom, outcomeFor } from "./rules.ts";
+import {
+  authorizeUrl,
+  expiryFrom,
+  hasAdsScope,
+  nonceFor,
+  outcomeFor,
+  purposeFromState,
+} from "./rules.ts";
 
 describe("authorizeUrl", () => {
   it("asks for the sign-in and posting permissions and carries the state", () => {
@@ -39,5 +46,36 @@ describe("outcomeFor", () => {
     expect(outcomeFor("unauthorized_scope_error")).toBe("connect=scope");
     expect(outcomeFor("something_else")).toBe("connect=failed");
     expect(outcomeFor(null)).toBe("connect=failed");
+  });
+});
+
+describe("purpose", () => {
+  it("asks for the ads permissions only when the purpose is ads", () => {
+    const base = {
+      clientId: "a",
+      redirectUri: "https://x.test/cb",
+      state: "s",
+    };
+    expect(new URL(authorizeUrl(base)).searchParams.get("scope")).not.toContain(
+      "r_ads",
+    );
+    expect(
+      new URL(authorizeUrl({ ...base, purpose: "ads" })).searchParams.get(
+        "scope",
+      ),
+    ).toContain("r_ads_reporting");
+  });
+  it("carries the purpose in the state's nonce", () => {
+    expect(purposeFromState(`5.999.${nonceFor("ads", "abc")}.sig`)).toBe("ads");
+    expect(purposeFromState(`5.999.${nonceFor("post", "abc")}.sig`)).toBe(
+      "post",
+    );
+  });
+  it("tells whether a token carries the ads reporting permission", () => {
+    expect(hasAdsScope("openid,profile,w_member_social,r_ads_reporting")).toBe(
+      true,
+    );
+    expect(hasAdsScope("openid profile w_member_social")).toBe(false);
+    expect(hasAdsScope(null)).toBe(false);
   });
 });

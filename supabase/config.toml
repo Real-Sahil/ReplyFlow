@@ -193,6 +193,8 @@ verify_jwt = false
 verify_jwt = false
 [functions.linkedin_post]
 verify_jwt = false
+[functions.linkedin_ads]
+verify_jwt = false
 
 [functions.onboard]
 verify_jwt = false

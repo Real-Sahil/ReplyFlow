@@ -6,7 +6,12 @@ export type LinkedInMember = {
   name: string;
   expires_at: string;
   connected_at: string;
+  scopes: string;
 };
+
+// Whether the connection was made with the permission to read ad results.
+export const hasAdsScope = (scopes: string | null | undefined) =>
+  (scopes ?? "").split(/[ ,]+/).includes("r_ads_reporting");
 
 export type LinkedInSent = { post_id: number; urn: string };
 
@@ -26,7 +31,7 @@ export const useLinkedIn = () => {
     queryFn: async (): Promise<LinkedInMember | null> => {
       const { data, error } = await getSupabaseClient()
         .from("linkedin_members")
-        .select("name, expires_at, connected_at")
+        .select("name, expires_at, connected_at, scopes")
         .maybeSingle();
       if (error) throw error;
       return data;

@@ -15,7 +15,15 @@ import { getUserSale } from "../_shared/getUserSale.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { createErrorResponse } from "../_shared/utils.ts";
 import { signState, verifyState } from "../meta_connect/state.ts";
-import { authorizeUrl, expiryFrom, outcomeFor } from "./rules.ts";
+import {
+  authorizeUrl,
+  expiryFrom,
+  nonceFor,
+  outcomeFor,
+  purposeFromState,
+  scopesFor,
+  type Purpose,
+} from "./rules.ts";
 
 const CLIENT_ID = Deno.env.get("LINKEDIN_CLIENT_ID") ?? "78o4205ivav2bp";
 const APP_URL = Deno.env.get("APP_URL") ?? "https://replyflow-sahil.vercel.app";
@@ -34,11 +42,9 @@ const callback = async (url: URL) => {
   if (error) return back(outcomeFor(error));
 
   const secret = Deno.env.get("LINKEDIN_CLIENT_SECRET") ?? "";
-  const saleId = await verifyState(
-    secret,
-    url.searchParams.get("state") ?? "",
-    Date.now(),
-  );
+  const state = url.searchParams.get("state") ?? "";
+  const saleId = await verifyState(secret, state, Date.now());
+  const purpose = purposeFromState(state);
   if (!saleId) return back("connect=expired");
   const code = url.searchParams.get("code");
   if (!code) return back("connect=failed");
@@ -95,6 +101,7 @@ const callback = async (url: URL) => {
         p_name: String(profile.name ?? ""),
         p_token: String(token.access_token),
         p_expires_at: expiryFrom(Date.now(), token.expires_in).toISOString(),
+        p_scopes: String(token.scope ?? scopesFor(purpose)),
       },
     );
     if (storeError) throw new Error(storeError.message);
@@ -125,7 +132,7 @@ Deno.serve((req: Request) => {
         if (!sale || sale.disabled) {
           return createErrorResponse(403, "Not allowed");
         }
-        let input: { action?: string };
+        let input: { action?: string; purpose?: string };
         try {
           input = await req.json();
         } catch {
@@ -151,7 +158,18 @@ Deno.serve((req: Request) => {
             { code: "not_configured" },
           );
         }
-        const nonce = crypto.randomUUID().replaceAll("-", "");
+        // Ad results show what the business spends, so only an administrator may ask for them.
+        const purpose: Purpose = input.purpose === "ads" ? "ads" : "post";
+        if (purpose === "ads" && !sale.administrator) {
+          return createErrorResponse(
+            403,
+            "Only administrators can connect LinkedIn ads",
+          );
+        }
+        const nonce = nonceFor(
+          purpose,
+          crypto.randomUUID().replaceAll("-", ""),
+        );
         const state = await signState(
           secret,
           String(sale.id),
@@ -163,6 +181,7 @@ Deno.serve((req: Request) => {
             clientId: CLIENT_ID,
             redirectUri: REDIRECT_URI,
             state,
+            purpose,
           }),
           valid_days: 7,
         });

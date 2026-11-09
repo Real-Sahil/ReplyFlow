@@ -151,6 +151,7 @@ const GROUPS: Group[] = [
         label: "Messenger auto-replies",
         Icon: MessageCircle,
       },
+      { to: "/linkedin_ads", label: "LinkedIn ads", Icon: ChartColumn },
       { to: "/errors", label: "Error log", Icon: Bug },
     ],
   },
