@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 
 import { AiWriting } from "../posts/AiWriting";
 import { getSupabaseClient } from "../providers/supabase/supabase";
-import { useLinkedIn } from "./useLinkedIn";
+import { photoNote, useLinkedIn } from "./useLinkedIn";
 import { useLinkedInPages } from "./useLinkedInPages";
 
 // What reads well on LinkedIn; the server allows up to 3,000.
@@ -80,18 +80,17 @@ export const LinkedInWriter = ({
   const post = async (target: "profile" | { orgId: string; name: string }) => {
     setBusy(true);
     const profile = target === "profile";
-    const { error } = await getSupabaseClient().functions.invoke(
-      profile ? "linkedin_post" : "linkedin_page_post",
-      {
-        method: "POST",
-        body: {
-          id: postId,
-          action: "publish",
-          message: text,
-          ...(profile ? {} : { org_id: target.orgId }),
-        },
+    const { data, error } = await getSupabaseClient().functions.invoke<{
+      data: { photo?: string };
+    }>(profile ? "linkedin_post" : "linkedin_page_post", {
+      method: "POST",
+      body: {
+        id: postId,
+        action: "publish",
+        message: text,
+        ...(profile ? {} : { org_id: target.orgId }),
       },
-    );
+    });
     setBusy(false);
     if (error) {
       notify(await errorMessage(error, "Could not reach LinkedIn"), {
@@ -101,8 +100,8 @@ export const LinkedInWriter = ({
     }
     notify(
       profile
-        ? "Posted to your LinkedIn"
-        : `Posted to ${target.name} on LinkedIn`,
+        ? `Posted to your LinkedIn${photoNote(data?.data?.photo)}`
+        : `Posted to ${target.name} on LinkedIn${photoNote(data?.data?.photo)}`,
     );
     refetchProfile();
     refetchPages();

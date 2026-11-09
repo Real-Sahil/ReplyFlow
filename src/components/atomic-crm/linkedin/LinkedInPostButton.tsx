@@ -5,7 +5,7 @@ import { useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
 
 import { getSupabaseClient } from "../providers/supabase/supabase";
-import { linkedInPostUrl, useLinkedIn } from "./useLinkedIn";
+import { linkedInPostUrl, photoNote, useLinkedIn } from "./useLinkedIn";
 import { useLinkedInPages, type LinkedInPage } from "./useLinkedInPages";
 
 // Posts a ReplyFlow post to the signed-in person's own LinkedIn profile, or takes it down again.
@@ -18,10 +18,9 @@ export const LinkedInPostButton = ({ postId }: { postId: number }) => {
 
   const run = async (action: "publish" | "remove") => {
     setBusy(true);
-    const { error } = await getSupabaseClient().functions.invoke(
-      "linkedin_post",
-      { method: "POST", body: { id: postId, action } },
-    );
+    const { data, error } = await getSupabaseClient().functions.invoke<{
+      data: { photo?: string };
+    }>("linkedin_post", { method: "POST", body: { id: postId, action } });
     setBusy(false);
     if (error) {
       const body = (await error.context?.json?.().catch(() => ({}))) as
@@ -35,7 +34,7 @@ export const LinkedInPostButton = ({ postId }: { postId: number }) => {
     }
     notify(
       action === "publish"
-        ? "Posted to your LinkedIn"
+        ? `Posted to your LinkedIn${photoNote(data?.data?.photo)}`
         : "Removed from your LinkedIn",
     );
     refetch();
@@ -94,10 +93,12 @@ const PagePostButton = ({
 
   const run = async (action: "publish" | "remove") => {
     setBusy(true);
-    const { error } = await getSupabaseClient().functions.invoke(
-      "linkedin_page_post",
-      { method: "POST", body: { id: postId, action, org_id: page.org_id } },
-    );
+    const { data, error } = await getSupabaseClient().functions.invoke<{
+      data: { photo?: string };
+    }>("linkedin_page_post", {
+      method: "POST",
+      body: { id: postId, action, org_id: page.org_id },
+    });
     setBusy(false);
     if (error) {
       const body = (await error.context?.json?.().catch(() => ({}))) as
@@ -111,7 +112,7 @@ const PagePostButton = ({
     }
     notify(
       action === "publish"
-        ? `Posted to ${page.name} on LinkedIn`
+        ? `Posted to ${page.name} on LinkedIn${photoNote(data?.data?.photo)}`
         : `Removed from ${page.name}`,
     );
     onChanged();

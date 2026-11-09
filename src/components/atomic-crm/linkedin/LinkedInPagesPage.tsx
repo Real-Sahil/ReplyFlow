@@ -17,7 +17,10 @@ type Comment = {
   text: string;
   at: number | null;
   fromPage: boolean;
+  actor: string;
+  personId: string | null;
 };
+type Person = { name: string; url: string | null };
 type Stats = {
   impressions: number;
   clicks: number;
@@ -150,7 +153,7 @@ const Comments = ({
     queryKey: key,
     retry: false,
     queryFn: () =>
-      call<{ comments: Comment[] }>({
+      call<{ comments: Comment[]; people: Record<string, Person> }>({
         action: "comments",
         org_id: orgId,
         post_urn: post.urn,
@@ -180,7 +183,7 @@ const Comments = ({
   if (q.error) return <Problem error={q.error as ActivityError} />;
   if (q.isPending)
     return <p className="text-sm text-muted-foreground">Loading comments…</p>;
-  const comments = q.data.comments;
+  const { comments, people } = q.data;
   return (
     <div className="flex flex-col gap-3">
       {comments.length ? (
@@ -195,7 +198,23 @@ const Comments = ({
               }
             >
               <div className="flex items-baseline justify-between gap-2 text-xs text-muted-foreground">
-                <span>{c.fromPage ? "Your Page" : "A LinkedIn member"}</span>
+                <span>
+                  {c.fromPage
+                    ? "Your Page"
+                    : c.personId
+                      ? (people[c.personId]?.name ?? "A LinkedIn member")
+                      : "Another LinkedIn Page"}
+                  {c.personId && people[c.personId]?.url ? (
+                    <a
+                      href={people[c.personId].url ?? undefined}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="ml-1 underline"
+                    >
+                      profile
+                    </a>
+                  ) : null}
+                </span>
                 <span>{when(c.at)}</span>
               </div>
               <p className="whitespace-pre-wrap">{c.text}</p>

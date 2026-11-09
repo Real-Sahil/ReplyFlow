@@ -58,3 +58,12 @@ export const useLinkedIn = () => {
     },
   };
 };
+
+// What to add to the confirmation when the post had a photo: it went too, or it could not be used (LinkedIn
+// takes JPEG and PNG) and the post went as text.
+export const photoNote = (photo: string | undefined) =>
+  photo === "sent"
+    ? " with its photo"
+    : photo === "skipped"
+      ? " as text only (its photo could not be sent)"
+      : "";

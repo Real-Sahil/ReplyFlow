@@ -17,6 +17,9 @@ import {
   commentsUrl,
   followersUrl,
   parseComments,
+  parsePeople,
+  peopleUrl,
+  personIds,
   parseFollowers,
   parsePosts,
   parseShareStats,
@@ -164,12 +167,18 @@ Deno.serve((req: Request) =>
             return createErrorResponse(400, "A post is required");
           }
           if (action === "comments") {
-            return ok({
-              comments: parseComments(
-                await call(t, commentsUrl(input.post_urn)),
-                orgId,
-              ),
-            });
+            const comments = parseComments(
+              await call(t, commentsUrl(input.post_urn)),
+              orgId,
+            );
+            // Names are best effort: if LinkedIn refuses the lookup, the comments still show.
+            const ids = personIds(comments);
+            const people = ids.length
+              ? await call(t, peopleUrl(ids))
+                  .then(parsePeople)
+                  .catch(() => ({}))
+              : {};
+            return ok({ comments, people });
           }
           // reply
           if (!validReply(input.text)) {

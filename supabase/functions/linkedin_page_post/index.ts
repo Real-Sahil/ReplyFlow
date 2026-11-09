@@ -9,6 +9,11 @@ import { getUserSale } from "../_shared/getUserSale.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { createErrorResponse } from "../_shared/utils.ts";
 import {
+  loadPostImage,
+  uploadImage,
+  withImage,
+} from "../_shared/linkedinImage.ts";
+import {
   organizationUrn,
   postBody,
   tooLong,
@@ -68,7 +73,9 @@ Deno.serve((req: Request) =>
 
         const { data: post } = await supabaseAdmin
           .from("page_posts")
-          .select("id, message, link_url, status")
+          .select(
+            "id, message, link_url, status, media_path, media_type, image_url",
+          )
           .eq("id", input.id)
           .eq("organisation_id", organisationId)
           .maybeSingle();
@@ -178,11 +185,42 @@ Deno.serve((req: Request) =>
             );
           }
 
+          // The post's photo, if it has a usable one (JPEG or PNG), goes up first. If LinkedIn refuses the
+          // photo nothing is posted, so a post is never half-sent; a photo that cannot be used (another type,
+          // or missing) is skipped and the post goes out as text, which the person is told.
+          const author = organizationUrn(orgId);
+          let imageUrn: string | null = null;
+          let photo: "sent" | "none" | "skipped" = "none";
+          const image = await loadPostImage(
+            post,
+            supabaseAdmin.storage.from("post-media"),
+          );
+          if (image) {
+            try {
+              imageUrn = await uploadImage(
+                String(token),
+                LINKEDIN_VERSION,
+                author,
+                image,
+              );
+              photo = "sent";
+            } catch (e) {
+              console.error("LinkedIn photo failed", (e as Error).message);
+              return createErrorResponse(
+                502,
+                "LinkedIn did not accept the photo, so nothing was posted. Try again.",
+              );
+            }
+          } else if (post.media_path || post.image_url) {
+            photo = "skipped";
+          }
+          const body = postBody(author, text, post.link_url);
+
           const response = await fetch(API, {
             method: "POST",
             headers: headers(String(token)),
             body: JSON.stringify(
-              postBody(organizationUrn(orgId), text, post.link_url),
+              imageUrn ? withImage(body, imageUrn, text) : body,
             ),
             signal: AbortSignal.timeout(15000),
           });
@@ -228,7 +266,7 @@ Deno.serve((req: Request) =>
               urn,
             });
           }
-          return ok({ urn });
+          return ok({ urn, photo });
         } catch (e) {
           console.error("LinkedIn Page call failed", (e as Error).message);
           return createErrorResponse(502, "Could not reach LinkedIn");

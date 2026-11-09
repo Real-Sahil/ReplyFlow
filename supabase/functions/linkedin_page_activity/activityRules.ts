@@ -50,6 +50,8 @@ export type Comment = {
   at: number | null;
   fromPage: boolean;
   actor: string;
+  // The commenter's LinkedIn member id, when the commenter is a person (not a Page).
+  personId: string | null;
 };
 
 // LinkedIn gives the commenter as an urn, not a name; names need a separate permission, so a member is
@@ -69,6 +71,8 @@ export const parseComments = (
         at: typeof created?.time === "number" ? created.time : null,
         fromPage: actor === orgUrn(orgId),
         actor,
+        personId:
+          /^urn:li:person:([A-Za-z0-9_-]{1,40})$/.exec(actor)?.[1] ?? null,
       };
     })
     .filter((c) => validCommentUrn(c.urn))
@@ -130,3 +134,57 @@ export const parseShareStats = (json: {
 
 export const parseFollowers = (json: { firstDegreeSize?: unknown }) =>
   num(json.firstDegreeSize);
+
+// ---- Commenters' names -------------------------------------------------------------------------------
+// LinkedIn gives a commenter as an id. A name needs a lookup, which LinkedIn may refuse for some members,
+// so a name is shown when it is returned and "A LinkedIn member" when it is not.
+
+export const personIds = (comments: Comment[]) => [
+  ...new Set(
+    comments.map((c) => c.personId).filter((id): id is string => !!id),
+  ),
+];
+
+export const MAX_LOOKUPS = 50;
+
+export const peopleUrl = (ids: string[]) =>
+  `${BASE}/people?ids=List(${ids
+    .slice(0, MAX_LOOKUPS)
+    .map((id) => `(id:${enc(id)})`)
+    .join(",")})`;
+
+export type Person = { name: string; url: string | null };
+
+const text = (v: unknown) => String(v ?? "").trim();
+const localised = (v: unknown) => {
+  const o = v as { localized?: Record<string, unknown> } | undefined;
+  return text(Object.values(o?.localized ?? {})[0]);
+};
+
+// LinkedIn answers a batch lookup with a "results" object keyed by "(id:abc)". Anything missing or odd is left
+// out, so a partial answer still names the people it can.
+export const parsePeople = (json: {
+  results?: Record<string, Record<string, unknown>>;
+}): Record<string, Person> => {
+  const people: Record<string, Person> = {};
+  for (const [key, value] of Object.entries(json.results ?? {})) {
+    const id = /id:([^,)]+)/.exec(decodeURIComponent(key))?.[1];
+    if (!id) continue;
+    const name =
+      [text(value.localizedFirstName), text(value.localizedLastName)]
+        .filter(Boolean)
+        .join(" ") ||
+      [localised(value.firstName), localised(value.lastName)]
+        .filter(Boolean)
+        .join(" ");
+    if (!name) continue;
+    const vanity = text(value.vanityName);
+    people[id] = {
+      name: name.slice(0, 120),
+      url: /^[A-Za-z0-9_%-]{1,100}$/.test(vanity)
+        ? `https://www.linkedin.com/in/${vanity}`
+        : null,
+    };
+  }
+  return people;
+};

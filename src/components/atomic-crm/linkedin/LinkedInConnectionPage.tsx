@@ -141,8 +141,8 @@ export const LinkedInConnectionPage = () => {
           <p className="text-sm text-muted-foreground">
             Connect your own LinkedIn account to post from ReplyFlow to your
             profile. Posts go out as you, only when you press the button on a
-            post that has been approved. Text and a link are sent; photos are
-            not sent to LinkedIn yet.
+            post that has been approved. The text, the link and the post's photo
+            (JPEG or PNG) are sent.
           </p>
 
           {loading ? (

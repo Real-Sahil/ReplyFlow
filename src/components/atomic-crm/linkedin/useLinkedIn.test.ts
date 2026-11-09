@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { daysLeft, hasAdsScope, linkedInPostUrl } from "./useLinkedIn";
+import {
+  daysLeft,
+  hasAdsScope,
+  linkedInPostUrl,
+  photoNote,
+} from "./useLinkedIn";
 
 describe("daysLeft", () => {
   const now = new Date("2026-11-09T12:00:00Z").getTime();
@@ -28,5 +33,14 @@ describe("hasAdsScope", () => {
     );
     expect(hasAdsScope("openid profile w_member_social")).toBe(false);
     expect(hasAdsScope(undefined)).toBe(false);
+  });
+});
+
+describe("photoNote", () => {
+  it("says whether the photo went", () => {
+    expect(photoNote("sent")).toBe(" with its photo");
+    expect(photoNote("skipped")).toContain("text only");
+    expect(photoNote("none")).toBe("");
+    expect(photoNote(undefined)).toBe("");
   });
 });

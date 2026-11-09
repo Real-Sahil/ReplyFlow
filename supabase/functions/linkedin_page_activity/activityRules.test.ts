@@ -3,6 +3,9 @@ import { describe, expect, it } from "vitest";
 import {
   commentsUrl,
   parseComments,
+  parsePeople,
+  peopleUrl,
+  personIds,
   parseFollowers,
   parsePosts,
   parseShareStats,
@@ -117,5 +120,65 @@ describe("parseShareStats and parseFollowers", () => {
     expect(parseShareStats({}).engagementRate).toBeNull();
     expect(parseFollowers({ firstDegreeSize: 42 })).toBe(42);
     expect(parseFollowers({})).toBe(0);
+  });
+});
+
+describe("commenters' names", () => {
+  it("finds the people among the commenters, once each", () => {
+    const comments = parseComments(
+      {
+        elements: [
+          {
+            $URN: "urn:li:comment:(urn:li:share:1,1)",
+            actor: "urn:li:person:abc",
+            message: { text: "a" },
+            created: { time: 1 },
+          },
+          {
+            $URN: "urn:li:comment:(urn:li:share:1,2)",
+            actor: "urn:li:person:abc",
+            message: { text: "b" },
+            created: { time: 2 },
+          },
+          {
+            $URN: "urn:li:comment:(urn:li:share:1,3)",
+            actor: "urn:li:organization:99",
+            message: { text: "c" },
+            created: { time: 3 },
+          },
+        ],
+      },
+      "12",
+    );
+    expect(personIds(comments)).toEqual(["abc"]);
+    expect(comments[2].personId).toBeNull();
+  });
+  it("builds LinkedIn's batch address", () => {
+    expect(peopleUrl(["a", "b"])).toContain("/people?ids=List((id:a),(id:b))");
+  });
+  it("reads names, and a profile link when LinkedIn gives one", () => {
+    const people = parsePeople({
+      results: {
+        "(id:abc)": {
+          localizedFirstName: "Sam",
+          localizedLastName: "Jones",
+          vanityName: "sam-jones",
+        },
+        "(id:def)": {
+          firstName: { localized: { en_GB: "Ana" } },
+          lastName: { localized: { en_GB: "Lee" } },
+        },
+        "(id:ghi)": {},
+      },
+    });
+    expect(people.abc).toEqual({
+      name: "Sam Jones",
+      url: "https://www.linkedin.com/in/sam-jones",
+    });
+    expect(people.def).toEqual({ name: "Ana Lee", url: null });
+    expect(people.ghi).toBeUndefined();
+  });
+  it("copes with nothing", () => {
+    expect(parsePeople({})).toEqual({});
   });
 });
