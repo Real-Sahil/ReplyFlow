@@ -14,7 +14,11 @@ import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
 import { createErrorResponse } from "../_shared/utils.ts";
 import { hasAdsScope } from "../linkedin_connect/rules.ts";
 import {
+  accountsUrl,
   analyticsUrl,
+  campaignsUrl,
+  MAX_PAGES,
+  nextPageToken,
   buildRows,
   totals,
   validRange,
@@ -58,6 +62,22 @@ const get = async (token: string, url: string) => {
     );
   }
   return json;
+};
+
+// Follows LinkedIn's page tokens so a long list is complete, up to a sensible limit.
+const getAll = async (
+  token: string,
+  urlFor: (pageToken?: string | null) => string,
+) => {
+  const items: Record<string, unknown>[] = [];
+  let pageToken: string | null = null;
+  for (let i = 0; i < MAX_PAGES; i++) {
+    const json = await get(token, urlFor(pageToken));
+    items.push(...((json.elements ?? []) as Record<string, unknown>[]));
+    pageToken = nextPageToken(json);
+    if (!pageToken) break;
+  }
+  return items;
 };
 
 Deno.serve((req: Request) =>
@@ -120,18 +140,13 @@ Deno.serve((req: Request) =>
 
         try {
           if (input.action === "accounts") {
-            const json = await get(
-              String(token),
-              `${BASE}/adAccounts?q=search&count=100`,
-            );
-            const accounts = (json.elements ?? []).map(
-              (a: Record<string, unknown>) => ({
-                id: String(a.id),
-                name: String(a.name ?? `Account ${a.id}`),
-                currency: String(a.currency ?? ""),
-                status: String(a.status ?? ""),
-              }),
-            );
+            const elements = await getAll(String(token), accountsUrl);
+            const accounts = elements.map((a: Record<string, unknown>) => ({
+              id: String(a.id),
+              name: String(a.name ?? `Account ${a.id}`),
+              currency: String(a.currency ?? ""),
+              status: String(a.status ?? ""),
+            }));
             return ok({ accounts });
           }
 
@@ -147,16 +162,13 @@ Deno.serve((req: Request) =>
           }
           const [account, campaignJson, analytics] = await Promise.all([
             get(String(token), `${BASE}/adAccounts/${accountId}`),
-            get(
-              String(token),
-              `${BASE}/adAccounts/${accountId}/adCampaigns?q=search&count=100`,
-            ),
+            getAll(String(token), (t) => campaignsUrl(accountId, t)),
             get(
               String(token),
               analyticsUrl(accountId, String(input.start), String(input.end)),
             ),
           ]);
-          const campaigns: Campaign[] = (campaignJson.elements ?? []).map(
+          const campaigns: Campaign[] = campaignJson.map(
             (c: Record<string, unknown>) => ({
               id: String(c.id),
               name: String(c.name ?? `Campaign ${c.id}`),

@@ -142,6 +142,9 @@ const AdsReport = () => {
           {list.map((a) => (
             <option key={a.id} value={a.id}>
               {a.name}
+              {a.status && a.status !== "ACTIVE"
+                ? ` (${a.status.toLowerCase().replace("_", " ")})`
+                : ""}
             </option>
           ))}
         </select>
@@ -158,6 +161,14 @@ const AdsReport = () => {
           ))}
         </select>
       </div>
+
+      <p className="text-xs text-muted-foreground">
+        {list.length === 1
+          ? "1 ad account found."
+          : `${list.length} ad accounts found.`}{" "}
+        Only ad accounts that the connected LinkedIn account has a role on are
+        listed. Company Pages are connected separately, on the LinkedIn screen.
+      </p>
 
       {report.error ? <Problem error={report.error as AdsError} /> : null}
       {report.isPending && chosen ? (

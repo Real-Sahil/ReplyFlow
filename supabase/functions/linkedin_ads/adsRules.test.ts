@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  accountsUrl,
   analyticsUrl,
+  campaignsUrl,
+  nextPageToken,
   buildRows,
   campaignIdFromUrn,
   dateRangeParam,
@@ -83,5 +86,31 @@ describe("validRange", () => {
     expect(validRange("2026-11-02", "2026-11-01")).toBe(false);
     expect(validRange("2024-01-01", "2026-01-01")).toBe(false);
     expect(validRange("nope", "2026-01-01")).toBe(false);
+  });
+});
+
+describe("accountsUrl", () => {
+  it("asks for every status, 100 at a time, and passes a page token on", () => {
+    const first = accountsUrl();
+    expect(first).toContain("pageSize=100");
+    expect(first).toContain("REMOVED");
+    expect(first).not.toContain("pageToken");
+    expect(accountsUrl("abc/def=")).toContain("pageToken=abc%2Fdef%3D");
+  });
+});
+
+describe("campaignsUrl", () => {
+  it("is for one account and pages the same way", () => {
+    expect(campaignsUrl("12", "tok")).toBe(
+      "https://api.linkedin.com/rest/adAccounts/12/adCampaigns?q=search&pageSize=100&pageToken=tok",
+    );
+  });
+});
+
+describe("nextPageToken", () => {
+  it("returns LinkedIn's token, or null on the last page", () => {
+    expect(nextPageToken({ metadata: { nextPageToken: "t1" } })).toBe("t1");
+    expect(nextPageToken({ metadata: {} })).toBeNull();
+    expect(nextPageToken({})).toBeNull();
   });
 });

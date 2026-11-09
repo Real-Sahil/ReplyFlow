@@ -106,3 +106,33 @@ export const validRange = (start: unknown, end: unknown) => {
     b - a <= 366 * 86_400_000
   );
 };
+
+// Every ad account the connected person can see, whatever its status (LinkedIn leaves some out otherwise),
+// 100 at a time. The page token is LinkedIn's own and is passed back unchanged.
+export const ALL_STATUSES = "ACTIVE,DRAFT,CANCELED,PENDING_DELETION,REMOVED";
+export const accountsUrl = (pageToken?: string | null) =>
+  "https://api.linkedin.com/rest/adAccounts?" +
+  [
+    "q=search",
+    `search=(status:(values:List(${ALL_STATUSES})))`,
+    "pageSize=100",
+    ...(pageToken ? [`pageToken=${encodeURIComponent(pageToken)}`] : []),
+  ].join("&");
+
+export const campaignsUrl = (accountId: string, pageToken?: string | null) =>
+  `https://api.linkedin.com/rest/adAccounts/${accountId}/adCampaigns?` +
+  [
+    "q=search",
+    "pageSize=100",
+    ...(pageToken ? [`pageToken=${encodeURIComponent(pageToken)}`] : []),
+  ].join("&");
+
+// The token for the next page, or null when that was the last one.
+export const nextPageToken = (json: {
+  metadata?: { nextPageToken?: unknown };
+}): string | null => {
+  const token = json?.metadata?.nextPageToken;
+  return typeof token === "string" && token ? token : null;
+};
+
+export const MAX_PAGES = 10;
