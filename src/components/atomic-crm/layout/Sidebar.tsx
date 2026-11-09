@@ -14,6 +14,7 @@ import {
   Import,
   Landmark,
   LayoutDashboard,
+  Linkedin,
   MessageCircle,
   MessageSquare,
   Newspaper,
@@ -158,6 +159,7 @@ const GROUPS: Group[] = [
     items: [
       { to: "/settings", label: "Settings", Icon: Settings, access: "config" },
       { to: "/profile", label: "My profile", Icon: User },
+      { to: "/linkedin", label: "LinkedIn", Icon: Linkedin },
       {
         to: "/businesses",
         label: "Businesses",

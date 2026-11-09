@@ -2,6 +2,7 @@ import { useIsPlatformOwner } from "../businesses/useBusinesses";
 import { useLayoutEffect, useRef, useState } from "react";
 import {
   BookOpen,
+  Linkedin,
   Boxes,
   ChartColumn,
   Bug,
@@ -518,6 +519,13 @@ const MoreSheet = ({
             label="My profile"
             detail="Your name, photo and password"
             Icon={User}
+            onPick={onOpenChange}
+          />
+          <MoreRow
+            to="/linkedin"
+            label="LinkedIn"
+            detail="Post to your own profile"
+            Icon={Linkedin}
             onPick={onOpenChange}
           />
           <BusinessesRow onPick={onOpenChange} />

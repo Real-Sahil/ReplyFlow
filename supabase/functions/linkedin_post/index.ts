@@ -12,8 +12,9 @@ import { createErrorResponse } from "../_shared/utils.ts";
 import { postBody, tooLong } from "./postRules.ts";
 
 const API = "https://api.linkedin.com/rest/posts";
-// LinkedIn versions its API by month. Move this on deliberately and re-test.
-const LINKEDIN_VERSION = "202511";
+// LinkedIn versions its API by month and retires each version after about a year. If posts start failing
+// with a "version not active" message in the logs, set LINKEDIN_API_VERSION to a newer month (YYYYMM).
+const LINKEDIN_VERSION = Deno.env.get("LINKEDIN_API_VERSION") ?? "202605";
 
 const ok = (data: unknown) =>
   new Response(JSON.stringify({ data }), {

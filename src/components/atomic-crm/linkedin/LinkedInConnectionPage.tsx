@@ -1,0 +1,138 @@
+import { useEffect, useState } from "react";
+import { useNotify } from "ra-core";
+import { Link2, Unplug } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+
+import { getSupabaseClient } from "../providers/supabase/supabase";
+import { daysLeft, useLinkedIn } from "./useLinkedIn";
+
+const REASONS: Record<string, string> = {
+  cancelled: "Connecting was cancelled, so nothing changed.",
+  expired: "That link has expired. Press Connect to start again.",
+  scope:
+    "LinkedIn did not give ReplyFlow permission to read your name. Connect again and allow it.",
+  failed: "LinkedIn could not be connected. Try again in a moment.",
+};
+
+const call = async (action: "start" | "disconnect") => {
+  const { data, error } = await getSupabaseClient().functions.invoke(
+    "linkedin_connect",
+    { method: "POST", body: { action } },
+  );
+  if (error) {
+    const body = (await error.context?.json?.().catch(() => ({}))) as
+      | { message?: string }
+      | undefined;
+    throw new Error(body?.message ?? "Could not reach LinkedIn right now.");
+  }
+  return data?.data as { url?: string } | undefined;
+};
+
+// LinkedIn sends the person back to /#/linkedin?connected=1 (or ?connect=cancelled and so on).
+const outcome = () =>
+  new URLSearchParams(window.location.hash.split("?")[1] ?? "");
+
+export const LinkedInConnectionPage = () => {
+  const notify = useNotify();
+  const { member, loading, refetch } = useLinkedIn();
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    const params = outcome();
+    if (!params.has("connected") && !params.has("connect")) return;
+    if (params.get("connected")) {
+      notify("LinkedIn connected");
+      refetch();
+    } else {
+      notify(REASONS[params.get("connect") ?? ""] ?? REASONS.failed, {
+        type: "warning",
+      });
+    }
+    window.history.replaceState(null, "", "#/linkedin");
+    // Only on arrival from LinkedIn.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const connect = async () => {
+    setBusy(true);
+    try {
+      const result = await call("start");
+      if (!result?.url) throw new Error("Could not start the connection.");
+      window.location.href = result.url;
+    } catch (e) {
+      notify((e as Error).message, { type: "error" });
+      setBusy(false);
+    }
+  };
+
+  const disconnect = async () => {
+    setBusy(true);
+    try {
+      await call("disconnect");
+      notify("LinkedIn disconnected");
+      refetch();
+    } catch (e) {
+      notify((e as Error).message, { type: "error" });
+    }
+    setBusy(false);
+  };
+
+  const left = member ? daysLeft(member.expires_at) : 0;
+  const expired = !!member && left === 0;
+
+  return (
+    <div className="mx-auto flex max-w-2xl flex-col gap-4">
+      <h1 className="text-2xl font-semibold">LinkedIn</h1>
+      <Card>
+        <CardContent className="flex flex-col gap-4">
+          <p className="text-sm text-muted-foreground">
+            Connect your own LinkedIn account to post from ReplyFlow to your
+            profile. Posts go out as you, only when you press the button on a
+            post that has been approved. Text and a link are sent; photos are
+            not sent to LinkedIn yet.
+          </p>
+
+          {loading ? (
+            <p className="text-sm text-muted-foreground">Checking…</p>
+          ) : member ? (
+            <div className="flex flex-col gap-1 text-sm">
+              <p className="font-medium">
+                {expired
+                  ? "Your LinkedIn connection has expired"
+                  : `Connected as ${member.name || "your LinkedIn account"}`}
+              </p>
+              <p className="text-muted-foreground">
+                {expired
+                  ? "Connect again to keep posting."
+                  : left <= 7
+                    ? `It stops working in ${left} ${left === 1 ? "day" : "days"}. Connect again soon.`
+                    : `Works for about ${left} more days. LinkedIn asks you to connect again every two months or so.`}
+              </p>
+            </div>
+          ) : (
+            <p className="text-sm font-medium">Not connected</p>
+          )}
+
+          <div className="flex flex-wrap gap-2">
+            <Button disabled={busy} onClick={connect}>
+              <Link2 />
+              {member ? "Connect again" : "Connect LinkedIn"}
+            </Button>
+            {member ? (
+              <Button variant="outline" disabled={busy} onClick={disconnect}>
+                <Unplug /> Disconnect
+              </Button>
+            ) : null}
+          </div>
+
+          <p className="text-xs text-muted-foreground">
+            ReplyFlow asks LinkedIn only for your name and permission to post
+            for you. Your sign-in token is stored encrypted on the server and
+            never shown in the app. Disconnecting removes it.
+          </p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
